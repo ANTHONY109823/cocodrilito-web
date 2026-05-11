@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --green-primary: #1D9E75;
+  --green-dark: #085041;
+  --green-light: #E1F5EE;
+  --gold: #EF9F27;
+  --danger: #D85A30;
+  --bg-dark: #0A0F0D;
+  --bg-card: #111916;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: #F0F4F1;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-primary {
+  background-color: var(--green-primary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background-color: var(--green-dark);
+  transform: translateY(-1px);
+}
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid #1A2E24;
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.input-field {
+  width: 100%;
+  background-color: #0F1A14;
+  border: 1px solid #1A2E24;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #F0F4F1;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-field:focus {
+  border-color: var(--green-primary);
+}
+
+.badge-league {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
