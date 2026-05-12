@@ -55,6 +55,9 @@ export default function DashboardLayout({
             <Link href="/premium" className="text-gray-400 hover:text-white text-sm transition-colors">
               Premium ⭐
             </Link>
+            <Link href="/admin" className="text-gray-400 hover:text-white text-sm transition-colors">
+            Admin 🛡️
+            </Link>
           </div>
 
           {/* Desktop user */}
