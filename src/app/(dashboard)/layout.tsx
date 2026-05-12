@@ -52,6 +52,9 @@ export default function DashboardLayout({
             <Link href="/ranking" className="text-gray-400 hover:text-white text-sm transition-colors">
               Ranking
             </Link>
+            <Link href="/premium" className="text-gray-400 hover:text-white text-sm transition-colors">
+              Premium ⭐
+            </Link>
           </div>
 
           {/* Desktop user */}
@@ -115,6 +118,10 @@ export default function DashboardLayout({
               <Link href="/ranking" onClick={() => setMenuOpen(false)}
                 className="text-gray-300 hover:text-white text-sm py-2 transition-colors">
                 🏆 Ranking
+              </Link>
+              <Link href="/premium" onClick={() => setMenuOpen(false)}
+               className="text-gray-300 hover:text-white text-sm py-2 transition-colors">
+              ⭐ Premium
               </Link>
               <button onClick={handleLogout}
                 className="text-red-400 text-sm py-2 text-left transition-colors">
