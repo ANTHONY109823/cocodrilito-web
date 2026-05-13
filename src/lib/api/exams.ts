@@ -12,4 +12,8 @@ export const examsApi = {
     apiClient.post(`/exams/sessions/${sessionId}/finish`),
   getResult: (sessionId: string) =>
     apiClient.get(`/exams/sessions/${sessionId}/result`),
+  getLatestSession: () =>
+    apiClient.get('/exams/sessions/latest'),
+  getMyStats: () =>
+    apiClient.get('/exams/sessions/stats'),
 }

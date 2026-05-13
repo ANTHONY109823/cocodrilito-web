@@ -15,52 +15,82 @@ interface GamificationStatus {
   badges: string[]
 }
 
+interface Stats {
+  totalSessions: number
+  totalCorrect: number
+  totalIncorrect: number
+  totalQuestions: number
+  lastAccess: string
+}
+
+interface LatestSession {
+  sessionId: string
+  score: number
+  correctAnswers: number
+  totalQuestions: number
+  timeSpentSeconds: number
+  finishedAt: string
+  passed: boolean
+}
+
 const leagueConfig: Record<string, { color: string; bg: string; border: string; emoji: string; next: string; correctasNext: number }> = {
-  'Cola Cortada':           { color: '#EF9F27', bg: '#1A1200', border: '#EF9F2740', emoji: '🐊✂️', next: 'Máximo nivel', correctasNext: 0 },
-  'Creo que nos cortan la cola': { color: '#1D9E75', bg: '#0A1A10', border: '#1D9E7540', emoji: '✂️', next: 'Cola Cortada', correctasNext: 100 },
-  'Lagartito':              { color: '#378ADD', bg: '#0A1020', border: '#378ADD40', emoji: '🦎', next: 'Creo que nos cortan la cola', correctasNext: 75 },
-  'Cocodrilito':            { color: '#A0C878', bg: '#0A1A08', border: '#A0C87840', emoji: '🐊', next: 'Lagartito', correctasNext: 50 },
-  'Dinosaurio':             { color: '#D85A30', bg: '#1A0800', border: '#D85A3040', emoji: '🦕', next: 'Cocodrilito', correctasNext: 25 },
+  'Cola Cortada':                { color: '#EF9F27', bg: '#1A1200', border: '#EF9F2740', emoji: '🐊✂️', next: 'Máximo nivel', correctasNext: 0 },
+  'Creo que nos cortan la cola': { color: '#1D9E75', bg: '#0A1A10', border: '#1D9E7540', emoji: '✂️',   next: 'Cola Cortada', correctasNext: 100 },
+  'Lagartito':                   { color: '#378ADD', bg: '#0A1020', border: '#378ADD40', emoji: '🦎',   next: 'Creo que nos cortan la cola', correctasNext: 75 },
+  'Cocodrilito':                 { color: '#A0C878', bg: '#0A1A08', border: '#A0C87840', emoji: '🐊',   next: 'Lagartito', correctasNext: 50 },
+  'Dinosaurio':                  { color: '#D85A30', bg: '#1A0800', border: '#D85A3040', emoji: '🦕',   next: 'Cocodrilito', correctasNext: 25 },
+}
+
+const getLeagueByCorrects = (total: number) => {
+  if (total >= 100) return 'Cola Cortada'
+  if (total >= 75)  return 'Creo que nos cortan la cola'
+  if (total >= 50)  return 'Lagartito'
+  if (total >= 25)  return 'Cocodrilito'
+  return 'Dinosaurio'
+}
+
+const formatTime = (seconds: number) => {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}m ${s}s`
 }
 
 export default function DashboardPage() {
   const { user, loadFromStorage } = useAuthStore()
   const [gami, setGami] = useState<GamificationStatus | null>(null)
-  const [lastResult, setLastResult] = useState<any>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [latest, setLatest] = useState<LatestSession | null>(null)
   const [loading, setLoading] = useState(true)
-
-  // Calcular liga por preguntas correctas históricas
-  const getLeagueByCorrects = (totalCorrects: number) => {
-    if (totalCorrects >= 100) return 'Cola Cortada'
-    if (totalCorrects >= 75) return 'Creo que nos cortan la cola'
-    if (totalCorrects >= 50) return 'Lagartito'
-    if (totalCorrects >= 25) return 'Cocodrilito'
-    return 'Dinosaurio'
-  }
 
   useEffect(() => {
     loadFromStorage()
-    loadData()
+    loadAll()
   }, [])
 
-  const loadData = async () => {
+  const loadAll = async () => {
     try {
-      const res = await gamificationApi.getMyStatus()
-      setGami(res.data)
+      const [gamiRes, statsRes, latestRes] = await Promise.all([
+        gamificationApi.getMyStatus(),
+        examsApi.getMyStats(),
+        examsApi.getLatestSession(),
+      ])
+      setGami(gamiRes.data)
+      setStats(statsRes.data)
+      setLatest(latestRes.data)
     } catch {
-      console.error('Error cargando gamificación')
+      console.error('Error cargando datos')
     } finally {
       setLoading(false)
     }
   }
 
-  const totalCorrects = gami?.totalXp ? Math.floor(gami.totalXp / 100) : 0
+  const totalCorrects = stats?.totalCorrect || 0
   const ligaNombre = getLeagueByCorrects(totalCorrects)
-  const league = leagueConfig[ligaNombre] || leagueConfig['Dinosaurio']
+  const league = leagueConfig[ligaNombre]
   const correctasNext = league.correctasNext
   const progressPercent = correctasNext > 0
     ? Math.min((totalCorrects / correctasNext) * 100, 100) : 100
-  const isNewUser = !gami || gami.examsCompleted === 0
+  const isNewUser = !stats || stats.totalSessions === 0
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
@@ -69,16 +99,17 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            {isNewUser ? '¡Bienvenido,' : '¡Hola de nuevo,'} {user?.fullName?.split(' ')[0] || user?.fullName}! {league.emoji}
+            {isNewUser ? '¡Bienvenido,' : '¡Hola de nuevo,'}{' '}
+            {user?.fullName?.split(' ')[0] || user?.fullName}! {league.emoji}
           </h1>
           <p className="text-gray-400 text-sm mt-1">{user?.rank} — {user?.unit}</p>
         </div>
         <div className="text-center px-4 py-2 rounded-xl"
           style={{ backgroundColor: '#1A1A0A', border: '1px solid #EF9F27' }}>
           <div className="text-2xl font-bold text-yellow-400">
-            {gami?.examsCompleted || 0}
+            {stats?.totalSessions || 0}
           </div>
-          <div className="text-xs text-gray-500">accesos</div>
+          <div className="text-xs text-gray-500">simulacros</div>
         </div>
       </div>
 
@@ -135,24 +166,22 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* STATS — 3 cajas estilo "Nuevo simulacro" */}
+      {/* STATS */}
       {!isNewUser && (
         <div className="grid grid-cols-3 gap-4">
           <div className="rounded-2xl p-4 text-center"
             style={{ background: 'linear-gradient(135deg, #0A2018 0%, #1A3D2E 100%)', border: '1px solid #1D9E75' }}>
-            <div className="text-3xl font-bold text-green-400">{totalCorrects}</div>
+            <div className="text-3xl font-bold text-green-400">{stats?.totalCorrect || 0}</div>
             <div className="text-gray-400 text-xs mt-1">Preguntas correctas</div>
           </div>
           <div className="rounded-2xl p-4 text-center"
-            style={{ background: 'linear-gradient(135deg, #0A1525 0%, #1A2A40 100%)', border: '1px solid #378ADD' }}>
-            <div className="text-3xl font-bold text-red-400">
-              {Math.max(0, (gami?.examsCompleted || 0) * 1 - totalCorrects)}
-            </div>
+            style={{ background: 'linear-gradient(135deg, #2A0A0A 0%, #3D1A1A 100%)', border: '1px solid #D85A30' }}>
+            <div className="text-3xl font-bold text-red-400">{stats?.totalIncorrect || 0}</div>
             <div className="text-gray-400 text-xs mt-1">Preguntas incorrectas</div>
           </div>
           <div className="rounded-2xl p-4 text-center"
             style={{ background: 'linear-gradient(135deg, #1A1200 0%, #2A2000 100%)', border: '1px solid #EF9F27' }}>
-            <div className="text-3xl font-bold text-yellow-400">{gami?.examsCompleted || 0}</div>
+            <div className="text-3xl font-bold text-yellow-400">{stats?.totalSessions || 0}</div>
             <div className="text-gray-400 text-xs mt-1">Simulacros realizados</div>
           </div>
         </div>
@@ -164,7 +193,7 @@ export default function DashboardPage() {
           style={{ backgroundColor: '#2A1010', border: '1px solid #D85A30' }}>
           <span className="text-3xl">☠️</span>
           <div className="flex-1">
-            <div className="text-red-400 font-semibold">¡Alerta! Estás oxidándose 🦕</div>
+            <div className="text-red-400 font-semibold">¡Alerta! Estás oxidándote 🦕</div>
             <div className="text-red-500 text-sm">
               Llevas días sin practicar. ¡Tu rancho te está aventajando!
             </div>
@@ -193,31 +222,53 @@ export default function DashboardPage() {
       )}
 
       {/* ÚLTIMO SIMULACRO */}
-      {!isNewUser && (
+      {latest && (
         <div className="rounded-2xl p-5"
           style={{ background: 'linear-gradient(135deg, #0A1020 0%, #1A2030 100%)', border: '1px solid #378ADD40' }}>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <div className="text-white font-bold">📊 Último simulacro</div>
-              <div className="text-gray-500 text-sm">Revisa tus respuestas y refuerza tus puntos débiles</div>
+              <div className="text-gray-500 text-sm">
+                {new Date(latest.finishedAt).toLocaleDateString('es-PE', {
+                  day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+                })}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold"
+                style={{ color: latest.passed ? '#1D9E75' : '#D85A30' }}>
+                {latest.score}%
+              </div>
+              <div className="text-xs" style={{ color: latest.passed ? '#1D9E75' : '#D85A30' }}>
+                {latest.passed ? '✅ Aprobado' : '❌ No aprobado'}
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+
+          <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="rounded-xl p-3 text-center"
               style={{ backgroundColor: '#1A3D2E' }}>
-              <div className="text-xl font-bold text-green-400">{totalCorrects > 0 ? '✅' : '—'}</div>
+              <div className="text-xl font-bold text-green-400">{latest.correctAnswers}</div>
               <div className="text-gray-400 text-xs">Correctas</div>
             </div>
             <div className="rounded-xl p-3 text-center"
               style={{ backgroundColor: '#2A1010' }}>
-              <div className="text-xl font-bold text-red-400">{totalCorrects > 0 ? '❌' : '—'}</div>
+              <div className="text-xl font-bold text-red-400">
+                {latest.totalQuestions - latest.correctAnswers}
+              </div>
               <div className="text-gray-400 text-xs">Incorrectas</div>
             </div>
+            <div className="rounded-xl p-3 text-center"
+              style={{ backgroundColor: '#0A1525' }}>
+              <div className="text-xl font-bold text-blue-400">{formatTime(latest.timeSpentSeconds)}</div>
+              <div className="text-gray-400 text-xs">Tiempo</div>
+            </div>
           </div>
-          <Link href="/ranking"
-            className="mt-3 block text-center py-2 rounded-xl text-sm transition-all"
+
+          <Link href={`/result/${latest.sessionId}`}
+            className="block text-center py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
             style={{ backgroundColor: '#1A2A40', color: '#378ADD' }}>
-            Ver mi posición en el ranking →
+            Ver respuestas detalladas →
           </Link>
         </div>
       )}
