@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
 import { gamificationApi } from '@/lib/api/gamification'
+import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 
 interface GamificationStatus {
@@ -14,26 +15,35 @@ interface GamificationStatus {
   badges: string[]
 }
 
-const leagueConfig: Record<string, { color: string; bg: string; emoji: string; next: string; xpNext: number }> = {
-  'Cocodrilo Élite':   { color: '#EF9F27', bg: '#2A1F00', emoji: '🐊', next: 'Máximo nivel', xpNext: 0 },
-  'Cocodrilo Veterano':{ color: '#1D9E75', bg: '#0A2018', emoji: '🐊', next: 'Cocodrilo Élite', xpNext: 50000 },
-  'Cocodrilo Activo':  { color: '#378ADD', bg: '#0A1525', emoji: '🦎', next: 'Cocodrilo Veterano', xpNext: 20000 },
-  'Lagarto':           { color: '#6B8E6B', bg: '#0F1A0F', emoji: '🦎', next: 'Cocodrilo Activo', xpNext: 8000 },
-  'Tortuga':           { color: '#8B7355', bg: '#1A1208', emoji: '🐢', next: 'Lagarto', xpNext: 2000 },
-  'Fósil en Peligro':  { color: '#D85A30', bg: '#2A0A00', emoji: '💀', next: 'Tortuga', xpNext: 500 },
+const leagueConfig: Record<string, { color: string; bg: string; border: string; emoji: string; next: string; correctasNext: number }> = {
+  'Cola Cortada':           { color: '#EF9F27', bg: '#1A1200', border: '#EF9F2740', emoji: '🐊✂️', next: 'Máximo nivel', correctasNext: 0 },
+  'Creo que nos cortan la cola': { color: '#1D9E75', bg: '#0A1A10', border: '#1D9E7540', emoji: '✂️', next: 'Cola Cortada', correctasNext: 100 },
+  'Lagartito':              { color: '#378ADD', bg: '#0A1020', border: '#378ADD40', emoji: '🦎', next: 'Creo que nos cortan la cola', correctasNext: 75 },
+  'Cocodrilito':            { color: '#A0C878', bg: '#0A1A08', border: '#A0C87840', emoji: '🐊', next: 'Lagartito', correctasNext: 50 },
+  'Dinosaurio':             { color: '#D85A30', bg: '#1A0800', border: '#D85A3040', emoji: '🦕', next: 'Cocodrilito', correctasNext: 25 },
 }
 
 export default function DashboardPage() {
   const { user, loadFromStorage } = useAuthStore()
   const [gami, setGami] = useState<GamificationStatus | null>(null)
+  const [lastResult, setLastResult] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+
+  // Calcular liga por preguntas correctas históricas
+  const getLeagueByCorrects = (totalCorrects: number) => {
+    if (totalCorrects >= 100) return 'Cola Cortada'
+    if (totalCorrects >= 75) return 'Creo que nos cortan la cola'
+    if (totalCorrects >= 50) return 'Lagartito'
+    if (totalCorrects >= 25) return 'Cocodrilito'
+    return 'Dinosaurio'
+  }
 
   useEffect(() => {
     loadFromStorage()
-    loadGamification()
+    loadData()
   }, [])
 
-  const loadGamification = async () => {
+  const loadData = async () => {
     try {
       const res = await gamificationApi.getMyStatus()
       setGami(res.data)
@@ -44,12 +54,16 @@ export default function DashboardPage() {
     }
   }
 
-  const league = gami ? (leagueConfig[gami.currentLeague] || leagueConfig['Fósil en Peligro']) : leagueConfig['Fósil en Peligro']
-  const xpProgress = gami && league.xpNext > 0 ? Math.min((gami.totalXp / league.xpNext) * 100, 100) : 100
+  const totalCorrects = gami?.totalXp ? Math.floor(gami.totalXp / 100) : 0
+  const ligaNombre = getLeagueByCorrects(totalCorrects)
+  const league = leagueConfig[ligaNombre] || leagueConfig['Dinosaurio']
+  const correctasNext = league.correctasNext
+  const progressPercent = correctasNext > 0
+    ? Math.min((totalCorrects / correctasNext) * 100, 100) : 100
   const isNewUser = !gami || gami.examsCompleted === 0
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4">
 
       {/* SALUDO */}
       <div className="flex items-center justify-between">
@@ -59,16 +73,16 @@ export default function DashboardPage() {
           </h1>
           <p className="text-gray-400 text-sm mt-1">{user?.rank} — {user?.unit}</p>
         </div>
-        {gami && gami.currentStreakDays > 0 && (
-          <div className="text-center px-4 py-2 rounded-xl"
-            style={{ backgroundColor: '#1A1A0A', border: '1px solid #EF9F27' }}>
-            <div className="text-2xl font-bold text-yellow-400">🔥 {gami.currentStreakDays}</div>
-            <div className="text-xs text-gray-500">días seguidos</div>
+        <div className="text-center px-4 py-2 rounded-xl"
+          style={{ backgroundColor: '#1A1A0A', border: '1px solid #EF9F27' }}>
+          <div className="text-2xl font-bold text-yellow-400">
+            {gami?.examsCompleted || 0}
           </div>
-        )}
+          <div className="text-xs text-gray-500">accesos</div>
+        </div>
       </div>
 
-      {/* CTA PRINCIPAL — solo si es nuevo usuario */}
+      {/* CTA NUEVO USUARIO */}
       {isNewUser && (
         <div className="relative overflow-hidden rounded-2xl p-6"
           style={{ background: 'linear-gradient(135deg, #085041 0%, #1D9E75 100%)' }}>
@@ -91,53 +105,55 @@ export default function DashboardPage() {
       {/* LIGA Y PROGRESO */}
       {!loading && (
         <div className="rounded-2xl p-5"
-          style={{ backgroundColor: league.bg, border: `1px solid ${league.color}33` }}>
-          <div className="flex items-center justify-between mb-4">
+          style={{ backgroundColor: league.bg, border: `1px solid ${league.border}` }}>
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <span className="text-3xl">{league.emoji}</span>
               <div>
                 <div className="text-xs text-gray-500 uppercase tracking-wider">Liga actual</div>
                 <div className="text-xl font-bold" style={{ color: league.color }}>
-                  {gami?.currentLeague || 'Fósil en Peligro'}
+                  {ligaNombre}
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-white">{gami?.totalXp || 0} XP</div>
-              {league.xpNext > 0 && (
-                <div className="text-xs text-gray-500">
-                  {league.xpNext - (gami?.totalXp || 0)} XP para {league.next}
+              <div className="text-2xl font-bold text-white">{totalCorrects}</div>
+              <div className="text-xs text-gray-500">preguntas correctas totales</div>
+              {correctasNext > 0 && (
+                <div className="text-xs mt-1" style={{ color: league.color }}>
+                  {correctasNext - totalCorrects} para {league.next}
                 </div>
               )}
             </div>
           </div>
-
-          {/* Barra de progreso */}
-          {league.xpNext > 0 && (
+          {correctasNext > 0 && (
             <div className="w-full h-2 rounded-full" style={{ backgroundColor: '#ffffff15' }}>
               <div className="h-2 rounded-full transition-all duration-700"
-                style={{ width: `${xpProgress}%`, backgroundColor: league.color }} />
+                style={{ width: `${progressPercent}%`, backgroundColor: league.color }} />
             </div>
           )}
         </div>
       )}
 
-      {/* STATS */}
+      {/* STATS — 3 cajas estilo "Nuevo simulacro" */}
       {!isNewUser && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="card text-center">
-            <div className="text-3xl font-bold text-yellow-400">{gami?.totalXp || 0}</div>
-            <div className="text-gray-500 text-xs mt-1">XP Total</div>
+          <div className="rounded-2xl p-4 text-center"
+            style={{ background: 'linear-gradient(135deg, #0A2018 0%, #1A3D2E 100%)', border: '1px solid #1D9E75' }}>
+            <div className="text-3xl font-bold text-green-400">{totalCorrects}</div>
+            <div className="text-gray-400 text-xs mt-1">Preguntas correctas</div>
           </div>
-          <div className="card text-center">
-            <div className="text-3xl font-bold text-blue-400">
-              {gami?.currentStreakDays || 0} 🔥
+          <div className="rounded-2xl p-4 text-center"
+            style={{ background: 'linear-gradient(135deg, #0A1525 0%, #1A2A40 100%)', border: '1px solid #378ADD' }}>
+            <div className="text-3xl font-bold text-red-400">
+              {Math.max(0, (gami?.examsCompleted || 0) * 1 - totalCorrects)}
             </div>
-            <div className="text-gray-500 text-xs mt-1">Días de racha</div>
+            <div className="text-gray-400 text-xs mt-1">Preguntas incorrectas</div>
           </div>
-          <div className="card text-center">
-            <div className="text-3xl font-bold text-green-400">{gami?.examsCompleted || 0}</div>
-            <div className="text-gray-500 text-xs mt-1">Simulacros</div>
+          <div className="rounded-2xl p-4 text-center"
+            style={{ background: 'linear-gradient(135deg, #1A1200 0%, #2A2000 100%)', border: '1px solid #EF9F27' }}>
+            <div className="text-3xl font-bold text-yellow-400">{gami?.examsCompleted || 0}</div>
+            <div className="text-gray-400 text-xs mt-1">Simulacros realizados</div>
           </div>
         </div>
       )}
@@ -148,9 +164,9 @@ export default function DashboardPage() {
           style={{ backgroundColor: '#2A1010', border: '1px solid #D85A30' }}>
           <span className="text-3xl">☠️</span>
           <div className="flex-1">
-            <div className="text-red-400 font-semibold">¡Alerta Anti-Fósil!</div>
+            <div className="text-red-400 font-semibold">¡Alerta! Estás oxidándose 🦕</div>
             <div className="text-red-500 text-sm">
-              Llevas {Math.floor(gami.fossilRiskScore / 20)} días sin practicar. ¡Tu rancho te está aventajando!
+              Llevas días sin practicar. ¡Tu rancho te está aventajando!
             </div>
           </div>
           <Link href="/exams"
@@ -161,7 +177,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* CTA SIMULACRO — para usuarios con historial */}
+      {/* CTA NUEVO SIMULACRO */}
       {!isNewUser && (
         <Link href="/exams"
           className="block rounded-2xl p-5 transition-all hover:scale-[1.01]"
@@ -171,14 +187,45 @@ export default function DashboardPage() {
               <div className="text-white font-bold text-lg">📝 Nuevo simulacro</div>
               <div className="text-gray-400 text-sm mt-1">Sigue entrenando para subir de liga</div>
             </div>
-            <div className="text-3xl">→</div>
+            <div className="text-white text-2xl">→</div>
           </div>
         </Link>
       )}
 
+      {/* ÚLTIMO SIMULACRO */}
+      {!isNewUser && (
+        <div className="rounded-2xl p-5"
+          style={{ background: 'linear-gradient(135deg, #0A1020 0%, #1A2030 100%)', border: '1px solid #378ADD40' }}>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-white font-bold">📊 Último simulacro</div>
+              <div className="text-gray-500 text-sm">Revisa tus respuestas y refuerza tus puntos débiles</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl p-3 text-center"
+              style={{ backgroundColor: '#1A3D2E' }}>
+              <div className="text-xl font-bold text-green-400">{totalCorrects > 0 ? '✅' : '—'}</div>
+              <div className="text-gray-400 text-xs">Correctas</div>
+            </div>
+            <div className="rounded-xl p-3 text-center"
+              style={{ backgroundColor: '#2A1010' }}>
+              <div className="text-xl font-bold text-red-400">{totalCorrects > 0 ? '❌' : '—'}</div>
+              <div className="text-gray-400 text-xs">Incorrectas</div>
+            </div>
+          </div>
+          <Link href="/ranking"
+            className="mt-3 block text-center py-2 rounded-xl text-sm transition-all"
+            style={{ backgroundColor: '#1A2A40', color: '#378ADD' }}>
+            Ver mi posición en el ranking →
+          </Link>
+        </div>
+      )}
+
       {/* BADGES */}
       {gami && gami.badges.length > 0 && (
-        <div className="card">
+        <div className="rounded-2xl p-5"
+          style={{ background: 'linear-gradient(135deg, #0A1A10 0%, #1A2A1A 100%)', border: '1px solid #1D9E7540' }}>
           <h3 className="text-white font-semibold mb-3">🏆 Mis logros</h3>
           <div className="flex flex-wrap gap-2">
             {gami.badges.map((badge, i) => (
