@@ -26,6 +26,7 @@ export interface AuthResponse {
     rank: string
     unit: string
     planType: string
+    role: string
   }
 }
 
