@@ -20,7 +20,6 @@ interface Stats {
   totalCorrect: number
   totalIncorrect: number
   totalQuestions: number
-  lastAccess: string
 }
 
 interface LatestSession {
@@ -84,33 +83,41 @@ export default function DashboardPage() {
     }
   }
 
-  const totalCorrects = stats?.totalCorrect || 0
-  const ligaNombre = getLeagueByCorrects(totalCorrects)
+  // Liga basada en correctas del último simulacro
+  const lastCorrects = latest?.correctAnswers || 0
+  const ligaNombre = getLeagueByCorrects(lastCorrects)
   const league = leagueConfig[ligaNombre]
   const correctasNext = league.correctasNext
   const progressPercent = correctasNext > 0
-    ? Math.min((totalCorrects / correctasNext) * 100, 100) : 100
-  const isNewUser = !stats || stats.totalSessions === 0
+    ? Math.min((lastCorrects / correctasNext) * 100, 100) : 100
+  const isNewUser = !latest
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
 
-      {/* SALUDO */}
-      <div className="flex items-center justify-between">
-        <div>
+      {/* SALUDO + BOTÓN NUEVO SIMULACRO */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-white">
             {isNewUser ? '¡Bienvenido,' : '¡Hola de nuevo,'}{' '}
             {user?.fullName?.split(' ')[0] || user?.fullName}! {league.emoji}
           </h1>
           <p className="text-gray-400 text-sm mt-1">{user?.rank} — {user?.unit}</p>
         </div>
-        <div className="text-center px-4 py-2 rounded-xl"
+
+        {/* Accesos */}
+        <div className="text-center px-3 py-2 rounded-xl shrink-0"
           style={{ backgroundColor: '#1A1A0A', border: '1px solid #EF9F27' }}>
-          <div className="text-2xl font-bold text-yellow-400">
-            {stats?.totalSessions || 0}
-          </div>
-          <div className="text-xs text-gray-500">simulacros</div>
+          <div className="text-xl font-bold text-yellow-400">{stats?.totalSessions || 0}</div>
+          <div className="text-xs text-gray-500">accesos</div>
         </div>
+
+        {/* Botón nuevo simulacro */}
+        <Link href="/exams"
+          className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all hover:scale-105"
+          style={{ backgroundColor: '#1D9E75', color: '#fff' }}>
+          📝 Nuevo simulacro
+        </Link>
       </div>
 
       {/* CTA NUEVO USUARIO */}
@@ -133,8 +140,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* LIGA Y PROGRESO */}
-      {!loading && (
+      {/* LIGA — basada en último simulacro */}
+      {!loading && latest && (
         <div className="rounded-2xl p-5"
           style={{ backgroundColor: league.bg, border: `1px solid ${league.border}` }}>
           <div className="flex items-center justify-between mb-3">
@@ -148,11 +155,11 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-white">{totalCorrects}</div>
-              <div className="text-xs text-gray-500">preguntas correctas totales</div>
+              <div className="text-2xl font-bold text-white">{lastCorrects}</div>
+              <div className="text-xs text-gray-500">correctas en último simulacro</div>
               {correctasNext > 0 && (
                 <div className="text-xs mt-1" style={{ color: league.color }}>
-                  {correctasNext - totalCorrects} para {league.next}
+                  {correctasNext - lastCorrects} preguntas para el siguiente nivel
                 </div>
               )}
             </div>
@@ -166,62 +173,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* STATS */}
-      {!isNewUser && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-2xl p-4 text-center"
-            style={{ background: 'linear-gradient(135deg, #0A2018 0%, #1A3D2E 100%)', border: '1px solid #1D9E75' }}>
-            <div className="text-3xl font-bold text-green-400">{stats?.totalCorrect || 0}</div>
-            <div className="text-gray-400 text-xs mt-1">Preguntas correctas</div>
-          </div>
-          <div className="rounded-2xl p-4 text-center"
-            style={{ background: 'linear-gradient(135deg, #2A0A0A 0%, #3D1A1A 100%)', border: '1px solid #D85A30' }}>
-            <div className="text-3xl font-bold text-red-400">{stats?.totalIncorrect || 0}</div>
-            <div className="text-gray-400 text-xs mt-1">Preguntas incorrectas</div>
-          </div>
-          <div className="rounded-2xl p-4 text-center"
-            style={{ background: 'linear-gradient(135deg, #1A1200 0%, #2A2000 100%)', border: '1px solid #EF9F27' }}>
-            <div className="text-3xl font-bold text-yellow-400">{stats?.totalSessions || 0}</div>
-            <div className="text-gray-400 text-xs mt-1">Simulacros realizados</div>
-          </div>
-        </div>
-      )}
-
-      {/* ALERTA ANTI-FÓSIL */}
-      {gami && gami.fossilRiskScore > 40 && (
-        <div className="rounded-xl p-4 flex items-center gap-4"
-          style={{ backgroundColor: '#2A1010', border: '1px solid #D85A30' }}>
-          <span className="text-3xl">☠️</span>
-          <div className="flex-1">
-            <div className="text-red-400 font-semibold">¡Alerta! Estás oxidándote 🦕</div>
-            <div className="text-red-500 text-sm">
-              Llevas días sin practicar. ¡Tu rancho te está aventajando!
-            </div>
-          </div>
-          <Link href="/exams"
-            className="px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap"
-            style={{ backgroundColor: '#D85A30', color: '#fff' }}>
-            Practicar ahora
-          </Link>
-        </div>
-      )}
-
-      {/* CTA NUEVO SIMULACRO */}
-      {!isNewUser && (
-        <Link href="/exams"
-          className="block rounded-2xl p-5 transition-all hover:scale-[1.01]"
-          style={{ background: 'linear-gradient(135deg, #0A2018 0%, #1A3D2E 100%)', border: '1px solid #1D9E75' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-white font-bold text-lg">📝 Nuevo simulacro</div>
-              <div className="text-gray-400 text-sm mt-1">Sigue entrenando para subir de liga</div>
-            </div>
-            <div className="text-white text-2xl">→</div>
-          </div>
-        </Link>
-      )}
-
-      {/* ÚLTIMO SIMULACRO */}
+      {/* ÚLTIMO SIMULACRO — stats */}
       {latest && (
         <div className="rounded-2xl p-5"
           style={{ background: 'linear-gradient(135deg, #0A1020 0%, #1A2030 100%)', border: '1px solid #378ADD40' }}>
@@ -260,32 +212,42 @@ export default function DashboardPage() {
             </div>
             <div className="rounded-xl p-3 text-center"
               style={{ backgroundColor: '#0A1525' }}>
-              <div className="text-xl font-bold text-blue-400">{formatTime(latest.timeSpentSeconds)}</div>
+              <div className="text-xl font-bold text-blue-400">
+                {formatTime(latest.timeSpentSeconds)}
+              </div>
               <div className="text-gray-400 text-xs">Tiempo</div>
             </div>
           </div>
 
-          <Link href={`/result/${latest.sessionId}`}
-            className="block text-center py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-            style={{ backgroundColor: '#1A2A40', color: '#378ADD' }}>
-            Ver respuestas detalladas →
-          </Link>
+          <div className="flex gap-3">
+            <Link href={`/result/${latest.sessionId}`}
+              className="flex-1 text-center py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+              style={{ backgroundColor: '#1A2A40', color: '#378ADD' }}>
+              Ver respuestas →
+            </Link>
+            <Link href="/ranking"
+              className="flex-1 text-center py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+              style={{ backgroundColor: '#1A2E24', color: '#1D9E75' }}>
+              Ver ranking →
+            </Link>
+          </div>
         </div>
       )}
 
-      {/* BADGES */}
-      {gami && gami.badges.length > 0 && (
-        <div className="rounded-2xl p-5"
-          style={{ background: 'linear-gradient(135deg, #0A1A10 0%, #1A2A1A 100%)', border: '1px solid #1D9E7540' }}>
-          <h3 className="text-white font-semibold mb-3">🏆 Mis logros</h3>
-          <div className="flex flex-wrap gap-2">
-            {gami.badges.map((badge, i) => (
-              <span key={i} className="px-3 py-1 rounded-full text-sm font-medium"
-                style={{ backgroundColor: '#1A2E24', color: '#1D9E75' }}>
-                🏆 {badge}
-              </span>
-            ))}
+      {/* ALERTA ANTI-FÓSIL */}
+      {gami && gami.fossilRiskScore > 40 && (
+        <div className="rounded-xl p-4 flex items-center gap-4"
+          style={{ backgroundColor: '#2A1010', border: '1px solid #D85A30' }}>
+          <span className="text-3xl">☠️</span>
+          <div className="flex-1">
+            <div className="text-red-400 font-semibold">¡Alerta! Estás oxidándote 🦕</div>
+            <div className="text-red-500 text-sm">¡Tu rancho te está aventajando!</div>
           </div>
+          <Link href="/exams"
+            className="px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap"
+            style={{ backgroundColor: '#D85A30', color: '#fff' }}>
+            Practicar ahora
+          </Link>
         </div>
       )}
 
