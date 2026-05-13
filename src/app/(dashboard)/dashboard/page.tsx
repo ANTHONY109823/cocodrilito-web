@@ -50,7 +50,7 @@ export default function DashboardPage() {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">
-          ¡Bienvenido, {user?.fullName?.split(' ')[0]}! 🐊
+          ¡Bienvenido, {user?.fullName?.split(' ')[0] || user?.fullName}
         </h1>
         <p className="text-gray-400 mt-1">
           {user?.rank} — {user?.unit}
