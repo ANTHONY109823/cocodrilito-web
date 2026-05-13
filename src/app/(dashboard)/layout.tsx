@@ -29,6 +29,8 @@ export default function DashboardLayout({
     router.push('/login')
   }
 
+  const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin'
+
   return (
     <div className="min-h-screen">
       <nav style={{ backgroundColor: '#0A0F0D', borderBottom: '1px solid #1A2E24' }}
@@ -55,9 +57,11 @@ export default function DashboardLayout({
             <Link href="/premium" className="text-gray-400 hover:text-white text-sm transition-colors">
               Premium ⭐
             </Link>
-            <Link href="/admin" className="text-gray-400 hover:text-white text-sm transition-colors">
-            Admin 🛡️
-            </Link>
+            {isAdmin && (
+              <Link href="/admin" className="text-gray-400 hover:text-white text-sm transition-colors">
+                Admin 🛡️
+              </Link>
+            )}
           </div>
 
           {/* Desktop user */}
@@ -123,9 +127,15 @@ export default function DashboardLayout({
                 🏆 Ranking
               </Link>
               <Link href="/premium" onClick={() => setMenuOpen(false)}
-               className="text-gray-300 hover:text-white text-sm py-2 transition-colors">
-              ⭐ Premium
+                className="text-gray-300 hover:text-white text-sm py-2 transition-colors">
+                ⭐ Premium
               </Link>
+              {isAdmin && (
+                <Link href="/admin" onClick={() => setMenuOpen(false)}
+                  className="text-gray-300 hover:text-white text-sm py-2 transition-colors">
+                  🛡️ Admin
+                </Link>
+              )}
               <button onClick={handleLogout}
                 className="text-red-400 text-sm py-2 text-left transition-colors">
                 🚪 Cerrar sesión
