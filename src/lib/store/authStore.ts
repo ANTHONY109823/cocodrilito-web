@@ -8,6 +8,7 @@ interface User {
   rank: string
   unit: string
   planType: string
+  role: string
 }
 
 interface AuthState {
