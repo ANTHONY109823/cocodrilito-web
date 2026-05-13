@@ -40,9 +40,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (user) {
-      if (user.planType !== 'Premium' && !['Admin', 'SuperAdmin'].includes(user.planType)) {
-        // permitir acceso temporal para testing
-      }
+      const isAdmin = user.role === 'Admin' || user.role === 'SuperAdmin'
+      if (!isAdmin) return
       loadData()
     }
   }, [user, tab])
