@@ -1,68 +1,77 @@
 'use client'
 
-import { useEffect, useState, useCallback, use } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 
-interface Option {
-  id: string
-  optionText: string
-  optionIndex: number
-}
+const NEON = '#00C87A'
+const RED = '#FF5252'
+const GOLD = '#FFD700'
 
 interface Question {
-  id: string
+  questionId: string
   questionText: string
-  imageUrl?: string
   orderIndex: number
-  points: number
-  options: Option[]
+  timeSpentMs: number
+  answerOptions: { id: string; optionText: string; optionIndex: number }[]
 }
 
-export default function ExamPage({
-  params,
-}: {
-  params: Promise<{ sessionId: string }>
-}) {
-  const { sessionId } = use(params)
-  const router = useRouter()
-  const searchParams = useSearchParams()
+interface SessionData {
+  sessionId: string
+  examTitle: string
+  totalQuestions: number
+  timeLimitSeconds: number
+  questions: Question[]
+}
 
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+export default function ExamPage() {
+  const router = useRouter()
+  const params = useParams()
+  const sessionId = params.sessionId as string
+
+  const [session, setSession] = useState<SessionData | null>(null)
+  const [currentIdx, setCurrentIdx] = useState(0)
+  const [answers, setAnswers] = useState<Record<string, string | null>>({})
   const [timeLeft, setTimeLeft] = useState(0)
+  const [questionTime, setQuestionTime] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [examTitle, setExamTitle] = useState('')
+  const [finishing, setFinishing] = useState(false)
+  const [selectedOption, setSelectedOption] = useState<string | null>(null)
 
   useEffect(() => {
     loadSession()
-  }, [])
+  }, [sessionId])
 
   useEffect(() => {
-    if (timeLeft <= 0) return
-    const timer = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timer)
-          handleFinish()
-          return 0
-        }
-        return t - 1
+    if (!session) return
+    const t = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) { handleFinish(); return 0 }
+        return prev - 1
       })
+      setQuestionTime(prev => prev + 1000)
     }, 1000)
-    return () => clearInterval(timer)
-  }, [timeLeft])
+    return () => clearInterval(t)
+  }, [session])
 
   const loadSession = async () => {
     try {
-      const examId = searchParams.get('examId')
-      if (!examId) return
-      const res = await examsApi.start(examId)
-      setQuestions(res.data.questions)
-      setTimeLeft(res.data.timeLimitSeconds)
-      setExamTitle(res.data.examTitle)
+      const res = await examsApi.getResult(sessionId)
+      if (res.data?.status === 'Completed') {
+        router.replace(`/result/${sessionId}`)
+        return
+      }
+    } catch { }
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/exams/sessions/${sessionId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSession(data)
+        setTimeLeft(data.timeLimitSeconds)
+      }
     } catch {
       router.push('/exams')
     } finally {
@@ -70,157 +79,163 @@ export default function ExamPage({
     }
   }
 
-  const handleAnswer = (optionId: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questions[currentIndex].id]: optionId,
-    }))
+  const handleAnswer = async (optionId: string) => {
+    if (!session) return
+    setSelectedOption(optionId)
+    const q = session.questions[currentIdx]
+    setAnswers(prev => ({ ...prev, [q.questionId]: optionId }))
+    try {
+      await examsApi.submitAnswer(sessionId, {
+        questionId: q.questionId,
+        selectedOptionId: optionId,
+        timeSpentMs: questionTime
+      })
+    } catch { }
+    setTimeout(() => {
+      if (currentIdx < session.totalQuestions - 1) {
+        setCurrentIdx(prev => prev + 1)
+        setSelectedOption(null)
+        setQuestionTime(0)
+      }
+    }, 600)
   }
 
   const handleFinish = useCallback(async () => {
-    if (submitting) return
-    setSubmitting(true)
+    if (finishing) return
+    setFinishing(true)
     try {
       await examsApi.finish(sessionId)
       router.push(`/result/${sessionId}`)
     } catch {
-      router.push('/exams')
+      router.push(`/result/${sessionId}`)
     }
-  }, [sessionId, submitting])
+  }, [finishing, sessionId])
 
-  const handleNext = async () => {
-    const question = questions[currentIndex]
-    const selectedOptionId = answers[question.id] || null
-    try {
-      await examsApi.submitAnswer(sessionId, {
-        questionId: question.id,
-        selectedOptionId,
-        timeSpentMs: 0,
-      })
-    } catch {
-      console.error('Error enviando respuesta')
-    }
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((i) => i + 1)
-    } else {
-      handleFinish()
-    }
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60)
+    const sec = s % 60
+    return `${m}:${sec.toString().padStart(2, '0')}`
   }
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-  }
+  const timerColor = timeLeft < 60 ? RED : timeLeft < 300 ? GOLD : NEON
+  const progress = session ? ((currentIdx) / session.totalQuestions) * 100 : 0
 
-  const timeColor = timeLeft < 300 ? '#D85A30' : timeLeft < 600 ? '#EF9F27' : '#1D9E75'
-  const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0
-
-  if (loading) {
+  if (loading || !session) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="text-4xl mb-4">🐊</div>
-          <div className="text-white">Cargando examen...</div>
+          <div className="text-4xl mb-4 animate-bounce">🐊</div>
+          <p className="text-gray-400">Cargando simulacro...</p>
         </div>
       </div>
     )
   }
 
-  const question = questions[currentIndex]
-  const selectedOption = answers[question?.id]
+  const currentQ = session.questions[currentIdx]
+  const answeredCount = Object.keys(answers).length
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-2xl mx-auto">
+      <style>{`
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        .fade-in { animation: fadeIn 0.25s ease forwards; }
+        @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(255,82,82,0.4)} 50%{box-shadow:0 0 0 8px rgba(255,82,82,0)} }
+        .pulse-red { animation: pulse-red 1s infinite; }
+      `}</style>
+
+      {/* HEADER */}
+      <div className="rounded-2xl p-4 mb-4 flex items-center justify-between"
+        style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
         <div>
-          <h1 className="text-white font-semibold">{examTitle}</h1>
-          <p className="text-gray-500 text-sm">Pregunta {currentIndex + 1} de {questions.length}</p>
-        </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold font-mono" style={{ color: timeColor }}>
-            ⏱ {formatTime(timeLeft)}
+          <div className="text-white font-bold text-sm">{session.examTitle}</div>
+          <div className="text-gray-500 text-xs mt-0.5">
+            Pregunta {currentIdx + 1} de {session.totalQuestions}
           </div>
-          <div className="text-gray-500 text-xs">tiempo restante</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold tabular-nums"
+            style={{
+              color: timerColor,
+              textShadow: `0 0 15px ${timerColor}`,
+            }}
+            className={timeLeft < 60 ? 'pulse-red' : ''}>
+            {formatTime(timeLeft)}
+          </div>
+          <div className="text-xs text-gray-600">tiempo restante</div>
         </div>
       </div>
 
-      <div className="w-full h-2 rounded-full mb-6" style={{ backgroundColor: '#1A2E24' }}>
-        <div className="h-2 rounded-full transition-all duration-300"
-          style={{ width: `${progress}%`, backgroundColor: '#1D9E75' }} />
+      {/* BARRA DE PROGRESO */}
+      <div className="w-full h-1.5 rounded-full mb-4" style={{ backgroundColor: '#ffffff08' }}>
+        <div className="h-1.5 rounded-full transition-all duration-500"
+          style={{ width: `${progress}%`, background: `linear-gradient(90deg, ${NEON}60, ${NEON})` }} />
       </div>
 
-      <div className="card mb-6">
-        <div className="flex items-start gap-3 mb-6">
-          <span className="px-2 py-1 rounded text-xs font-bold"
-            style={{ backgroundColor: '#1A2E24', color: '#1D9E75', minWidth: '32px', textAlign: 'center' }}>
-            {currentIndex + 1}
-          </span>
-          <p className="text-white text-lg leading-relaxed">{question?.questionText}</p>
+      {/* PREGUNTA */}
+      <div className="rounded-2xl p-5 mb-4 fade-in" key={currentIdx}
+        style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}15` }}>
+        <div className="text-xs text-gray-600 mb-3 uppercase tracking-wider">
+          Pregunta {currentIdx + 1}
         </div>
+        <p className="text-white text-base font-medium leading-relaxed mb-6">
+          {currentQ.questionText}
+        </p>
+
         <div className="space-y-3">
-          {question?.options.map((option, i) => {
-            const letters = ['A', 'B', 'C', 'D', 'E']
-            const isSelected = selectedOption === option.id
-            return (
-              <button key={option.id} onClick={() => handleAnswer(option.id)}
-                className="w-full text-left p-4 rounded-xl transition-all duration-200 flex items-start gap-3"
-                style={{
-                  backgroundColor: isSelected ? '#1A3D2E' : '#0F1A14',
-                  border: isSelected ? '2px solid #1D9E75' : '2px solid #1A2E24',
-                  color: isSelected ? '#fff' : '#9CA3AF',
-                }}>
-                <span className="font-bold text-sm min-w-6 h-6 rounded-full flex items-center justify-center"
+          {currentQ.answerOptions
+            .sort((a, b) => a.optionIndex - b.optionIndex)
+            .map((opt, i) => {
+              const isSelected = selectedOption === opt.id
+              const letters = ['A', 'B', 'C', 'D']
+              return (
+                <button key={opt.id}
+                  onClick={() => !selectedOption && handleAnswer(opt.id)}
+                  disabled={!!selectedOption}
+                  className="w-full text-left rounded-xl p-4 transition-all flex items-start gap-3"
                   style={{
-                    backgroundColor: isSelected ? '#1D9E75' : '#1A2E24',
-                    color: isSelected ? '#fff' : '#6B7280',
+                    background: isSelected ? `rgba(0,200,122,0.12)` : 'rgba(0,5,2,0.6)',
+                    border: `1px solid ${isSelected ? NEON : '#ffffff10'}`,
+                    boxShadow: isSelected ? `0 0 15px ${NEON}20` : 'none',
+                    cursor: selectedOption ? 'default' : 'pointer',
+                    transform: isSelected ? 'scale(1.01)' : 'scale(1)'
                   }}>
-                  {letters[i]}
-                </span>
-                <span className="leading-relaxed">{option.optionText}</span>
-              </button>
-            )
-          })}
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                    style={{
+                      backgroundColor: isSelected ? NEON : '#ffffff10',
+                      color: isSelected ? '#000' : '#9CA3AF'
+                    }}>
+                    {letters[i]}
+                  </span>
+                  <span className="text-sm leading-relaxed"
+                    style={{ color: isSelected ? '#fff' : '#D1D5DB' }}>
+                    {opt.optionText}
+                  </span>
+                </button>
+              )
+            })}
         </div>
       </div>
 
-      <div className="flex justify-between items-center">
-        <button onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-          disabled={currentIndex === 0}
-          className="px-6 py-3 rounded-xl text-sm font-medium transition-all"
-          style={{
-            backgroundColor: currentIndex === 0 ? '#0F1A14' : '#1A2E24',
-            color: currentIndex === 0 ? '#374151' : '#9CA3AF',
-            border: '1px solid #1A2E24'
-          }}>
-          ← Anterior
-        </button>
-
-        <div className="flex gap-2">
-          {questions.map((_, i) => (
-            <button key={i} onClick={() => setCurrentIndex(i)}
-              className="w-8 h-8 rounded-full text-xs font-bold transition-all"
-              style={{
-                backgroundColor: answers[questions[i]?.id] ? '#1D9E75' : i === currentIndex ? '#1A3D2E' : '#1A2E24',
-                color: answers[questions[i]?.id] ? '#fff' : i === currentIndex ? '#1D9E75' : '#6B7280',
-                border: i === currentIndex ? '2px solid #1D9E75' : '2px solid transparent'
-              }}>
-              {i + 1}
-            </button>
-          ))}
+      {/* FOOTER */}
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-gray-600">
+          {answeredCount} de {session.totalQuestions} respondidas
         </div>
-
-        {currentIndex < questions.length - 1 ? (
-          <button onClick={handleNext}
-            className="px-6 py-3 rounded-xl text-sm font-medium transition-all"
-            style={{ backgroundColor: '#1D9E75', color: '#fff' }}>
-            Siguiente →
+        {currentIdx === session.totalQuestions - 1 ? (
+          <button onClick={handleFinish} disabled={finishing}
+            className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
+            style={{
+              background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
+              color: '#000', boxShadow: `0 0 20px ${NEON}40`
+            }}>
+            {finishing ? 'Finalizando...' : 'Finalizar examen ✓'}
           </button>
         ) : (
-          <button onClick={handleNext} disabled={submitting}
-            className="px-6 py-3 rounded-xl text-sm font-bold transition-all"
-            style={{ backgroundColor: '#EF9F27', color: '#000' }}>
-            {submitting ? 'Enviando...' : '✅ Terminar examen'}
+          <button
+            onClick={() => { setCurrentIdx(prev => prev + 1); setSelectedOption(null); setQuestionTime(0) }}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+            style={{ backgroundColor: 'rgba(0,8,4,0.8)', color: '#6B7280', border: '1px solid #ffffff10' }}>
+            Siguiente →
           </button>
         )}
       </div>

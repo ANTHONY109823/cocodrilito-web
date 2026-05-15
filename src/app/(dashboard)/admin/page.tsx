@@ -232,8 +232,9 @@ export default function AdminPage() {
               <label className="block text-xs text-gray-500 mb-2">Plan de acceso *</label>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { days: 30, label: 'Mensual', price: 'S/. 12.90', sub: '30 días' },
-                  { days: 180, label: 'Full Proceso', price: 'S/. 42.90', sub: '180 días — hasta el examen' },
+           { days: 30, label: 'Mensual', price: 'S/. 12.90', sub: '30 días' },
+           { days: 60, label: 'Bimestral', price: 'S/. 22.90', sub: '60 días' },
+           { days: 180, label: 'Full Proceso', price: 'S/. 42.90', sub: '180 días — hasta el examen' },
                 ].map(plan => (
                   <button key={plan.days} type="button"
                     onClick={() => setForm({ ...form, planDays: plan.days })}
@@ -329,6 +330,11 @@ export default function AdminPage() {
                       className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
                       style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
                       +30d
+                    </button>
+                    <button onClick={() => handleExtend(u.id, 60)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}25` }}>
+                      +60d
                     </button>
                     <button onClick={() => handleExtend(u.id, 180)}
                       className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"

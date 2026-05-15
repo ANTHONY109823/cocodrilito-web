@@ -1,47 +1,45 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 
-interface QuestionResult {
-  questionId: string
-  questionText: string
-  explanation?: string
-  selectedOptionId?: string
-  correctOptionId: string
-  isCorrect: boolean
-  pointsEarned: number
-  options: { id: string; optionText: string; optionIndex: number }[]
-}
+const NEON = '#00C87A'
+const RED = '#FF5252'
+const GOLD = '#FFD700'
+const BLUE = '#4FC3F7'
 
-interface ExamResult {
+interface ResultData {
   sessionId: string
   examTitle: string
   score: number
   correctAnswers: number
   totalQuestions: number
   timeSpentSeconds: number
-  status: string
   passed: boolean
-  questions: QuestionResult[]
+  passingScore: number
+  answers: {
+    questionId: string
+    questionText: string
+    selectedOptionId: string | null
+    correctOptionId: string
+    isCorrect: boolean
+    options: { id: string; optionText: string; optionIndex: number }[]
+  }[]
 }
 
-export default function ResultPage({
-  params,
-}: {
-  params: Promise<{ sessionId: string }>
-}) {
-  const { sessionId } = use(params)
+export default function ResultPage() {
+  const params = useParams()
   const router = useRouter()
-  const [result, setResult] = useState<ExamResult | null>(null)
+  const sessionId = params.sessionId as string
+  const [result, setResult] = useState<ResultData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showDetail, setShowDetail] = useState(false)
+  const [showAnswers, setShowAnswers] = useState(false)
 
   useEffect(() => {
     loadResult()
-  }, [])
+  }, [sessionId])
 
   const loadResult = async () => {
     try {
@@ -54,18 +52,14 @@ export default function ResultPage({
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}m ${s}s`
-  }
+  const formatTime = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="text-4xl mb-4">🐊</div>
-          <div className="text-white">Calculando resultado...</div>
+          <div className="text-4xl mb-4 animate-bounce">🐊</div>
+          <p className="text-gray-400">Calculando resultado...</p>
         </div>
       </div>
     )
@@ -73,110 +67,141 @@ export default function ResultPage({
 
   if (!result) return null
 
-  const scoreColor = result.passed ? '#1D9E75' : '#D85A30'
-  const scoreEmoji = result.score === 100 ? '🏆' :
-    result.score >= 80 ? '🐊' :
-    result.passed ? '✅' : '💀'
+  const scoreColor = result.passed ? NEON : RED
+  const scoreEmoji = result.score >= 90 ? '🏆' : result.score >= 70 ? '✅' : result.score >= 50 ? '⚠️' : '💀'
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="card text-center mb-6">
-        <div className="text-6xl mb-4">{scoreEmoji}</div>
-        <h1 className="text-3xl font-bold mb-2" style={{ color: scoreColor }}>
+      <style>{`
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes countUp { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        .count-up { animation: countUp 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
+      `}</style>
+
+      {/* BOTÓN VOLVER */}
+      <Link href="/exams"
+        className="inline-flex items-center gap-1 text-gray-500 hover:text-white text-sm mb-6 transition-colors">
+        ← Volver a exámenes
+      </Link>
+
+      {/* RESULTADO PRINCIPAL */}
+      <div className="rounded-2xl p-8 text-center mb-4 fade-in"
+        style={{
+          background: result.passed ? 'rgba(0,200,122,0.06)' : 'rgba(255,82,82,0.06)',
+          border: `1px solid ${scoreColor}25`,
+          boxShadow: `0 0 40px ${scoreColor}15`
+        }}>
+        <div className="text-6xl mb-4 count-up">{scoreEmoji}</div>
+        <div className="text-7xl font-bold mb-2 count-up"
+          style={{ color: scoreColor, textShadow: `0 0 30px ${scoreColor}` }}>
           {result.score}%
-        </h1>
-        <div className="text-xl font-semibold text-white mb-1">
+        </div>
+        <div className="text-xl font-bold mb-1"
+          style={{ color: scoreColor }}>
           {result.passed ? '¡Aprobado!' : 'No aprobado'}
         </div>
-        <p className="text-gray-400 text-sm">{result.examTitle}</p>
-
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-6"
-          style={{ borderTop: '1px solid #1A2E24' }}>
-          <div>
-            <div className="text-2xl font-bold text-white">
-              {result.correctAnswers}/{result.totalQuestions}
-            </div>
-            <div className="text-gray-500 text-xs mt-1">Correctas</div>
+        <div className="text-gray-500 text-sm">{result.examTitle}</div>
+        {!result.passed && (
+          <div className="text-xs text-gray-600 mt-1">
+            Necesitas {result.passingScore}% para aprobar
           </div>
-          <div>
-            <div className="text-2xl font-bold text-white">
-              {formatTime(result.timeSpentSeconds)}
-            </div>
-            <div className="text-gray-500 text-xs mt-1">Tiempo</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold" style={{ color: scoreColor }}>
-              {result.status === 'Completed' ? 'Completado' : result.status}
-            </div>
-            <div className="text-gray-500 text-xs mt-1">Estado</div>
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="flex gap-3 mb-6">
-        <Link href="/exams" className="btn-primary text-center">
-          Hacer otro examen
-        </Link>
-        <button
-          onClick={() => setShowDetail(!showDetail)}
-          className="flex-1 py-3 rounded-xl text-sm font-medium transition-all"
+      {/* STATS */}
+      <div className="grid grid-cols-3 gap-3 mb-4 fade-in">
+        {[
+          { label: 'Correctas', value: result.correctAnswers, color: NEON, bg: 'rgba(0,200,122,0.06)', border: 'rgba(0,200,122,0.15)' },
+          { label: 'Incorrectas', value: result.totalQuestions - result.correctAnswers, color: RED, bg: 'rgba(255,82,82,0.06)', border: 'rgba(255,82,82,0.15)' },
+          { label: 'Tiempo', value: formatTime(result.timeSpentSeconds), color: BLUE, bg: 'rgba(79,195,247,0.06)', border: 'rgba(79,195,247,0.15)' },
+        ].map((item, i) => (
+          <div key={i} className="rounded-2xl p-4 text-center"
+            style={{ backgroundColor: item.bg, border: `1px solid ${item.border}` }}>
+            <div className="text-2xl font-bold" style={{ color: item.color }}>{item.value}</div>
+            <div className="text-gray-500 text-xs mt-1">{item.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ACCIONES */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <button onClick={() => setShowAnswers(!showAnswers)}
+          className="py-3 rounded-xl text-sm font-semibold transition-all"
           style={{
-            backgroundColor: '#1A2E24',
-            color: '#1D9E75',
-            border: '1px solid #1D9E75'
+            backgroundColor: showAnswers ? `${BLUE}15` : 'rgba(0,8,4,0.8)',
+            color: showAnswers ? BLUE : '#9CA3AF',
+            border: `1px solid ${showAnswers ? BLUE : '#ffffff10'}20`
           }}>
-          {showDetail ? 'Ocultar' : 'Ver'} respuestas
+          {showAnswers ? 'Ocultar respuestas' : 'Ver respuestas'}
         </button>
+        <Link href="/exams"
+          className="py-3 rounded-xl text-sm font-bold text-center transition-all hover:scale-[1.02]"
+          style={{
+            background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
+            color: '#000', boxShadow: `0 0 15px ${NEON}30`
+          }}>
+          Otro examen →
+        </Link>
       </div>
 
-      {showDetail && (
-        <div className="space-y-4">
-          <h3 className="text-white font-semibold">Revisión de respuestas</h3>
-          {result.questions.map((q, i) => (
-            <div key={q.questionId} className="card">
-              <div className="flex items-start gap-3 mb-4">
-                <span className="text-lg">{q.isCorrect ? '✅' : '❌'}</span>
-                <p className="text-white text-sm font-medium">
-                  {i + 1}. {q.questionText}
-                </p>
-              </div>
-              <div className="space-y-2">
-                {q.options.map((opt) => {
-                  const letters = ['A', 'B', 'C', 'D', 'E']
-                  const isCorrect = opt.id === q.correctOptionId
-                  const isWrong = opt.id === q.selectedOptionId && !isCorrect
-                  return (
-                    <div key={opt.id}
-                      className="flex items-center gap-2 p-2 rounded-lg text-sm"
-                      style={{
-                        backgroundColor: isCorrect ? '#1A3D2E' : isWrong ? '#3D1A1A' : 'transparent',
-                        border: isCorrect ? '1px solid #1D9E75' : isWrong ? '1px solid #D85A30' : '1px solid transparent'
-                      }}>
-                      <span className="font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{
-                          backgroundColor: isCorrect ? '#1D9E75' : isWrong ? '#D85A30' : '#1A2E24',
-                          color: '#fff'
-                        }}>
-                        {letters[opt.optionIndex]}
-                      </span>
-                      <span style={{ color: isCorrect ? '#1D9E75' : isWrong ? '#D85A30' : '#6B7280' }}>
-                        {opt.optionText}
-                      </span>
-                      {isCorrect && (
-                        <span className="ml-auto text-xs" style={{ color: '#1D9E75' }}>✓ correcta</span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              {q.explanation && (
-                <div className="mt-3 p-3 rounded-lg text-sm"
-                  style={{ backgroundColor: '#0F1A14', color: '#9CA3AF' }}>
-                  💡 {q.explanation}
+      <Link href="/ranking"
+        className="block py-3 rounded-xl text-sm font-medium text-center mb-4 transition-all"
+        style={{ backgroundColor: 'rgba(0,8,4,0.8)', color: '#6B7280', border: '1px solid #ffffff08' }}>
+        Ver mi posición en el ranking →
+      </Link>
+
+      {/* REVISIÓN DE RESPUESTAS */}
+      {showAnswers && result.answers && (
+        <div className="space-y-3 fade-in">
+          <h3 className="text-white font-bold text-base">Revisión de respuestas</h3>
+          {result.answers.map((ans, i) => {
+            const letters = ['A', 'B', 'C', 'D']
+            return (
+              <div key={ans.questionId} className="rounded-2xl p-4"
+                style={{
+                  background: 'rgba(0,5,2,0.9)',
+                  border: `1px solid ${ans.isCorrect ? NEON : RED}20`
+                }}>
+                <div className="flex items-start gap-2 mb-3">
+                  <span className="text-lg shrink-0">{ans.isCorrect ? '✅' : '❌'}</span>
+                  <p className="text-white text-sm font-medium leading-relaxed">
+                    {i + 1}. {ans.questionText}
+                  </p>
                 </div>
-              )}
-            </div>
-          ))}
+                <div className="space-y-2">
+                  {ans.options
+                    .sort((a, b) => a.optionIndex - b.optionIndex)
+                    .map((opt, j) => {
+                      const isCorrect = opt.id === ans.correctOptionId
+                      const isSelected = opt.id === ans.selectedOptionId
+                      const isWrong = isSelected && !isCorrect
+                      return (
+                        <div key={opt.id}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
+                          style={{
+                            backgroundColor: isCorrect ? `${NEON}12` : isWrong ? `${RED}12` : 'transparent',
+                            border: `1px solid ${isCorrect ? `${NEON}30` : isWrong ? `${RED}30` : 'transparent'}`
+                          }}>
+                          <span className="w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold shrink-0"
+                            style={{
+                              backgroundColor: isCorrect ? NEON : isWrong ? RED : '#ffffff10',
+                              color: (isCorrect || isWrong) ? '#000' : '#6B7280'
+                            }}>
+                            {letters[j]}
+                          </span>
+                          <span style={{ color: isCorrect ? '#fff' : isWrong ? '#fff' : '#6B7280' }}>
+                            {opt.optionText}
+                          </span>
+                          {isCorrect && <span className="ml-auto text-xs font-bold" style={{ color: NEON }}>✓ correcta</span>}
+                          {isWrong && <span className="ml-auto text-xs font-bold" style={{ color: RED }}>✗ tu respuesta</span>}
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
