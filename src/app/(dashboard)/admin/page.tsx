@@ -49,19 +49,19 @@ const PURPLE = '#A855F7'
 export default function AdminPage() {
   const { user, loadFromStorage } = useAuthStore()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'subscriptions' | 'create' | 'questions'>('users')
+  const [tab, setTab] = useState<'users' | 'subscriptions' | 'inactive' | 'create' | 'questions'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
-  const [showInactive, setShowInactive] = useState(false)
   const [userFilter, setUserFilter] = useState<'all' | 'admin' | 'web'>('all')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null)
   const [exams, setExams] = useState<{ id: string; title: string }[]>([])
+  const [inactiveFilter, setInactiveFilter] = useState<'all' | 'admin' | 'web'>('all')
 
   const [form, setForm] = useState({
     fullName: '', dni: '', email: '', password: '',
@@ -92,7 +92,7 @@ export default function AdminPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      if (tab === 'users') {
+      if (tab === 'users' || tab === 'inactive') {
         const res = await apiClient.get('/admin/users')
         setUsers(res.data)
       } else if (tab === 'subscriptions') {
@@ -146,6 +146,8 @@ export default function AdminPage() {
     try {
       await apiClient.delete(`/admin/users/${id}`)
       setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: false } : u))
+      setMsg({ text: '⛔ Usuario desactivado', ok: false })
+      setTimeout(() => setMsg(null), 2000)
     } catch { }
   }
 
@@ -252,35 +254,33 @@ export default function AdminPage() {
     return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000)
   }
 
-  // Clasificar usuarios
-  const isAdminCreated = (u: User) => {
-    // Usuarios creados por admin tienen emails @cocodrilito.com o tienen suscripción activa desde el inicio
-    return u.email.includes('@cocodrilito.com') || u.planType === 'Premium'
-  }
+  const isAdminCreated = (u: User) =>
+    u.email.includes('@cocodrilito.com') || u.planType === 'Premium'
 
-  const filteredUsers = users.filter(u => {
-    if (!showInactive && !u.isActive) return false
+  // Usuarios activos solamente para tab 'users'
+  const activeUsers = users.filter(u => u.isActive)
+  const inactiveUsers = users.filter(u => !u.isActive)
+  const pendingPayment = users.filter(u => u.isActive && u.planType === 'Free')
+
+  const filteredActiveUsers = activeUsers.filter(u => {
     if (userFilter === 'admin') return isAdminCreated(u)
     if (userFilter === 'web') return !isAdminCreated(u)
     return true
   })
 
-  const activeUsers = users.filter(u => u.isActive)
-  const inactiveUsers = users.filter(u => !u.isActive)
-  const pendingPayment = users.filter(u => u.isActive && u.planType === 'Free')
+  const filteredInactiveUsers = inactiveUsers.filter(u => {
+    if (inactiveFilter === 'admin') return isAdminCreated(u)
+    if (inactiveFilter === 'web') return !isAdminCreated(u)
+    return true
+  })
 
   const tabs = [
-    { key: 'users', label: '👥 Usuarios', count: users.length },
-    { key: 'subscriptions', label: '💳 Pendientes', count: subscriptions.length },
-    { key: 'create', label: '➕ Crear usuario', count: null },
-    { key: 'questions', label: '📝 Banco de preguntas', count: questions.length },
+    { key: 'users',         label: '👥 Usuarios',          count: activeUsers.length,   countColor: NEON },
+    { key: 'subscriptions', label: '💳 Pendientes',         count: subscriptions.length, countColor: GOLD },
+    { key: 'inactive',      label: '🔴 Inactivos',          count: inactiveUsers.length, countColor: RED  },
+    { key: 'create',        label: '➕ Crear usuario',       count: null,                 countColor: NEON },
+    { key: 'questions',     label: '📝 Banco de preguntas', count: questions.length,     countColor: NEON2 },
   ]
-
-  const inputStyle = {
-    width: '100%', padding: '10px 14px', borderRadius: '10px',
-    background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15',
-    color: '#fff', fontSize: '13px', outline: 'none'
-  }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -318,15 +318,18 @@ export default function AdminPage() {
           <button key={t.key} onClick={() => setTab(t.key as any)}
             className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
             style={{
-              backgroundColor: tab === t.key ? NEON : 'rgba(0,10,5,0.8)',
+              backgroundColor: tab === t.key ? (t.key === 'inactive' ? RED : NEON) : 'rgba(0,10,5,0.8)',
               color: tab === t.key ? '#000' : '#9CA3AF',
-              border: `1px solid ${tab === t.key ? NEON : '#ffffff10'}`,
-              boxShadow: tab === t.key ? `0 0 20px ${NEON}40` : 'none'
+              border: `1px solid ${tab === t.key ? (t.key === 'inactive' ? RED : NEON) : '#ffffff10'}`,
+              boxShadow: tab === t.key ? `0 0 20px ${t.key === 'inactive' ? RED : NEON}40` : 'none'
             }}>
             {t.label}
             {t.count !== null && t.count > 0 && (
               <span className="px-1.5 py-0.5 rounded-full text-xs font-bold"
-                style={{ backgroundColor: tab === t.key ? '#000' : RED, color: '#fff' }}>
+                style={{
+                  backgroundColor: tab === t.key ? '#000' : t.countColor,
+                  color: '#fff'
+                }}>
                 {t.count}
               </span>
             )}
@@ -334,16 +337,17 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* TAB: USUARIOS */}
+      {/* ═══════════════════════════════════════════
+          TAB: USUARIOS ACTIVOS
+      ═══════════════════════════════════════════ */}
       {tab === 'users' && (
         <div className="fade-in">
-          {/* FILTROS */}
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <div className="flex gap-2">
               {[
-                { key: 'all', label: 'Todos' },
+                { key: 'all',   label: 'Todos' },
                 { key: 'admin', label: '🛡️ Por admin' },
-                { key: 'web', label: '🌐 Desde web' },
+                { key: 'web',   label: '🌐 Desde web' },
               ].map(f => (
                 <button key={f.key} onClick={() => setUserFilter(f.key as any)}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
@@ -356,27 +360,21 @@ export default function AdminPage() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setShowInactive(!showInactive)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all ml-auto"
-              style={{
-                backgroundColor: showInactive ? `${RED}15` : 'rgba(0,5,2,0.5)',
-                color: showInactive ? RED : '#6B7280',
-                border: `1px solid ${showInactive ? RED : '#ffffff10'}`
-              }}>
-              {showInactive ? '👁 Ocultar inactivos' : '👁 Mostrar inactivos'}
-            </button>
+            <span className="ml-auto text-xs text-gray-600">
+              {filteredActiveUsers.length} usuario{filteredActiveUsers.length !== 1 ? 's' : ''} activo{filteredActiveUsers.length !== 1 ? 's' : ''}
+            </span>
           </div>
 
           <div className="space-y-3">
             {loading ? (
               <div className="text-gray-500 text-center py-12">Cargando usuarios...</div>
-            ) : filteredUsers.length === 0 ? (
+            ) : filteredActiveUsers.length === 0 ? (
               <div className="text-center py-12 rounded-2xl"
                 style={{ background: 'rgba(0,10,5,0.8)', border: `1px solid ${NEON}15` }}>
                 <div className="text-4xl mb-3">👥</div>
-                <p className="text-gray-500">No hay usuarios en esta categoría</p>
+                <p className="text-gray-500">No hay usuarios activos en esta categoría</p>
               </div>
-            ) : filteredUsers.map(u => {
+            ) : filteredActiveUsers.map(u => {
               const days = daysLeft(u.subscription?.expiresAt)
               const expired = days !== null && days <= 0
               const warning = days !== null && days > 0 && days <= 7
@@ -386,8 +384,7 @@ export default function AdminPage() {
                 <div key={u.id} className="rounded-2xl p-4"
                   style={{
                     background: 'rgba(0,8,4,0.9)',
-                    border: `1px solid ${!u.isActive ? '#ffffff08' : expired ? RED : warning ? GOLD : noSub ? `${GOLD}40` : NEON}15`,
-                    opacity: u.isActive ? 1 : 0.5
+                    border: `1px solid ${expired ? RED : warning ? GOLD : noSub ? `${GOLD}40` : NEON}15`,
                   }}>
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
@@ -406,13 +403,7 @@ export default function AdminPage() {
                             🌐 Web
                           </span>
                         )}
-                        {!u.isActive && (
-                          <span className="text-xs px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: `${RED}20`, color: RED }}>
-                            Inactivo
-                          </span>
-                        )}
-                        {noSub && u.isActive && (
+                        {noSub && (
                           <span className="text-xs px-2 py-0.5 rounded-full"
                             style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>
                             ⏳ Sin pago
@@ -425,43 +416,35 @@ export default function AdminPage() {
                       {u.subscription && (
                         <div className="text-xs mt-1.5 font-medium"
                           style={{ color: expired ? RED : warning ? GOLD : NEON }}>
-                          {expired ? '⚠️ Vencido'
-                            : warning ? `⚡ Vence en ${days} días`
-                            : `✓ Activo hasta ${new Date(u.subscription.expiresAt).toLocaleDateString('es-PE')} (${days} días)`}
+                          {expired
+                            ? '⚠️ Vencido'
+                            : warning
+                              ? `⚡ Vence en ${days} días`
+                              : `✓ Activo hasta ${new Date(u.subscription.expiresAt).toLocaleDateString('es-PE')} (${days} días)`}
                         </div>
                       )}
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      {u.isActive ? (
-                        <>
-                          <button onClick={() => handleExtend(u.id, 30)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                            style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
-                            +30d
-                          </button>
-                          <button onClick={() => handleExtend(u.id, 60)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                            style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}25` }}>
-                            +60d
-                          </button>
-                          <button onClick={() => handleExtend(u.id, 180)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                            style={{ backgroundColor: `${NEON}15`, color: NEON, border: `1px solid ${NEON}25` }}>
-                            +180d
-                          </button>
-                          <button onClick={() => handleDeactivate(u.id)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                            style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}25` }}>
-                            Desactivar
-                          </button>
-                        </>
-                      ) : (
-                        <button onClick={() => handleReactivate(u.id)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                          style={{ backgroundColor: `${NEON}15`, color: NEON, border: `1px solid ${NEON}25` }}>
-                          Reactivar
-                        </button>
-                      )}
+                      <button onClick={() => handleExtend(u.id, 30)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
+                        +30d
+                      </button>
+                      <button onClick={() => handleExtend(u.id, 60)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}25` }}>
+                        +60d
+                      </button>
+                      <button onClick={() => handleExtend(u.id, 180)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: `${NEON}15`, color: NEON, border: `1px solid ${NEON}25` }}>
+                        +180d
+                      </button>
+                      <button onClick={() => handleDeactivate(u.id)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}25` }}>
+                        Desactivar
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -471,7 +454,138 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: CREAR USUARIO */}
+      {/* ═══════════════════════════════════════════
+          TAB: INACTIVOS
+      ═══════════════════════════════════════════ */}
+      {tab === 'inactive' && (
+        <div className="fade-in">
+          {/* Banner informativo */}
+          <div className="rounded-2xl p-4 mb-5 flex items-center gap-3"
+            style={{ background: `rgba(255,82,82,0.06)`, border: `1px solid ${RED}25` }}>
+            <span className="text-2xl">🔴</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: RED }}>Usuarios desactivados</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Estos usuarios no tienen acceso a la plataforma. Puedes reactivarlos o extender su plan directamente.
+              </p>
+            </div>
+            <span className="ml-auto text-2xl font-bold" style={{ color: RED }}>{inactiveUsers.length}</span>
+          </div>
+
+          {/* Filtros inactivos */}
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <div className="flex gap-2">
+              {[
+                { key: 'all',   label: 'Todos' },
+                { key: 'admin', label: '🛡️ Por admin' },
+                { key: 'web',   label: '🌐 Desde web' },
+              ].map(f => (
+                <button key={f.key} onClick={() => setInactiveFilter(f.key as any)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                  style={{
+                    backgroundColor: inactiveFilter === f.key ? `${RED}15` : 'rgba(0,5,2,0.5)',
+                    color: inactiveFilter === f.key ? RED : '#6B7280',
+                    border: `1px solid ${inactiveFilter === f.key ? RED : '#ffffff10'}`
+                  }}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-gray-500 text-center py-12">Cargando...</div>
+            ) : filteredInactiveUsers.length === 0 ? (
+              <div className="text-center py-12 rounded-2xl"
+                style={{ background: 'rgba(0,10,5,0.8)', border: `1px solid ${RED}15` }}>
+                <div className="text-4xl mb-3">✅</div>
+                <p className="text-gray-500">No hay usuarios inactivos en esta categoría</p>
+              </div>
+            ) : filteredInactiveUsers.map(u => {
+              const days = daysLeft(u.subscription?.expiresAt)
+              const isFromWeb = !isAdminCreated(u)
+              return (
+                <div key={u.id} className="rounded-2xl p-4"
+                  style={{
+                    background: 'rgba(5,2,2,0.9)',
+                    border: `1px solid ${RED}15`,
+                    opacity: 0.85
+                  }}>
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-gray-300 font-semibold">{u.fullName}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${RED}20`, color: RED }}>
+                          Inactivo
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: u.planType === 'Premium' ? `${NEON}15` : `${GOLD}10`,
+                            color: u.planType === 'Premium' ? NEON : GOLD
+                          }}>
+                          {u.planType}
+                        </span>
+                        {isFromWeb && (
+                          <span className="text-xs px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: `${NEON2}10`, color: NEON2 }}>
+                            🌐 Web
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-gray-600 text-xs mt-1">
+                        {u.email} · DNI {u.dni} · {u.rank} · {u.unit}
+                      </div>
+                      {u.subscription ? (
+                        <div className="text-xs mt-1.5 font-medium text-gray-500">
+                          Plan hasta: {new Date(u.subscription.expiresAt).toLocaleDateString('es-PE')}
+                          {days !== null && (
+                            <span style={{ color: RED }}> · {days < 0 ? `Vencido hace ${Math.abs(days)} días` : `${days} días restantes`}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-xs mt-1.5 text-gray-600">Sin suscripción registrada</div>
+                      )}
+                      <div className="text-xs text-gray-700 mt-0.5">
+                        Creado: {new Date(u.createdAt).toLocaleDateString('es-PE')}
+                      </div>
+                    </div>
+
+                    {/* Acciones: reactivar y extender directamente */}
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <button onClick={() => handleExtend(u.id, 30)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: `${NEON2}10`, color: NEON2, border: `1px solid ${NEON2}20` }}>
+                        +30d
+                      </button>
+                      <button onClick={() => handleExtend(u.id, 60)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: `${GOLD}10`, color: GOLD, border: `1px solid ${GOLD}20` }}>
+                        +60d
+                      </button>
+                      <button onClick={() => handleExtend(u.id, 180)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: `${NEON}10`, color: NEON, border: `1px solid ${NEON}20` }}>
+                        +180d
+                      </button>
+                      <button onClick={() => handleReactivate(u.id)}
+                        className="px-4 py-1.5 rounded-lg text-xs font-bold"
+                        style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000' }}>
+                        ✅ Reactivar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════
+          TAB: CREAR USUARIO
+      ═══════════════════════════════════════════ */}
       {tab === 'create' && (
         <div className="rounded-2xl p-6 fade-in"
           style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}20` }}>
@@ -498,9 +612,9 @@ export default function AdminPage() {
               <label className="block text-xs text-gray-500 mb-2">Plan de acceso *</label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { days: 30, label: 'Mensual', price: 'S/. 12.90', sub: '30 días' },
-                  { days: 60, label: 'Bimestral', price: 'S/. 22.90', sub: '60 días' },
-                  { days: 180, label: 'Full Proceso', price: 'S/. 42.90', sub: '180 días' },
+                  { days: 30,  label: 'Mensual',      price: 'S/. 12.90', sub: '30 días' },
+                  { days: 60,  label: 'Bimestral',    price: 'S/. 22.90', sub: '60 días' },
+                  { days: 180, label: 'Full Proceso',  price: 'S/. 42.90', sub: '180 días' },
                 ].map(plan => (
                   <button key={plan.days} type="button"
                     onClick={() => setForm({ ...form, planDays: plan.days })}
@@ -523,7 +637,9 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: SUSCRIPCIONES */}
+      {/* ═══════════════════════════════════════════
+          TAB: SUSCRIPCIONES
+      ═══════════════════════════════════════════ */}
       {tab === 'subscriptions' && (
         <div className="fade-in space-y-3">
           {loading ? (
@@ -560,7 +676,9 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: BANCO DE PREGUNTAS */}
+      {/* ═══════════════════════════════════════════
+          TAB: BANCO DE PREGUNTAS
+      ═══════════════════════════════════════════ */}
       {tab === 'questions' && (
         <div className="fade-in space-y-4">
 
