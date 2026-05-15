@@ -8,7 +8,6 @@ import Link from 'next/link'
 
 const NEON = '#00C87A'
 const GOLD = '#FFD700'
-const BLUE = '#4FC3F7'
 
 interface Exam {
   id: string
@@ -20,7 +19,6 @@ interface Exam {
   passingScore: number
   yearValuation: number
   isPremium: boolean
-  totalQuestions?: number
 }
 
 const difficultyLabel = (d: number) => {
@@ -36,21 +34,16 @@ export default function ExamsPage() {
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
 
-  useEffect(() => {
-    loadExams()
-  }, [])
+  useEffect(() => { loadExams() }, [])
 
   const loadExams = async () => {
     try {
       const res = await apiClient.get('/exams/list')
-      setExams(res.data)
+      const data = Array.isArray(res.data) ? res.data : res.data?.items || []
+      setExams(data)
     } catch (err: any) {
-      if (err.response?.status === 403) {
-        setBlocked(true)
-      }
-    } finally {
-      setLoading(false)
-    }
+      if (err.response?.status === 403) setBlocked(true)
+    } finally { setLoading(false) }
   }
 
   const handleStart = async (examId: string) => {
@@ -59,12 +52,8 @@ export default function ExamsPage() {
       const res = await examsApi.start(examId)
       router.push(`/exam/${res.data.sessionId}`)
     } catch (err: any) {
-      if (err.response?.status === 403) {
-        router.push('/premium?blocked=1')
-      }
-    } finally {
-      setStarting(null)
-    }
+      if (err.response?.status === 403) router.push('/premium?blocked=1')
+    } finally { setStarting(null) }
   }
 
   if (blocked) {
@@ -87,17 +76,15 @@ export default function ExamsPage() {
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         .fade-in { animation: fadeIn 0.3s ease forwards; }
-        .exam-card:hover { transform: translateY(-2px); }
         .exam-card { transition: all 0.2s ease; }
+        .exam-card:hover { transform: translateY(-2px); }
       `}</style>
 
-      {/* HEADER */}
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard"
-          className="text-gray-500 hover:text-white text-sm transition-colors flex items-center gap-1">
+        <Link href="/dashboard" className="text-gray-500 hover:text-white text-sm transition-colors">
           ← Inicio
         </Link>
-        <div className="flex-1">
+        <div>
           <h1 className="text-2xl font-bold text-white">Simulacros disponibles</h1>
           <p className="text-gray-500 text-sm mt-0.5">Elige un examen y demuestra que no eres fósil 🐊</p>
         </div>
@@ -115,7 +102,9 @@ export default function ExamsPage() {
           style={{ background: 'rgba(0,8,4,0.8)', border: `1px solid ${NEON}15` }}>
           <div className="text-5xl mb-4">📝</div>
           <h3 className="text-white font-bold mb-2">Próximamente</h3>
-          <p className="text-gray-500 text-sm">El banco de preguntas se cargará cuando se publique el balotario oficial en junio.</p>
+          <p className="text-gray-500 text-sm">
+            El banco de preguntas se cargará cuando se publique el balotario oficial en junio.
+          </p>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4 fade-in">
@@ -126,7 +115,6 @@ export default function ExamsPage() {
             return (
               <div key={exam.id} className="exam-card rounded-2xl p-5"
                 style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}15` }}>
-                {/* BADGES */}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span className="px-2.5 py-1 rounded-full text-xs font-bold"
                     style={{ backgroundColor: `${NEON}15`, color: NEON }}>
@@ -143,17 +131,13 @@ export default function ExamsPage() {
                     </span>
                   )}
                 </div>
-
                 <h3 className="text-white font-bold text-base mb-1">{exam.title}</h3>
                 <p className="text-gray-500 text-xs mb-4">{exam.description}</p>
-
-                {/* STATS */}
                 <div className="flex items-center gap-4 mb-4 text-xs text-gray-500">
                   <span>⏱ {mins} min</span>
                   <span>✅ Aprueba con {exam.passingScore}%</span>
                   <span>📅 {exam.yearValuation}</span>
                 </div>
-
                 <button onClick={() => handleStart(exam.id)} disabled={isStarting}
                   className="w-full py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-[1.02]"
                   style={{

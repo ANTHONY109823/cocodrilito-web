@@ -347,6 +347,46 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* CONTADOR REGRESIVO */}
+{(() => {
+  const examDate = new Date('2025-10-15')
+  const today = new Date()
+  const daysLeft = Math.ceil((examDate.getTime() - today.getTime()) / 86400000)
+  if (daysLeft <= 0) return null
+  return (
+    <div className="rounded-2xl p-4 flex items-center justify-between"
+      style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.2)' }}>
+      <div>
+        <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Examen de ascenso PNP</div>
+        <div className="text-white font-bold">⏳ Faltan {daysLeft} días</div>
+        <div className="text-gray-500 text-xs mt-0.5">Fecha estimada: 15 de octubre 2025</div>
+      </div>
+      <div className="text-right">
+        <div className="text-4xl font-bold" style={{ color: '#FFD700' }}>{daysLeft}</div>
+        <div className="text-xs text-gray-600">días</div>
+      </div>
+    </div>
+  )
+})()}
+
+{/* LINK HISTORIAL */}
+{!isNew && (
+  <Link href="/history"
+    className="block rounded-2xl p-4 transition-all hover:opacity-80"
+    style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff08' }}>
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="text-white font-medium text-sm">📋 Ver historial completo</div>
+        <div className="text-gray-600 text-xs mt-0.5">Todos tus simulacros anteriores</div>
+      </div>
+      <div className="text-gray-500">→</div>
+    </div>
+  </Link>
+)}
+
+
+
+
           {/* PREMIUM */}
           {user?.planType === 'Free' && (
             <div className="rounded-2xl p-5 flex items-center justify-between gap-4"
