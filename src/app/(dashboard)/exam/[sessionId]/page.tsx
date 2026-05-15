@@ -153,12 +153,9 @@ export default function ExamPage() {
           </div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold tabular-nums"
-            style={{
-              color: timerColor,
-              textShadow: `0 0 15px ${timerColor}`,
-            }}
-            className={timeLeft < 60 ? 'pulse-red' : ''}>
+          <div
+            className={`text-2xl font-bold tabular-nums ${timeLeft < 60 ? 'pulse-red' : ''}`}
+            style={{ color: timerColor, textShadow: `0 0 15px ${timerColor}` }}>
             {formatTime(timeLeft)}
           </div>
           <div className="text-xs text-gray-600">tiempo restante</div>
@@ -242,3 +239,5 @@ export default function ExamPage() {
     </div>
   )
 }
+
+
