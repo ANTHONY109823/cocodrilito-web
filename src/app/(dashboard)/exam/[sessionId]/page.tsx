@@ -3,17 +3,23 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
+import apiClient from '@/lib/api/client'
 
 const NEON = '#00C87A'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 
+interface AnswerOption {
+  id: string
+  optionText: string
+  optionIndex: number
+}
+
 interface Question {
-  questionId: string
+  id: string
   questionText: string
   orderIndex: number
-  timeSpentMs: number
-  answerOptions: { id: string; optionText: string; optionIndex: number }[]
+  options: AnswerOption[]
 }
 
 interface SessionData {
@@ -56,22 +62,39 @@ export default function ExamPage() {
 
   const loadSession = async () => {
     try {
-      const res = await examsApi.getResult(sessionId)
-      if (res.data?.status === 'Completed') {
+      // Verificar si ya está completada
+      const resultRes = await examsApi.getResult(sessionId)
+      if (resultRes.data?.status === 'Completed') {
         router.replace(`/result/${sessionId}`)
         return
       }
     } catch { }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/exams/sessions/${sessionId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
+      const res = await apiClient.get(`/exams/sessions/${sessionId}`)
+      const data = res.data
+      // Normalizar estructura
+      setSession({
+        sessionId: data.sessionId,
+        examTitle: data.examTitle,
+        totalQuestions: data.questions?.length || 0,
+        timeLimitSeconds: data.timeLimitSeconds,
+        questions: (data.questions || []).map((q: any) => ({
+          id: q.id,
+          questionText: q.questionText,
+          orderIndex: q.orderIndex,
+          options: (q.options || q.answerOptions || []).map((o: any) => ({
+            id: o.id,
+            optionText: o.optionText,
+            optionIndex: o.optionIndex
+          }))
+        }))
       })
-      if (res.ok) {
-        const data = await res.json()
-        setSession(data)
-        setTimeLeft(data.timeLimitSeconds)
-      }
+      // Calcular tiempo restante basado en cuándo empezó
+      const startedAt = new Date(data.startedAt).getTime()
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000)
+      const remaining = Math.max(0, data.timeLimitSeconds - elapsed)
+      setTimeLeft(remaining)
     } catch {
       router.push('/exams')
     } finally {
@@ -83,10 +106,10 @@ export default function ExamPage() {
     if (!session) return
     setSelectedOption(optionId)
     const q = session.questions[currentIdx]
-    setAnswers(prev => ({ ...prev, [q.questionId]: optionId }))
+    setAnswers(prev => ({ ...prev, [q.id]: optionId }))
     try {
       await examsApi.submitAnswer(sessionId, {
-        questionId: q.questionId,
+        questionId: q.id,
         selectedOptionId: optionId,
         timeSpentMs: questionTime
       })
@@ -118,7 +141,7 @@ export default function ExamPage() {
   }
 
   const timerColor = timeLeft < 60 ? RED : timeLeft < 300 ? GOLD : NEON
-  const progress = session ? ((currentIdx) / session.totalQuestions) * 100 : 0
+  const progress = session ? (currentIdx / session.totalQuestions) * 100 : 0
 
   if (loading || !session) {
     return (
@@ -179,7 +202,7 @@ export default function ExamPage() {
         </p>
 
         <div className="space-y-3">
-          {currentQ.answerOptions
+          {currentQ.options
             .sort((a, b) => a.optionIndex - b.optionIndex)
             .map((opt, i) => {
               const isSelected = selectedOption === opt.id
@@ -190,7 +213,7 @@ export default function ExamPage() {
                   disabled={!!selectedOption}
                   className="w-full text-left rounded-xl p-4 transition-all flex items-start gap-3"
                   style={{
-                    background: isSelected ? `rgba(0,200,122,0.12)` : 'rgba(0,5,2,0.6)',
+                    background: isSelected ? 'rgba(0,200,122,0.12)' : 'rgba(0,5,2,0.6)',
                     border: `1px solid ${isSelected ? NEON : '#ffffff10'}`,
                     boxShadow: isSelected ? `0 0 15px ${NEON}20` : 'none',
                     cursor: selectedOption ? 'default' : 'pointer',
@@ -239,5 +262,3 @@ export default function ExamPage() {
     </div>
   )
 }
-
-

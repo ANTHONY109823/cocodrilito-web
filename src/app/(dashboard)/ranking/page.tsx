@@ -60,11 +60,14 @@ export default function RankingPage() {
         apiClient.get('/rankings/global'),
         apiClient.get('/rankings/me'),
       ])
-      setRanking(globalRes.data)
+      const globalData = Array.isArray(globalRes.data)
+        ? globalRes.data
+        : globalRes.data?.items || globalRes.data?.data || []
+      setRanking(globalData)
       setMyRanking(myRes.data)
     } catch { } finally { setLoading(false) }
   }
-
+  
   return (
     <div className="max-w-2xl mx-auto">
       <style>{`
