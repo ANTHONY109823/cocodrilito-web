@@ -15,6 +15,7 @@ interface User {
   planType: string
   role: string
   isActive: boolean
+  createdByAdmin: boolean
   createdAt: string
   subscription?: { expiresAt: string; startsAt: string } | null
 }
@@ -57,11 +58,11 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [userFilter, setUserFilter] = useState<'all' | 'admin' | 'web'>('all')
+  const [inactiveFilter, setInactiveFilter] = useState<'all' | 'admin' | 'web'>('all')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null)
   const [exams, setExams] = useState<{ id: string; title: string }[]>([])
-  const [inactiveFilter, setInactiveFilter] = useState<'all' | 'admin' | 'web'>('all')
 
   const [form, setForm] = useState({
     fullName: '', dni: '', email: '', password: '',
@@ -123,11 +124,16 @@ export default function AdminPage() {
     } finally { setSaving(false) }
   }
 
-  const handleApprove = async (id: string) => {
+  // Aprobación con días calculados según monto pagado
+  const inferDays = (amount: number) =>
+    amount <= 13 ? 30 : amount <= 23 ? 60 : 180
+
+  const handleApprove = async (sub: Subscription) => {
     try {
-      await apiClient.put(`/subscriptions/${id}/approve`, { durationDays: 180 })
-      setSubscriptions(prev => prev.filter(s => s.id !== id))
-      setMsg({ text: '✅ Suscripción aprobada', ok: true })
+      const days = inferDays(sub.amountPaid)
+      await apiClient.put(`/subscriptions/${sub.id}/approve`, { durationDays: days })
+      setSubscriptions(prev => prev.filter(s => s.id !== sub.id))
+      setMsg({ text: `✅ Suscripción aprobada — ${days} días activados`, ok: true })
       setTimeout(() => setMsg(null), 3000)
     } catch { setMsg({ text: 'Error al aprobar', ok: false }) }
   }
@@ -148,7 +154,9 @@ export default function AdminPage() {
       setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: false } : u))
       setMsg({ text: '⛔ Usuario desactivado', ok: false })
       setTimeout(() => setMsg(null), 2000)
-    } catch { }
+    } catch (err: any) {
+      setMsg({ text: err.response?.data?.message || 'Error al desactivar', ok: false })
+    }
   }
 
   const handleReactivate = async (id: string) => {
@@ -254,23 +262,19 @@ export default function AdminPage() {
     return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000)
   }
 
-  const isAdminCreated = (u: User) =>
-    u.email.includes('@cocodrilito.com') || u.planType === 'Premium'
-
-  // Usuarios activos solamente para tab 'users'
   const activeUsers = users.filter(u => u.isActive)
   const inactiveUsers = users.filter(u => !u.isActive)
   const pendingPayment = users.filter(u => u.isActive && u.planType === 'Free')
 
   const filteredActiveUsers = activeUsers.filter(u => {
-    if (userFilter === 'admin') return isAdminCreated(u)
-    if (userFilter === 'web') return !isAdminCreated(u)
+    if (userFilter === 'admin') return u.createdByAdmin
+    if (userFilter === 'web') return !u.createdByAdmin
     return true
   })
 
   const filteredInactiveUsers = inactiveUsers.filter(u => {
-    if (inactiveFilter === 'admin') return isAdminCreated(u)
-    if (inactiveFilter === 'web') return !isAdminCreated(u)
+    if (inactiveFilter === 'admin') return u.createdByAdmin
+    if (inactiveFilter === 'web') return !u.createdByAdmin
     return true
   })
 
@@ -326,10 +330,7 @@ export default function AdminPage() {
             {t.label}
             {t.count !== null && t.count > 0 && (
               <span className="px-1.5 py-0.5 rounded-full text-xs font-bold"
-                style={{
-                  backgroundColor: tab === t.key ? '#000' : t.countColor,
-                  color: '#fff'
-                }}>
+                style={{ backgroundColor: tab === t.key ? '#000' : t.countColor, color: '#fff' }}>
                 {t.count}
               </span>
             )}
@@ -337,17 +338,15 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* ═══════════════════════════════════════════
-          TAB: USUARIOS ACTIVOS
-      ═══════════════════════════════════════════ */}
+      {/* TAB: USUARIOS ACTIVOS */}
       {tab === 'users' && (
         <div className="fade-in">
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <div className="flex gap-2">
               {[
-                { key: 'all',   label: 'Todos' },
+                { key: 'all', label: 'Todos' },
                 { key: 'admin', label: '🛡️ Por admin' },
-                { key: 'web',   label: '🌐 Desde web' },
+                { key: 'web', label: '🌐 Desde web' },
               ].map(f => (
                 <button key={f.key} onClick={() => setUserFilter(f.key as any)}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
@@ -379,7 +378,6 @@ export default function AdminPage() {
               const expired = days !== null && days <= 0
               const warning = days !== null && days > 0 && days <= 7
               const noSub = u.planType === 'Free' || !u.subscription
-              const isFromWeb = !isAdminCreated(u)
               return (
                 <div key={u.id} className="rounded-2xl p-4"
                   style={{
@@ -397,7 +395,7 @@ export default function AdminPage() {
                           }}>
                           {u.planType}
                         </span>
-                        {isFromWeb && (
+                        {!u.createdByAdmin && (
                           <span className="text-xs px-2 py-0.5 rounded-full"
                             style={{ backgroundColor: `${NEON2}15`, color: NEON2 }}>
                             🌐 Web
@@ -416,11 +414,9 @@ export default function AdminPage() {
                       {u.subscription && (
                         <div className="text-xs mt-1.5 font-medium"
                           style={{ color: expired ? RED : warning ? GOLD : NEON }}>
-                          {expired
-                            ? '⚠️ Vencido'
-                            : warning
-                              ? `⚡ Vence en ${days} días`
-                              : `✓ Activo hasta ${new Date(u.subscription.expiresAt).toLocaleDateString('es-PE')} (${days} días)`}
+                          {expired ? '⚠️ Vencido'
+                            : warning ? `⚡ Vence en ${days} días`
+                            : `✓ Activo hasta ${new Date(u.subscription.expiresAt).toLocaleDateString('es-PE')} (${days} días)`}
                         </div>
                       )}
                     </div>
@@ -454,43 +450,35 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════
-          TAB: INACTIVOS
-      ═══════════════════════════════════════════ */}
+      {/* TAB: INACTIVOS */}
       {tab === 'inactive' && (
         <div className="fade-in">
-          {/* Banner informativo */}
           <div className="rounded-2xl p-4 mb-5 flex items-center gap-3"
             style={{ background: `rgba(255,82,82,0.06)`, border: `1px solid ${RED}25` }}>
             <span className="text-2xl">🔴</span>
             <div>
               <p className="text-sm font-semibold" style={{ color: RED }}>Usuarios desactivados</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Estos usuarios no tienen acceso a la plataforma. Puedes reactivarlos o extender su plan directamente.
-              </p>
+              <p className="text-xs text-gray-500 mt-0.5">Sin acceso a la plataforma. Puedes reactivarlos o extender su plan.</p>
             </div>
             <span className="ml-auto text-2xl font-bold" style={{ color: RED }}>{inactiveUsers.length}</span>
           </div>
 
-          {/* Filtros inactivos */}
-          <div className="flex items-center gap-3 mb-4 flex-wrap">
-            <div className="flex gap-2">
-              {[
-                { key: 'all',   label: 'Todos' },
-                { key: 'admin', label: '🛡️ Por admin' },
-                { key: 'web',   label: '🌐 Desde web' },
-              ].map(f => (
-                <button key={f.key} onClick={() => setInactiveFilter(f.key as any)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={{
-                    backgroundColor: inactiveFilter === f.key ? `${RED}15` : 'rgba(0,5,2,0.5)',
-                    color: inactiveFilter === f.key ? RED : '#6B7280',
-                    border: `1px solid ${inactiveFilter === f.key ? RED : '#ffffff10'}`
-                  }}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {[
+              { key: 'all', label: 'Todos' },
+              { key: 'admin', label: '🛡️ Por admin' },
+              { key: 'web', label: '🌐 Desde web' },
+            ].map(f => (
+              <button key={f.key} onClick={() => setInactiveFilter(f.key as any)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{
+                  backgroundColor: inactiveFilter === f.key ? `${RED}15` : 'rgba(0,5,2,0.5)',
+                  color: inactiveFilter === f.key ? RED : '#6B7280',
+                  border: `1px solid ${inactiveFilter === f.key ? RED : '#ffffff10'}`
+                }}>
+                {f.label}
+              </button>
+            ))}
           </div>
 
           <div className="space-y-3">
@@ -504,22 +492,15 @@ export default function AdminPage() {
               </div>
             ) : filteredInactiveUsers.map(u => {
               const days = daysLeft(u.subscription?.expiresAt)
-              const isFromWeb = !isAdminCreated(u)
               return (
                 <div key={u.id} className="rounded-2xl p-4"
-                  style={{
-                    background: 'rgba(5,2,2,0.9)',
-                    border: `1px solid ${RED}15`,
-                    opacity: 0.85
-                  }}>
+                  style={{ background: 'rgba(5,2,2,0.9)', border: `1px solid ${RED}15`, opacity: 0.85 }}>
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-gray-300 font-semibold">{u.fullName}</span>
                         <span className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${RED}20`, color: RED }}>
-                          Inactivo
-                        </span>
+                          style={{ backgroundColor: `${RED}20`, color: RED }}>Inactivo</span>
                         <span className="text-xs px-2 py-0.5 rounded-full"
                           style={{
                             backgroundColor: u.planType === 'Premium' ? `${NEON}15` : `${GOLD}10`,
@@ -527,7 +508,7 @@ export default function AdminPage() {
                           }}>
                           {u.planType}
                         </span>
-                        {isFromWeb && (
+                        {!u.createdByAdmin && (
                           <span className="text-xs px-2 py-0.5 rounded-full"
                             style={{ backgroundColor: `${NEON2}10`, color: NEON2 }}>
                             🌐 Web
@@ -547,12 +528,7 @@ export default function AdminPage() {
                       ) : (
                         <div className="text-xs mt-1.5 text-gray-600">Sin suscripción registrada</div>
                       )}
-                      <div className="text-xs text-gray-700 mt-0.5">
-                        Creado: {new Date(u.createdAt).toLocaleDateString('es-PE')}
-                      </div>
                     </div>
-
-                    {/* Acciones: reactivar y extender directamente */}
                     <div className="flex gap-2 flex-wrap items-center">
                       <button onClick={() => handleExtend(u.id, 30)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
@@ -583,9 +559,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════
-          TAB: CREAR USUARIO
-      ═══════════════════════════════════════════ */}
+      {/* TAB: CREAR USUARIO */}
       {tab === 'create' && (
         <div className="rounded-2xl p-6 fade-in"
           style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}20` }}>
@@ -594,7 +568,7 @@ export default function AdminPage() {
             <div className="grid md:grid-cols-2 gap-4">
               {[
                 { label: 'Nombre completo *', key: 'fullName', placeholder: 'Juan Pérez Torres' },
-                { label: 'DNI *', key: 'dni', placeholder: '12345678' },
+                { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '12345678' },
                 { label: 'Email (Gmail) *', key: 'email', placeholder: 'juan@gmail.com', type: 'email' },
                 { label: 'Contraseña temporal *', key: 'password', placeholder: 'Mínimo 8 caracteres', type: 'password' },
                 { label: 'Grado *', key: 'rank', placeholder: 'Suboficial de 3ra' },
@@ -612,9 +586,9 @@ export default function AdminPage() {
               <label className="block text-xs text-gray-500 mb-2">Plan de acceso *</label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { days: 30,  label: 'Mensual',      price: 'S/. 12.90', sub: '30 días' },
-                  { days: 60,  label: 'Bimestral',    price: 'S/. 22.90', sub: '60 días' },
-                  { days: 180, label: 'Full Proceso',  price: 'S/. 42.90', sub: '180 días' },
+                  { days: 30, label: 'Mensual', price: 'S/. 12.90', sub: '30 días' },
+                  { days: 60, label: 'Bimestral', price: 'S/. 22.90', sub: '60 días' },
+                  { days: 180, label: 'Full Proceso', price: 'S/. 42.90', sub: '180 días' },
                 ].map(plan => (
                   <button key={plan.days} type="button"
                     onClick={() => setForm({ ...form, planDays: plan.days })}
@@ -637,9 +611,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════
-          TAB: SUSCRIPCIONES
-      ═══════════════════════════════════════════ */}
+      {/* TAB: SUSCRIPCIONES */}
       {tab === 'subscriptions' && (
         <div className="fade-in space-y-3">
           {loading ? (
@@ -650,39 +622,47 @@ export default function AdminPage() {
               <div className="text-4xl mb-3">✅</div>
               <p className="text-gray-500">No hay suscripciones pendientes</p>
             </div>
-          ) : subscriptions.map(sub => (
-            <div key={sub.id} className="rounded-2xl p-4"
-              style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${GOLD}20` }}>
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-bold" style={{ color: GOLD }}>S/. {sub.amountPaid}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{sub.paymentMethod}</span>
+          ) : subscriptions.map(sub => {
+            const days = inferDays(sub.amountPaid)
+            return (
+              <div key={sub.id} className="rounded-2xl p-4"
+                style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${GOLD}20` }}>
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-bold" style={{ color: GOLD }}>S/. {sub.amountPaid}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{sub.paymentMethod}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${NEON}10`, color: NEON }}>
+                        → {days} días
+                      </span>
+                    </div>
+                    <div className="text-gray-400 text-xs">Ref: <span className="text-white">{sub.paymentReference || 'Sin referencia'}</span></div>
+                    <div className="text-gray-600 text-xs mt-0.5">{new Date(sub.createdAt).toLocaleString('es-PE')}</div>
                   </div>
-                  <div className="text-gray-400 text-xs">Ref: <span className="text-white">{sub.paymentReference || 'Sin referencia'}</span></div>
-                  <div className="text-gray-600 text-xs mt-0.5">{new Date(sub.createdAt).toLocaleString('es-PE')}</div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleApprove(sub.id)}
-                    className="px-4 py-2 rounded-lg text-sm font-bold"
-                    style={{ backgroundColor: NEON, color: '#000' }}>✅ Aprobar</button>
-                  <button onClick={() => handleReject(sub.id)}
-                    className="px-4 py-2 rounded-lg text-sm font-medium"
-                    style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>❌ Rechazar</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleApprove(sub)}
+                      className="px-4 py-2 rounded-lg text-sm font-bold"
+                      style={{ backgroundColor: NEON, color: '#000' }}>
+                      ✅ Aprobar {days}d
+                    </button>
+                    <button onClick={() => handleReject(sub.id)}
+                      className="px-4 py-2 rounded-lg text-sm font-medium"
+                      style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>
+                      ❌ Rechazar
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════
-          TAB: BANCO DE PREGUNTAS
-      ═══════════════════════════════════════════ */}
+      {/* TAB: BANCO DE PREGUNTAS */}
       {tab === 'questions' && (
         <div className="fade-in space-y-4">
-
-          {/* MODAL EDICIÓN */}
           {editingQuestion && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
               style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
@@ -758,7 +738,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* CARGA CSV */}
           <div className="rounded-2xl p-5" style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${PURPLE}25` }}>
             <h2 className="text-white font-bold text-base mb-1">📤 Carga masiva CSV</h2>
             <p className="text-gray-500 text-xs mb-4">Sube el balotario completo en un archivo CSV.</p>
@@ -777,7 +756,6 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* AGREGAR PREGUNTA */}
           <div className="rounded-2xl p-5" style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}20` }}>
             <h2 className="text-white font-bold text-base mb-4">✏️ Agregar pregunta manual</h2>
             <form onSubmit={handleAddQuestion} className="space-y-4">
@@ -848,7 +826,6 @@ export default function AdminPage() {
             </form>
           </div>
 
-          {/* LISTA PREGUNTAS */}
           <div className="rounded-2xl p-5" style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
             <h2 className="text-white font-bold text-base mb-4">📋 Preguntas en banco ({questions.length})</h2>
             {loading ? (
@@ -872,14 +849,10 @@ export default function AdminPage() {
                     <div className="flex gap-2 shrink-0">
                       <button onClick={() => handleEditQuestion(q)}
                         className="px-2 py-1 rounded-lg text-xs"
-                        style={{ backgroundColor: `${NEON2}15`, color: NEON2 }}>
-                        ✏️
-                      </button>
+                        style={{ backgroundColor: `${NEON2}15`, color: NEON2 }}>✏️</button>
                       <button onClick={() => handleDeleteQuestion(q.id)}
                         className="px-2 py-1 rounded-lg text-xs"
-                        style={{ backgroundColor: `${RED}15`, color: RED }}>
-                        🗑️
-                      </button>
+                        style={{ backgroundColor: `${RED}15`, color: RED }}>🗑️</button>
                     </div>
                   </div>
                 ))}

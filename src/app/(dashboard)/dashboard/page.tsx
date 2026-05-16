@@ -349,7 +349,7 @@ export default function DashboardPage() {
 
           {/* CONTADOR REGRESIVO */}
 {(() => {
-  const examDate = new Date('2025-10-15')
+  const examDate = new Date('2026-10-15')
   const today = new Date()
   const daysLeft = Math.ceil((examDate.getTime() - today.getTime()) / 86400000)
   if (daysLeft <= 0) return null
@@ -359,7 +359,7 @@ export default function DashboardPage() {
       <div>
         <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Examen de ascenso PNP</div>
         <div className="text-white font-bold">⏳ Faltan {daysLeft} días</div>
-        <div className="text-gray-500 text-xs mt-0.5">Fecha estimada: 15 de octubre 2025</div>
+        <div className="text-gray-500 text-xs mt-0.5">Fecha estimada: 15 de octubre 2026</div>
       </div>
       <div className="text-right">
         <div className="text-4xl font-bold" style={{ color: '#FFD700' }}>{daysLeft}</div>
