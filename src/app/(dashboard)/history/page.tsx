@@ -108,11 +108,24 @@ export default function HistoryPage() {
                       {s.score}%
                     </div>
                   </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                   <div className="text-right">
+                    <div className="text-2xl font-bold"
+                      style={{ color: s.passed ? NEON : RED }}>
+                      {s.score}%
+                    </div>
+                  </div>
                   <Link href={`/result/${s.sessionId}`}
-                    className="px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
-                    style={{ backgroundColor: `${BLUE}15`, color: BLUE, border: `1px solid ${BLUE}20` }}>
-                    Ver →
-                  </Link>
+                  className="px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
+                  style={{ backgroundColor: `${BLUE}15`, color: BLUE, border: `1px solid ${BLUE}20` }}>
+                   Ver →
+                 </Link>
+                  <Link href={`/review/${s.sessionId}`}
+                  className="px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
+                  style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}20` }}>
+                  📚 Repasar
+                 </Link>
+                  </div>
                 </div>
               </div>
             </div>

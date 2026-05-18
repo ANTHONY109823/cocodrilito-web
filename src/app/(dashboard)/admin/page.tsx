@@ -64,6 +64,42 @@ export default function AdminPage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null)
   const [exams, setExams] = useState<{ id: string; title: string }[]>([])
 
+  const excelInputRef = useRef<HTMLInputElement>(null)
+const [uploadingExcel, setUploadingExcel] = useState(false)
+
+const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  setUploadingExcel(true)
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await apiClient.post('/admin/users/import/excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    setMsg({ text: `✅ ${res.data.created} usuarios importados`, ok: true })
+    if (res.data.errors?.length > 0) {
+      console.warn('Errores de importación:', res.data.errors)
+    }
+    loadData()
+  } catch (err: any) {
+    setMsg({ text: err.response?.data?.message || 'Error al importar', ok: false })
+  } finally {
+    setUploadingExcel(false)
+    if (excelInputRef.current) excelInputRef.current.value = ''
+  }
+}
+
+const handleDownloadExcelTemplate = () => {
+  const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado,Unidad,Días\nJuan Pérez Torres,12345678,juan@gmail.com,Temp1234!,Suboficial de 3ra,Comisaría Lima Norte,180\n'
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'plantilla_usuarios.csv'
+  a.click()
+}
+
   const [form, setForm] = useState({
     fullName: '', dni: '', email: '', password: '',
     rank: '', unit: '', planDays: 180
@@ -619,6 +655,30 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
+{/* IMPORTAR DESDE EXCEL */}
+<div className="rounded-2xl p-5 mb-5"
+  style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${PURPLE}25` }}>
+  <h3 className="text-white font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
+  <p className="text-gray-500 text-xs mb-3">
+    Sube un Excel con columnas: Nombre, DNI, Email, Contraseña, Grado, Unidad, Días (30/60/180)
+  </p>
+  <div className="flex gap-3 flex-wrap">
+    <button onClick={handleDownloadExcelTemplate}
+      className="px-4 py-2 rounded-xl text-sm font-medium"
+      style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
+      ⬇️ Descargar plantilla Excel
+    </button>
+    <button onClick={() => excelInputRef.current?.click()} disabled={uploadingExcel}
+      className="px-4 py-2 rounded-xl text-sm font-bold"
+      style={{ background: `linear-gradient(135deg, ${PURPLE}, #7C3AED)`, color: '#fff', opacity: uploadingExcel ? 0.7 : 1 }}>
+      {uploadingExcel ? 'Importando...' : '📁 Subir Excel'}
+    </button>
+    <input ref={excelInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
+  </div>
+</div>
+
+
+
             <button type="submit" disabled={saving}
               className="w-full py-3 rounded-xl font-bold text-sm"
               style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>

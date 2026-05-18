@@ -18,4 +18,8 @@ export const examsApi = {
     apiClient.get('/exams/sessions/stats'),
   getCategoryStats: () =>
     apiClient.get('/exams/sessions/stats/categories'),
+  getHistory: () =>
+    apiClient.get('/exams/sessions/history'),
+  getReviewSession: (sessionId: string) =>
+    apiClient.get(`/exams/sessions/${sessionId}/review`),
 }
