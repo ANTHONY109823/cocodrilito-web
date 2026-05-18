@@ -305,6 +305,18 @@ const handleDownloadExcelTemplate = () => {
     }
   }
 
+  const handleDeleteAllQuestions = async () => {
+    if (!confirm('⚠️ ¿Eliminar TODAS las preguntas del banco? Esta acción no se puede deshacer.')) return
+    if (!confirm('¿Estás SEGURO? Se eliminarán todas las preguntas permanentemente.')) return
+    try {
+      const res = await apiClient.delete('/admin/Questions/bulk')
+      setMsg({ text: `🗑️ ${res.data.deleted} preguntas eliminadas`, ok: false })
+      setTimeout(() => { setMsg(null); loadData() }, 2000)
+    } catch (err: any) {
+      setMsg({ text: err.response?.data?.message || 'Error al eliminar', ok: false })
+    }
+  }
+
   const daysLeft = (expiresAt?: string | null) => {
     if (!expiresAt) return null
     return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000)
@@ -904,7 +916,16 @@ const handleDownloadExcelTemplate = () => {
           </div>
 
           <div className="rounded-2xl p-5" style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
-            <h2 className="text-white font-bold text-base mb-4">📋 Preguntas en banco ({questions.length})</h2>
+          <div className="flex items-center justify-between mb-4">
+  <h2 className="text-white font-bold text-base">📋 Preguntas en banco ({questions.length})</h2>
+  {questions.length > 0 && (
+    <button onClick={handleDeleteAllQuestions}
+      className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80"
+      style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>
+      🗑️ Eliminar todas
+    </button>
+  )}
+</div>
             {loading ? (
               <div className="text-gray-500 text-center py-8">Cargando...</div>
             ) : questions.length === 0 ? (
