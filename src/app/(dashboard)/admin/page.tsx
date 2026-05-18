@@ -257,6 +257,18 @@ export default function AdminPage() {
     } catch { }
   }
 
+  const handleDeletePermanent = async (id: string) => {
+    if (!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este usuario? Esta acción no se puede deshacer.')) return
+    try {
+      await apiClient.delete(`/admin/users/${id}/permanent`)
+      setUsers(prev => prev.filter(u => u.id !== id))
+      setMsg({ text: '🗑️ Usuario eliminado permanentemente', ok: false })
+      setTimeout(() => setMsg(null), 3000)
+    } catch (err: any) {
+      setMsg({ text: err.response?.data?.message || 'Error al eliminar', ok: false })
+    }
+  }
+
   const daysLeft = (expiresAt?: string | null) => {
     if (!expiresAt) return null
     return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000)
@@ -549,6 +561,11 @@ export default function AdminPage() {
                         className="px-4 py-1.5 rounded-lg text-xs font-bold"
                         style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000' }}>
                         ✅ Reactivar
+                      </button>
+                      <button onClick={() => handleDeletePermanent(u.id)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: 'rgba(255,82,82,0.15)', color: '#FF5252', border: '1px solid #FF525230' }}>
+                        🗑️ Eliminar
                       </button>
                     </div>
                   </div>

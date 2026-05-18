@@ -16,4 +16,6 @@ export const examsApi = {
     apiClient.get('/exams/sessions/latest'),
   getMyStats: () =>
     apiClient.get('/exams/sessions/stats'),
+  getCategoryStats: () =>
+    apiClient.get('/exams/sessions/stats/categories'),
 }

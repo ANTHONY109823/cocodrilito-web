@@ -32,6 +32,14 @@ interface LatestSession {
   passed: boolean
 }
 
+interface CategoryStat {
+  category: string
+  total: number
+  correct: number
+  incorrect: number
+  percentage: number
+}
+
 const leagueConfig: Record<string, {
   color: string; glow: string; bg: string; border: string
   next: string; correctasNext: number; emoji: string
@@ -53,7 +61,6 @@ const getLeague = (n: number) => {
 
 const formatTime = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`
 
-// Partículas animadas
 function Particles() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -74,7 +81,6 @@ function Particles() {
   )
 }
 
-// Stats flotantes laterales
 function SideStats({ stats, latest }: { stats: Stats | null, latest: LatestSession | null }) {
   const items = [
     { label: 'Simulacros', value: stats?.totalSessions || 0, color: '#00C87A', icon: '📝' },
@@ -110,6 +116,7 @@ export default function DashboardPage() {
   const [gami, setGami] = useState<GamificationStatus | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [latest, setLatest] = useState<LatestSession | null>(null)
+  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([])
   const [loading, setLoading] = useState(true)
   const [slide, setSlide] = useState(0)
 
@@ -128,12 +135,16 @@ export default function DashboardPage() {
 
   const loadAll = async () => {
     try {
-      const [g, s, l] = await Promise.all([
+      const [g, s, l, cats] = await Promise.all([
         gamificationApi.getMyStatus(),
         examsApi.getMyStats(),
         examsApi.getLatestSession(),
+        examsApi.getCategoryStats(),
       ])
-      setGami(g.data); setStats(s.data); setLatest(l.data)
+      setGami(g.data)
+      setStats(s.data)
+      setLatest(l.data)
+      setCategoryStats(Array.isArray(cats.data) ? cats.data : [])
     } catch { } finally { setLoading(false) }
   }
 
@@ -150,10 +161,6 @@ export default function DashboardPage() {
           0%, 100% { transform: translateY(0px) scale(1); opacity: 0.15; }
           50% { transform: translateY(-20px) scale(1.2); opacity: 0.35; }
         }
-        @keyframes glow-pulse {
-          0%, 100% { box-shadow: 0 0 20px var(--glow); }
-          50% { box-shadow: 0 0 40px var(--glow), 0 0 60px var(--glow); }
-        }
         @keyframes slide-in {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
@@ -162,31 +169,23 @@ export default function DashboardPage() {
       `}</style>
 
       <div className="flex gap-6">
-        {/* CONTENIDO PRINCIPAL */}
         <div className="flex-1 space-y-4 min-w-0">
 
           {/* HERO CARRUSEL */}
           <div className="relative overflow-hidden rounded-2xl h-36 md:h-44"
             style={{ background: slides[slide].bg }}>
             <Particles />
-            {/* Grid lines estilo Process AI */}
             <div className="absolute inset-0 opacity-5"
               style={{
                 backgroundImage: 'linear-gradient(#00C87A 1px, transparent 1px), linear-gradient(90deg, #00C87A 1px, transparent 1px)',
                 backgroundSize: '40px 40px'
               }} />
-            {/* Glow orb */}
             <div className="absolute right-8 top-1/2 -translate-y-1/2 w-32 h-32 rounded-full opacity-20 blur-3xl"
               style={{ backgroundColor: slides[slide].color }} />
             <div className="relative z-10 h-full flex flex-col justify-center px-6 md:px-8 slide-animate" key={slide}>
-              <div className="text-2xl md:text-3xl font-bold text-white mb-2">
-                {slides[slide].text}
-              </div>
-              <div className="text-sm md:text-base" style={{ color: slides[slide].color }}>
-                {slides[slide].sub}
-              </div>
+              <div className="text-2xl md:text-3xl font-bold text-white mb-2">{slides[slide].text}</div>
+              <div className="text-sm md:text-base" style={{ color: slides[slide].color }}>{slides[slide].sub}</div>
             </div>
-            {/* Dots */}
             <div className="absolute bottom-3 left-6 flex gap-1.5">
               {slides.map((_, i) => (
                 <button key={i} onClick={() => setSlide(i)}
@@ -208,11 +207,7 @@ export default function DashboardPage() {
             </div>
             <Link href="/exams"
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
-              style={{
-                background: 'linear-gradient(135deg, #00C87A, #009A5E)',
-                color: '#000',
-                boxShadow: '0 0 20px #00C87A50'
-              }}>
+              style={{ background: 'linear-gradient(135deg, #00C87A, #009A5E)', color: '#000', boxShadow: '0 0 20px #00C87A50' }}>
               📝 Nuevo simulacro
             </Link>
           </div>
@@ -221,9 +216,7 @@ export default function DashboardPage() {
           {isNew && (
             <div className="relative overflow-hidden rounded-2xl p-6"
               style={{ background: 'rgba(0,30,18,0.9)', border: '1px solid #00C87A30', boxShadow: '0 0 30px #00C87A15' }}>
-              <p className="text-gray-400 text-base mb-4">
-                Descubre tu nivel y empieza a escalar en el ranking PNP.
-              </p>
+              <p className="text-gray-400 text-base mb-4">Descubre tu nivel y empieza a escalar en el ranking PNP.</p>
               <Link href="/exams"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base"
                 style={{ background: 'linear-gradient(135deg, #00C87A, #009A5E)', color: '#000' }}>
@@ -264,11 +257,7 @@ export default function DashboardPage() {
                 <>
                   <div className="w-full h-2 rounded-full mb-1" style={{ backgroundColor: '#ffffff08' }}>
                     <div className="h-2 rounded-full transition-all duration-1000"
-                      style={{
-                        width: `${pct}%`,
-                        background: `linear-gradient(90deg, ${cfg.color}60, ${cfg.color})`,
-                        boxShadow: `0 0 10px ${cfg.color}`
-                      }} />
+                      style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${cfg.color}60, ${cfg.color})`, boxShadow: `0 0 10px ${cfg.color}` }} />
                   </div>
                   <div className="flex justify-between text-xs text-gray-600">
                     <span>0</span><span>{cfg.correctasNext} → {cfg.next}</span>
@@ -301,7 +290,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-
               <div className="grid grid-cols-3 gap-3 mb-4">
                 {[
                   { label: 'Correctas', value: latest.correctAnswers, color: '#00E5A0', bg: 'rgba(0,229,160,0.06)', border: '#00E5A020' },
@@ -315,7 +303,6 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <Link href={`/result/${latest.sessionId}`}
                   className="text-center py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
@@ -331,7 +318,58 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ALERTA */}
+          {/* ESTADÍSTICAS POR CATEGORÍA */}
+          {categoryStats.length > 0 && (
+            <div className="rounded-2xl p-5"
+              style={{ background: 'rgba(0,8,16,0.9)', border: '1px solid #4FC3F720' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="text-white font-bold text-base">📊 Rendimiento por categoría</div>
+                  <div className="text-gray-600 text-xs mt-0.5">Basado en todos tus simulacros</div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {categoryStats.map((cat, i) => {
+                  const color = cat.percentage >= 75 ? '#00E5A0'
+                    : cat.percentage >= 50 ? '#FFD700' : '#FF5252'
+                  const bgColor = cat.percentage >= 75 ? 'rgba(0,229,160,0.06)'
+                    : cat.percentage >= 50 ? 'rgba(255,215,0,0.06)' : 'rgba(255,82,82,0.06)'
+                  return (
+                    <div key={i} className="rounded-xl p-3"
+                      style={{ backgroundColor: bgColor, border: `1px solid ${color}20` }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-white">{cat.category}</span>
+                          <span className="text-xs text-gray-500">{cat.total} preguntas</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs">
+                          <span style={{ color: '#00E5A0' }}>✓ {cat.correct}</span>
+                          <span style={{ color: '#FF5252' }}>✗ {cat.incorrect}</span>
+                          <span className="font-bold text-sm" style={{ color }}>{cat.percentage}%</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full" style={{ backgroundColor: '#ffffff08' }}>
+                        <div className="h-1.5 rounded-full transition-all duration-700"
+                          style={{
+                            width: `${cat.percentage}%`,
+                            background: `linear-gradient(90deg, ${color}60, ${color})`,
+                            boxShadow: `0 0 6px ${color}`
+                          }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {categoryStats.length > 0 && (
+                <div className="mt-3 pt-3 text-xs text-gray-600"
+                  style={{ borderTop: '1px solid #ffffff08' }}>
+                  💡 Tu punto débil: <span style={{ color: '#FF5252' }}>{categoryStats[0].category}</span> — enfócate en reforzarlo
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ALERTA ANTI-FÓSIL */}
           {gami && gami.fossilRiskScore > 40 && (
             <div className="rounded-xl p-4 flex items-center gap-4"
               style={{ background: 'rgba(255,82,82,0.06)', border: '1px solid #FF525225' }}>
@@ -348,44 +386,41 @@ export default function DashboardPage() {
           )}
 
           {/* CONTADOR REGRESIVO */}
-{(() => {
-  const examDate = new Date('2026-10-15')
-  const today = new Date()
-  const daysLeft = Math.ceil((examDate.getTime() - today.getTime()) / 86400000)
-  if (daysLeft <= 0) return null
-  return (
-    <div className="rounded-2xl p-4 flex items-center justify-between"
-      style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.2)' }}>
-      <div>
-        <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Examen de ascenso PNP</div>
-        <div className="text-white font-bold">⏳ Faltan {daysLeft} días</div>
-        <div className="text-gray-500 text-xs mt-0.5">Fecha estimada: 15 de octubre 2026</div>
-      </div>
-      <div className="text-right">
-        <div className="text-4xl font-bold" style={{ color: '#FFD700' }}>{daysLeft}</div>
-        <div className="text-xs text-gray-600">días</div>
-      </div>
-    </div>
-  )
-})()}
+          {(() => {
+            const examDate = new Date('2026-10-15')
+            const today = new Date()
+            const daysLeft = Math.ceil((examDate.getTime() - today.getTime()) / 86400000)
+            if (daysLeft <= 0) return null
+            return (
+              <div className="rounded-2xl p-4 flex items-center justify-between"
+                style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.2)' }}>
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Examen de ascenso PNP</div>
+                  <div className="text-white font-bold">⏳ Faltan {daysLeft} días</div>
+                  <div className="text-gray-500 text-xs mt-0.5">Fecha estimada: 15 de octubre 2026</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-4xl font-bold" style={{ color: '#FFD700' }}>{daysLeft}</div>
+                  <div className="text-xs text-gray-600">días</div>
+                </div>
+              </div>
+            )
+          })()}
 
-{/* LINK HISTORIAL */}
-{!isNew && (
-  <Link href="/history"
-    className="block rounded-2xl p-4 transition-all hover:opacity-80"
-    style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff08' }}>
-    <div className="flex items-center justify-between">
-      <div>
-        <div className="text-white font-medium text-sm">📋 Ver historial completo</div>
-        <div className="text-gray-600 text-xs mt-0.5">Todos tus simulacros anteriores</div>
-      </div>
-      <div className="text-gray-500">→</div>
-    </div>
-  </Link>
-)}
-
-
-
+          {/* HISTORIAL */}
+          {!isNew && (
+            <Link href="/history"
+              className="block rounded-2xl p-4 transition-all hover:opacity-80"
+              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff08' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-white font-medium text-sm">📋 Ver historial completo</div>
+                  <div className="text-gray-600 text-xs mt-0.5">Todos tus simulacros anteriores</div>
+                </div>
+                <div className="text-gray-500">→</div>
+              </div>
+            </Link>
+          )}
 
           {/* PREMIUM */}
           {user?.planType === 'Free' && (
@@ -405,7 +440,7 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* STATS LATERALES — solo en pantallas grandes */}
+        {/* STATS LATERALES */}
         <SideStats stats={stats} latest={latest} />
       </div>
     </>
