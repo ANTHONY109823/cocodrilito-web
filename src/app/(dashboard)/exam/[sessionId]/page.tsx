@@ -202,9 +202,10 @@ export default function ExamPage() {
         </p>
 
         <div className="space-y-3">
-          {currentQ.options
-            .sort((a, b) => a.optionIndex - b.optionIndex)
-            .map((opt, i) => {
+        {currentQ.options
+  .sort((a, b) => a.optionIndex - b.optionIndex)
+  .slice(0, 4)
+  .map((opt, i) => {
               const isSelected = selectedOption === opt.id
               const letters = ['A', 'B', 'C', 'D']
               return (
