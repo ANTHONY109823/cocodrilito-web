@@ -238,28 +238,43 @@ export default function ExamPage() {
       </div>
 
       {/* FOOTER */}
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-600">
-          {answeredCount} de {session.totalQuestions} respondidas
-        </div>
-        {currentIdx === session.totalQuestions - 1 ? (
-          <button onClick={handleFinish} disabled={finishing}
-            className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
-            style={{
-              background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
-              color: '#000', boxShadow: `0 0 20px ${NEON}40`
-            }}>
-            {finishing ? 'Finalizando...' : 'Finalizar examen ✓'}
-          </button>
-        ) : (
-          <button
-            onClick={() => { setCurrentIdx(prev => prev + 1); setSelectedOption(null); setQuestionTime(0) }}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
-            style={{ backgroundColor: 'rgba(0,8,4,0.8)', color: '#6B7280', border: '1px solid #ffffff10' }}>
-            Siguiente →
-          </button>
-        )}
-      </div>
+   {/* FOOTER */}
+<div className="flex items-center justify-between gap-3">
+  <div className="flex items-center gap-3">
+    <button
+      onClick={() => { setCurrentIdx(prev => prev - 1); setSelectedOption(answers[session.questions[currentIdx - 1]?.id] || null); setQuestionTime(0) }}
+      disabled={currentIdx === 0}
+      className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+      style={{
+        backgroundColor: currentIdx === 0 ? 'rgba(0,5,2,0.3)' : 'rgba(0,8,4,0.8)',
+        color: currentIdx === 0 ? '#374151' : '#9CA3AF',
+        border: '1px solid #ffffff10',
+        cursor: currentIdx === 0 ? 'not-allowed' : 'pointer'
+      }}>
+      ← Anterior
+    </button>
+    <div className="text-xs text-gray-600">
+      {answeredCount} de {session.totalQuestions} respondidas
+    </div>
+  </div>
+  {currentIdx === session.totalQuestions - 1 ? (
+    <button onClick={handleFinish} disabled={finishing}
+      className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
+      style={{
+        background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
+        color: '#000', boxShadow: `0 0 20px ${NEON}40`
+      }}>
+      {finishing ? 'Finalizando...' : 'Finalizar examen ✓'}
+    </button>
+  ) : (
+    <button
+      onClick={() => { setCurrentIdx(prev => prev + 1); setSelectedOption(answers[session.questions[currentIdx + 1]?.id] || null); setQuestionTime(0) }}
+      className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+      style={{ backgroundColor: 'rgba(0,8,4,0.8)', color: '#9CA3AF', border: '1px solid #ffffff10' }}>
+      Siguiente →
+    </button>
+  )}
+</div>
     </div>
   )
 }
