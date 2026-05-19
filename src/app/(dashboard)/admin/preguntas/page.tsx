@@ -25,15 +25,15 @@ const NEON = '#00C87A'
 const NEON2 = '#4FC3F7'
 const RED = '#FF5252'
 const PURPLE = '#A855F7'
-const GOLD = '#FFD700'
 
 const CATEGORIES = [
-  { key: 'ALL', label: 'Todas', color: NEON },
-  { key: 'DOCTRINA', label: 'Doctrina', color: '#4FC3F7' },
-  { key: 'LEGISLACION', label: 'Legislación', color: '#A855F7' },
-  { key: 'PROCEDIMIENTOS', label: 'Procedimientos', color: '#FFD700' },
-  { key: 'DEONTOLOGIA', label: 'Deontología', color: '#FF7043' },
-  { key: 'CULTURA GENERAL', label: 'Cultura General', color: '#00E5A0' },
+  { key: 'DERECHOS HUMANOS',      label: 'Derechos Humanos',      color: '#4FC3F7' },
+  { key: 'LEGISLACION POLICIAL',  label: 'Legislación Policial',  color: '#A855F7' },
+  { key: 'LEY PNP',               label: 'Ley PNP',               color: '#FFD700' },
+  { key: 'LUCHA CORRUPCION',      label: 'Lucha Corrupción',      color: '#FF7043' },
+  { key: 'REGIMEN DISCIPLINARIO', label: 'Régimen Disciplinario', color: '#00E5A0' },
+  { key: 'FORMACION PROFESIONAL', label: 'Formación Profesional', color: '#F06292' },
+  { key: 'TRANSPARENCIA',         label: 'Transparencia',         color: '#FFB300' },
 ]
 
 const PAGE_SIZE = 50
@@ -46,25 +46,25 @@ export default function PreguntasPage() {
   const [exams, setExams] = useState<{ id: string; title: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [uploadingCat, setUploadingCat] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState('ALL')
+  const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0].key)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [showAddForm, setShowAddForm] = useState(false)
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const [qForm, setQForm] = useState({
     examId: '',
     questionText: '',
-    category: 'DOCTRINA',
+    category: CATEGORIES[0].key,
     yearValuation: 2025,
     orderIndex: 1,
     explanation: '',
     options: [
-      { optionText: '', isCorrect: true, optionIndex: 0 },
+      { optionText: '', isCorrect: true,  optionIndex: 0 },
       { optionText: '', isCorrect: false, optionIndex: 1 },
       { optionText: '', isCorrect: false, optionIndex: 2 },
       { optionText: '', isCorrect: false, optionIndex: 3 },
@@ -93,23 +93,24 @@ export default function PreguntasPage() {
     } catch { } finally { setLoading(false) }
   }
 
-  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploading(true)
+    setUploadingCat(category)
     try {
       const formData = new FormData()
       formData.append('file', file)
       const res = await apiClient.post('/admin/import/questions', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      setMsg({ text: `✅ ${res.data.imported || 0} preguntas importadas`, ok: true })
+      setMsg({ text: `✅ ${res.data.imported || 0} preguntas importadas en ${category}`, ok: true })
+      setTimeout(() => setMsg(null), 4000)
       loadData()
     } catch (err: any) {
       setMsg({ text: err.response?.data?.message || 'Error al subir archivo', ok: false })
     } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      setUploadingCat(null)
+      if (fileRefs.current[category]) fileRefs.current[category]!.value = ''
     }
   }
 
@@ -193,9 +194,8 @@ export default function PreguntasPage() {
     }
   }
 
-  // Filtros y paginación — todo en cliente
   const filtered = questions.filter(q => {
-    const matchCat = selectedCategory === 'ALL' || q.category === selectedCategory
+    const matchCat = q.category === selectedCategory
     const matchSearch = search === '' ||
       q.questionText.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
@@ -204,15 +204,13 @@ export default function PreguntasPage() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  // Contadores por categoría
   const counts = CATEGORIES.reduce((acc, cat) => {
-    acc[cat.key] = cat.key === 'ALL'
-      ? questions.length
-      : questions.filter(q => q.category === cat.key).length
+    acc[cat.key] = questions.filter(q => q.category === cat.key).length
     return acc
   }, {} as Record<string, number>)
 
   const letters = ['A', 'B', 'C', 'D']
+  const currentCat = CATEGORIES.find(c => c.key === selectedCategory)!
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -247,11 +245,9 @@ export default function PreguntasPage() {
                   <label className="block text-xs text-gray-500 mb-1.5">Categoría</label>
                   <select className="input-q" value={editingQuestion.category}
                     onChange={e => setEditingQuestion({ ...editingQuestion, category: e.target.value })}>
-                    <option>DOCTRINA</option>
-                    <option>LEGISLACION</option>
-                    <option>PROCEDIMIENTOS</option>
-                    <option>DEONTOLOGIA</option>
-                    <option>CULTURA GENERAL</option>
+                    {CATEGORIES.map(c => (
+                      <option key={c.key} value={c.key}>{c.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -274,7 +270,7 @@ export default function PreguntasPage() {
                             ...editingQuestion,
                             answerOptions: editingQuestion.answerOptions!.map((o, j) => ({ ...o, isCorrect: j === i }))
                           })}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-all"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
                           style={{
                             backgroundColor: opt.isCorrect ? NEON : '#ffffff10',
                             color: opt.isCorrect ? '#000' : '#6B7280',
@@ -311,8 +307,7 @@ export default function PreguntasPage() {
 
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-6 flex-wrap">
-        <Link href="/admin"
-          className="text-gray-500 hover:text-white text-sm transition-colors">
+        <Link href="/admin" className="text-gray-500 hover:text-white text-sm transition-colors">
           ← Panel Admin
         </Link>
         <div className="flex-1">
@@ -320,6 +315,11 @@ export default function PreguntasPage() {
           <p className="text-gray-500 text-sm mt-0.5">{questions.length} preguntas en total</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={handleDownloadTemplate}
+            className="px-3 py-2 rounded-xl text-xs font-medium"
+            style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
+            ⬇️ Plantilla CSV
+          </button>
           <button onClick={() => setShowAddForm(!showAddForm)}
             className="px-4 py-2 rounded-xl text-sm font-bold transition-all"
             style={{
@@ -332,7 +332,7 @@ export default function PreguntasPage() {
           {questions.length > 0 && (
             <button onClick={handleDeleteAll}
               className="px-4 py-2 rounded-xl text-sm font-medium"
-              style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>
+              style={{ backgroundColor: 'rgba(255,82,82,0.15)', color: '#FF5252', border: '1px solid #FF525230' }}>
               🗑️ Eliminar todo
             </button>
           )}
@@ -349,30 +349,6 @@ export default function PreguntasPage() {
           {msg.text}
         </div>
       )}
-
-      {/* CARGA CSV */}
-      <div className="rounded-2xl p-4 mb-4 flex items-center gap-4 flex-wrap"
-        style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${PURPLE}25` }}>
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-semibold text-sm">📤 Carga masiva CSV</p>
-          <p className="text-gray-500 text-xs mt-0.5">
-            Columnas: Pregunta, Categoria, Dificultad, Año, OpcionA, OpcionB, OpcionC, OpcionD, OpcionE, RespuestaCorrecta, Explicacion
-          </p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <button onClick={handleDownloadTemplate}
-            className="px-3 py-2 rounded-xl text-xs font-medium"
-            style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
-            ⬇️ Plantilla
-          </button>
-          <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-            className="px-3 py-2 rounded-xl text-xs font-bold"
-            style={{ background: `linear-gradient(135deg, ${PURPLE}, #7C3AED)`, color: '#fff', opacity: uploading ? 0.7 : 1 }}>
-            {uploading ? 'Subiendo...' : '📁 Subir CSV'}
-          </button>
-          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleCSVUpload} />
-        </div>
-      </div>
 
       {/* FORMULARIO AGREGAR */}
       {showAddForm && (
@@ -399,11 +375,9 @@ export default function PreguntasPage() {
                 <label className="block text-xs text-gray-500 mb-1.5">Categoría</label>
                 <select className="input-q" value={qForm.category}
                   onChange={e => setQForm({ ...qForm, category: e.target.value })}>
-                  <option>DOCTRINA</option>
-                  <option>LEGISLACION</option>
-                  <option>PROCEDIMIENTOS</option>
-                  <option>DEONTOLOGIA</option>
-                  <option>CULTURA GENERAL</option>
+                  {CATEGORIES.map(c => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -420,7 +394,7 @@ export default function PreguntasPage() {
                 <div key={i} className="flex items-center gap-2 mb-2">
                   <button type="button"
                     onClick={() => setQForm({ ...qForm, options: qForm.options.map((o, j) => ({ ...o, isCorrect: j === i })) })}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-all"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
                     style={{
                       backgroundColor: opt.isCorrect ? NEON : '#ffffff10',
                       color: opt.isCorrect ? '#000' : '#6B7280',
@@ -450,58 +424,88 @@ export default function PreguntasPage() {
         </div>
       )}
 
-      {/* FILTROS POR CATEGORÍA */}
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {CATEGORIES.map(cat => (
-          <button key={cat.key}
-            onClick={() => { setSelectedCategory(cat.key); setPage(1) }}
-            className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5"
-            style={{
-              backgroundColor: selectedCategory === cat.key ? `${cat.color}20` : 'rgba(0,5,2,0.5)',
-              color: selectedCategory === cat.key ? cat.color : '#6B7280',
-              border: `1px solid ${selectedCategory === cat.key ? cat.color : '#ffffff10'}`
-            }}>
-            {cat.label}
-            <span className="px-1.5 py-0.5 rounded-full text-xs"
+      {/* TABS POR CATEGORÍA CON BOTÓN CSV PROPIO */}
+      <div className="grid grid-cols-1 gap-2 mb-4">
+        {CATEGORIES.map(cat => {
+          const isSelected = selectedCategory === cat.key
+          const count = counts[cat.key] || 0
+          const isUploading = uploadingCat === cat.key
+          return (
+            <div key={cat.key}
+              className="rounded-xl flex items-center justify-between gap-3 px-4 py-3 cursor-pointer transition-all"
               style={{
-                backgroundColor: selectedCategory === cat.key ? `${cat.color}30` : '#ffffff08',
-                color: selectedCategory === cat.key ? cat.color : '#4B5563'
-              }}>
-              {counts[cat.key]}
-            </span>
-          </button>
-        ))}
+                background: isSelected ? `${cat.color}12` : 'rgba(0,5,2,0.6)',
+                border: `1px solid ${isSelected ? cat.color : '#ffffff10'}`,
+                boxShadow: isSelected ? `0 0 15px ${cat.color}20` : 'none'
+              }}
+              onClick={() => { setSelectedCategory(cat.key); setPage(1); setSearch('') }}>
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: cat.color }} />
+                <span className="font-medium text-sm"
+                  style={{ color: isSelected ? cat.color : '#9CA3AF' }}>
+                  {cat.label}
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: isSelected ? `${cat.color}20` : '#ffffff08',
+                    color: isSelected ? cat.color : '#4B5563'
+                  }}>
+                  {count} preguntas
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0"
+                onClick={e => e.stopPropagation()}>
+                <button
+                  onClick={() => fileRefs.current[cat.key]?.click()}
+                  disabled={isUploading}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                  style={{
+                    background: `linear-gradient(135deg, ${cat.color}cc, ${cat.color}88)`,
+                    color: '#000',
+                    opacity: isUploading ? 0.6 : 1
+                  }}>
+                  {isUploading ? '⏳ Subiendo...' : '📁 Subir CSV'}
+                </button>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  ref={el => { fileRefs.current[cat.key] = el }}
+                  onChange={e => handleCSVUpload(e, cat.key)}
+                />
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* BUSCADOR */}
       <div className="mb-4">
-        <input className="input-q" placeholder="🔍 Buscar por texto de pregunta..."
+        <input className="input-q"
+          placeholder={`🔍 Buscar en ${currentCat.label}...`}
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1) }} />
       </div>
 
       {/* LISTA DE PREGUNTAS */}
       <div className="rounded-2xl overflow-hidden"
-        style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
+        style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${currentCat.color}20` }}>
         <div className="flex items-center justify-between px-5 py-3"
-          style={{ borderBottom: '1px solid #ffffff08' }}>
-          <p className="text-gray-400 text-xs">
-            Mostrando {paginated.length} de {filtered.length} preguntas
-            {search && ` · búsqueda: "${search}"`}
+          style={{ borderBottom: `1px solid ${currentCat.color}15` }}>
+          <p className="text-xs font-medium" style={{ color: currentCat.color }}>
+            {currentCat.label} · {filtered.length} pregunta{filtered.length !== 1 ? 's' : ''}
+            {search && ` · "${search}"`}
           </p>
           {filtered.length > PAGE_SIZE && (
             <div className="flex items-center gap-2">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 className="px-2 py-1 rounded-lg text-xs"
-                style={{ backgroundColor: '#ffffff08', color: page === 1 ? '#4B5563' : '#fff' }}>
-                ←
-              </button>
+                style={{ backgroundColor: '#ffffff08', color: page === 1 ? '#4B5563' : '#fff' }}>←</button>
               <span className="text-xs text-gray-500">{page} / {totalPages}</span>
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                 className="px-2 py-1 rounded-lg text-xs"
-                style={{ backgroundColor: '#ffffff08', color: page === totalPages ? '#4B5563' : '#fff' }}>
-                →
-              </button>
+                style={{ backgroundColor: '#ffffff08', color: page === totalPages ? '#4B5563' : '#fff' }}>→</button>
             </div>
           )}
         </div>
@@ -511,42 +515,39 @@ export default function PreguntasPage() {
         ) : paginated.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-4xl mb-3">📭</div>
-            <p className="text-gray-500 text-sm">
-              {search ? `Sin resultados para "${search}"` : 'No hay preguntas en esta categoría'}
+            <p className="text-gray-500 text-sm mb-4">
+              {search ? `Sin resultados para "${search}"` : `No hay preguntas en ${currentCat.label}`}
             </p>
+            {!search && (
+              <button
+                onClick={() => fileRefs.current[currentCat.key]?.click()}
+                className="inline-flex px-5 py-2.5 rounded-xl text-sm font-bold"
+                style={{ background: `linear-gradient(135deg, ${currentCat.color}cc, ${currentCat.color}88)`, color: '#000' }}>
+                📁 Subir CSV de {currentCat.label}
+              </button>
+            )}
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: '#ffffff08' }}>
+          <div className="divide-y" style={{ borderColor: '#ffffff05' }}>
             {paginated.map((q, i) => {
-              const catConfig = CATEGORIES.find(c => c.key === q.category)
               const globalIdx = (page - 1) * PAGE_SIZE + i + 1
               return (
-                <div key={q.id} className="px-5 py-3 flex items-start gap-3 hover:bg-white/[0.02] transition-colors">
+                <div key={q.id} className="px-5 py-4 flex items-start gap-3 hover:bg-white/[0.02] transition-colors">
                   <span className="text-xs text-gray-600 w-8 shrink-0 pt-0.5 text-right">{globalIdx}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={{
-                          backgroundColor: `${catConfig?.color || NEON}15`,
-                          color: catConfig?.color || NEON
-                        }}>
-                        {q.category}
-                      </span>
-                      <span className="text-xs text-gray-600">{q.yearValuation}</span>
-                    </div>
-                    <p className="text-gray-200 text-sm leading-relaxed">{q.questionText}</p>
+                    <p className="text-gray-100 text-sm leading-relaxed mb-2">{q.questionText}</p>
                     {q.answerOptions && (
-                      <div className="mt-2 grid grid-cols-2 gap-1">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                         {q.answerOptions
                           .sort((a, b) => a.optionIndex - b.optionIndex)
                           .map((opt, oi) => (
                             <div key={oi} className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold shrink-0"
-                                style={{ color: opt.isCorrect ? NEON : '#4B5563' }}>
+                              <span className="text-xs font-bold shrink-0 w-5"
+                                style={{ color: opt.isCorrect ? currentCat.color : '#4B5563' }}>
                                 {letters[oi]}.
                               </span>
                               <span className="text-xs truncate"
-                                style={{ color: opt.isCorrect ? NEON : '#6B7280' }}>
+                                style={{ color: opt.isCorrect ? currentCat.color : '#6B7280' }}>
                                 {opt.optionText}
                               </span>
                             </div>
@@ -556,15 +557,11 @@ export default function PreguntasPage() {
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     <button onClick={() => handleEditQuestion(q)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
-                      style={{ backgroundColor: `${NEON2}15`, color: NEON2 }}>
-                      ✏️
-                    </button>
+                      className="px-2.5 py-1.5 rounded-lg text-xs transition-all hover:opacity-80"
+                      style={{ backgroundColor: `${NEON2}15`, color: NEON2 }}>✏️</button>
                     <button onClick={() => handleDeleteQuestion(q.id)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
-                      style={{ backgroundColor: `${RED}15`, color: RED }}>
-                      🗑️
-                    </button>
+                      className="px-2.5 py-1.5 rounded-lg text-xs transition-all hover:opacity-80"
+                      style={{ backgroundColor: `${RED}15`, color: RED }}>🗑️</button>
                   </div>
                 </div>
               )
@@ -575,30 +572,22 @@ export default function PreguntasPage() {
         {/* PAGINACIÓN INFERIOR */}
         {filtered.length > PAGE_SIZE && (
           <div className="flex items-center justify-center gap-2 px-5 py-3"
-            style={{ borderTop: '1px solid #ffffff08' }}>
+            style={{ borderTop: `1px solid ${currentCat.color}15` }}>
             <button onClick={() => setPage(1)} disabled={page === 1}
               className="px-3 py-1.5 rounded-lg text-xs"
-              style={{ backgroundColor: '#ffffff08', color: page === 1 ? '#4B5563' : '#fff' }}>
-              ««
-            </button>
+              style={{ backgroundColor: '#ffffff08', color: page === 1 ? '#4B5563' : '#fff' }}>««</button>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
               className="px-3 py-1.5 rounded-lg text-xs"
-              style={{ backgroundColor: '#ffffff08', color: page === 1 ? '#4B5563' : '#fff' }}>
-              ← Anterior
-            </button>
+              style={{ backgroundColor: '#ffffff08', color: page === 1 ? '#4B5563' : '#fff' }}>← Anterior</button>
             <span className="text-xs text-gray-500 px-2">
               Página {page} de {totalPages} · {filtered.length} preguntas
             </span>
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
               className="px-3 py-1.5 rounded-lg text-xs"
-              style={{ backgroundColor: '#ffffff08', color: page === totalPages ? '#4B5563' : '#fff' }}>
-              Siguiente →
-            </button>
+              style={{ backgroundColor: '#ffffff08', color: page === totalPages ? '#4B5563' : '#fff' }}>Siguiente →</button>
             <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
               className="px-3 py-1.5 rounded-lg text-xs"
-              style={{ backgroundColor: '#ffffff08', color: page === totalPages ? '#4B5563' : '#fff' }}>
-              »»
-            </button>
+              style={{ backgroundColor: '#ffffff08', color: page === totalPages ? '#4B5563' : '#fff' }}>»»</button>
           </div>
         )}
       </div>
