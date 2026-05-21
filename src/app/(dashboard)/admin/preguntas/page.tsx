@@ -153,7 +153,7 @@ export default function PreguntasPage() {
   }
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    if (!confirm(`¿Eliminar la categoría "${name}"? Las preguntas asociadas no se eliminan.`)) return
+    if (!confirm(`¿Eliminar la categoría "${name}"? También se eliminarán TODAS sus preguntas.`)) return
     try {
       await apiClient.delete(`/categories/${id}`)
       setCategories(prev => prev.filter(c => c.id !== id))

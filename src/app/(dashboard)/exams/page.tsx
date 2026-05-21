@@ -51,7 +51,7 @@ export default function ExamsPage() {
       const [examsRes, catsRes, qRes] = await Promise.all([
         apiClient.get('/exams/list'),
         apiClient.get('/categories'),
-        apiClient.get('/admin/Questions'),
+        apiClient.get('/admin/Questions?pageSize=500'),
       ])
       const examsData = Array.isArray(examsRes.data) ? examsRes.data : examsRes.data?.items || []
       const catsData = Array.isArray(catsRes.data) ? catsRes.data : []
