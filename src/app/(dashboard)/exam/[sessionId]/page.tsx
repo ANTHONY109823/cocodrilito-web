@@ -4,6 +4,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import apiClient from '@/lib/api/client'
+import {
+  getEffectiveQuestionCount,
+  loadExamSessionMeta,
+  normalizeExamSessionPayload,
+} from '@/lib/examSession'
 
 const NEON = '#00C87A'
 const RED = '#FF5252'
@@ -25,6 +30,7 @@ interface Question {
 interface SessionData {
   sessionId: string
   examTitle: string
+  practiceCategory: string | null
   totalQuestions: number
   timeLimitSeconds: number
   questions: Question[]
@@ -73,27 +79,48 @@ export default function ExamPage() {
     try {
       const res = await apiClient.get(`/exams/sessions/${sessionId}`)
       const data = res.data
-      // Normalizar estructura
+      const meta = normalizeExamSessionPayload(data)
+      const cached = loadExamSessionMeta(sessionId)
+
+      const practiceCategory = meta.practiceCategory ?? cached?.practiceCategory ?? null
+      const questionList = (data.questions || data.Questions || []).map((q: {
+        id: string
+        questionText: string
+        orderIndex: number
+        options?: AnswerOption[]
+        answerOptions?: AnswerOption[]
+      }) => ({
+        id: q.id,
+        questionText: q.questionText,
+        orderIndex: q.orderIndex,
+        options: (q.options || q.answerOptions || []).map((o: AnswerOption) => ({
+          id: o.id,
+          optionText: o.optionText,
+          optionIndex: o.optionIndex,
+        })),
+      }))
+
+      const totalQuestions =
+        meta.totalQuestions > 0
+          ? meta.totalQuestions
+          : cached?.totalQuestions ?? questionList.length
+
+      const examTitle =
+        practiceCategory ??
+        (meta.examTitle || cached?.examTitle || 'Simulacro')
+
       setSession({
-        sessionId: data.sessionId,
-        examTitle: data.examTitle,
-        totalQuestions: data.questions?.length || 0,
-        timeLimitSeconds: data.timeLimitSeconds,
-        questions: (data.questions || []).map((q: any) => ({
-          id: q.id,
-          questionText: q.questionText,
-          orderIndex: q.orderIndex,
-          options: (q.options || q.answerOptions || []).map((o: any) => ({
-            id: o.id,
-            optionText: o.optionText,
-            optionIndex: o.optionIndex
-          }))
-        }))
+        sessionId: data.sessionId ?? data.SessionId ?? sessionId,
+        examTitle,
+        practiceCategory,
+        totalQuestions,
+        timeLimitSeconds: data.timeLimitSeconds ?? data.TimeLimitSeconds ?? 3600,
+        questions: questionList,
       })
-      // Calcular tiempo restante basado en cuándo empezó
-      const startedAt = new Date(data.startedAt).getTime()
+      const startedAt = new Date(data.startedAt ?? data.StartedAt).getTime()
       const elapsed = Math.floor((Date.now() - startedAt) / 1000)
-      const remaining = Math.max(0, data.timeLimitSeconds - elapsed)
+      const limit = data.timeLimitSeconds ?? data.TimeLimitSeconds ?? 3600
+      const remaining = Math.max(0, limit - elapsed)
       setTimeLeft(remaining)
     } catch {
       router.push('/exams')
@@ -115,7 +142,8 @@ export default function ExamPage() {
       })
     } catch { }
     setTimeout(() => {
-      if (currentIdx < session.totalQuestions - 1) {
+      const total = getEffectiveQuestionCount(session.totalQuestions, session.questions.length)
+      if (currentIdx < total - 1) {
         setCurrentIdx(prev => prev + 1)
         setSelectedOption(null)
         setQuestionTime(0)
@@ -141,7 +169,8 @@ export default function ExamPage() {
   }
 
   const timerColor = timeLeft < 60 ? RED : timeLeft < 300 ? GOLD : NEON
-  const progress = session ? (currentIdx / session.totalQuestions) * 100 : 0
+  const total = session?.totalQuestions || 1
+  const progress = session ? ((currentIdx + 1) / total) * 100 : 0
 
   if (loading || !session) {
     return (
@@ -154,6 +183,10 @@ export default function ExamPage() {
     )
   }
 
+  const effectiveTotal = getEffectiveQuestionCount(
+    session.totalQuestions,
+    session.questions.length
+  )
   const currentQ = session.questions[currentIdx]
   const answeredCount = Object.keys(answers).length
 
@@ -172,7 +205,7 @@ export default function ExamPage() {
         <div>
           <div className="text-white font-bold text-sm">{session.examTitle}</div>
           <div className="text-gray-500 text-xs mt-0.5">
-            Pregunta {currentIdx + 1} de {session.totalQuestions}
+            Pregunta {currentIdx + 1} de {effectiveTotal}
           </div>
         </div>
         <div className="text-center">
@@ -254,10 +287,10 @@ export default function ExamPage() {
       ← Anterior
     </button>
     <div className="text-xs text-gray-600">
-      {answeredCount} de {session.totalQuestions} respondidas
+      {answeredCount} de {effectiveTotal} respondidas
     </div>
   </div>
-  {currentIdx === session.totalQuestions - 1 ? (
+  {currentIdx === effectiveTotal - 1 ? (
     <button onClick={handleFinish} disabled={finishing}
       className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
       style={{

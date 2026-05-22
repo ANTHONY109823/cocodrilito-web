@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api/client'
 import { examsApi } from '@/lib/api/exams'
+import { saveExamSessionMeta } from '@/lib/examSession'
 import Link from 'next/link'
 
 const NEON = '#00C87A'
@@ -92,6 +93,7 @@ export default function ExamsPage() {
         setError('El servidor no devolvió un ID de sesión. ¿Migración pendiente en Railway?')
         return
       }
+      saveExamSessionMeta(sessionId, res.data ?? {}, options?.category)
       router.push(`/exam/${sessionId}`)
     } catch (err: unknown) {
       const ax = err as {
