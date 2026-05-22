@@ -25,10 +25,17 @@ export default function UploadPage() {
       const res = await apiClient.post('/admin/import/questions', formData)
       setResult(res.data)
     } catch (err: any) {
+      const status = err.response?.status
+      const msg =
+        err.response?.data?.errors?.[0]
+        || err.response?.data?.message
+        || (status === 415 ? 'Error 415: multipart incorrecto. Despliega la última versión del frontend.' : null)
+        || err.message
+        || 'Error al importar'
       setResult({
         imported: 0,
         totalErrors: 1,
-        errors: [err.response?.data?.message || 'Error al importar'],
+        errors: [`${status ? `[${status}] ` : ''}${msg}`],
         message: 'Error'
       })
     } finally {

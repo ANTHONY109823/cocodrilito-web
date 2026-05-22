@@ -137,8 +137,14 @@ export default function PreguntasPage() {
       setTimeout(() => setMsg(null), totalErrors > 0 || imported === 0 ? 12000 : 4000)
       loadAll()
     } catch (err: any) {
-      const detail = err.response?.data?.errors?.[0] || err.response?.data?.message || 'Error al subir'
-      setMsg({ text: detail, ok: false })
+      const status = err.response?.status
+      const detail =
+        err.response?.data?.errors?.[0]
+        || err.response?.data?.message
+        || (status === 415 ? 'Error 415: el archivo no se envió como multipart. Actualiza el frontend en Vercel.' : null)
+        || err.message
+        || 'Error al subir'
+      setMsg({ text: `${status ? `[${status}] ` : ''}${detail}`, ok: false })
     } finally {
       setUploadingCat(null)
       if (fileRefs.current[category]) fileRefs.current[category]!.value = ''

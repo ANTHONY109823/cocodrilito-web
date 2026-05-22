@@ -2,12 +2,19 @@ import axios from 'axios'
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  headers: { 'Content-Type': 'application/json' },
 })
 
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
+
+  // FormData debe llevar boundary automático; application/json provoca 415
+  if (config.data instanceof FormData) {
+    config.headers.delete('Content-Type')
+  } else if (!config.headers['Content-Type']) {
+    config.headers['Content-Type'] = 'application/json'
+  }
+
   return config
 })
 
