@@ -22,9 +22,7 @@ export default function UploadPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await apiClient.post('/admin/import/questions', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      const res = await apiClient.post('/admin/import/questions', formData)
       setResult(res.data)
     } catch (err: any) {
       setResult({

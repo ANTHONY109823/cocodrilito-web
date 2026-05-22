@@ -111,17 +111,34 @@ export default function PreguntasPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingCat(category)
+    setMsg(null)
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await apiClient.post('/admin/import/questions', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      setMsg({ text: `✅ ${res.data.imported || 0} preguntas importadas en ${category}`, ok: true })
-      setTimeout(() => setMsg(null), 4000)
+      const res = await apiClient.post(
+        `/admin/import/questions?categoria=${encodeURIComponent(category)}`,
+        formData
+      )
+      const imported = res.data.imported ?? 0
+      const totalErrors = res.data.totalErrors ?? 0
+      const firstErrors = (res.data.errors as string[] | undefined)?.slice(0, 3).join(' · ') ?? ''
+
+      if (imported === 0) {
+        setMsg({
+          text: `⚠️ 0 importadas en ${category}. ${res.data.message || ''}${firstErrors ? ` ${firstErrors}` : ''}`,
+          ok: false
+        })
+      } else {
+        setMsg({
+          text: `✅ ${imported} preguntas importadas en ${category}${totalErrors > 0 ? ` (${totalErrors} filas con error)` : ''}`,
+          ok: true
+        })
+      }
+      setTimeout(() => setMsg(null), totalErrors > 0 || imported === 0 ? 12000 : 4000)
       loadAll()
     } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error al subir', ok: false })
+      const detail = err.response?.data?.errors?.[0] || err.response?.data?.message || 'Error al subir'
+      setMsg({ text: detail, ok: false })
     } finally {
       setUploadingCat(null)
       if (fileRefs.current[category]) fileRefs.current[category]!.value = ''
