@@ -19,6 +19,7 @@ interface Stats {
   totalSessions: number
   totalCorrect: number
   totalIncorrect: number
+  totalUnanswered: number
   totalQuestions: number
 }
 
@@ -26,6 +27,8 @@ interface LatestSession {
   sessionId: string
   score: number
   correctAnswers: number
+  incorrectAnswers?: number
+  unansweredCount?: number
   totalQuestions: number
   timeSpentSeconds: number
   finishedAt: string
@@ -85,6 +88,8 @@ function SideStats({ stats, latest }: { stats: Stats | null, latest: LatestSessi
   const items = [
     { label: 'Simulacros', value: stats?.totalSessions || 0, color: '#00C87A', icon: '📝' },
     { label: 'Correctas', value: stats?.totalCorrect || 0, color: '#69F0AE', icon: '✅' },
+    { label: 'Incorrectas', value: stats?.totalIncorrect || 0, color: '#FF5252', icon: '✗' },
+    { label: 'Sin responder', value: stats?.totalUnanswered || 0, color: '#9CA3AF', icon: '⏳' },
     { label: 'Último score', value: latest ? `${latest.score}%` : '—', color: latest?.passed ? '#00E5A0' : '#FF5252', icon: '🎯' },
   ]
   return (
@@ -212,6 +217,24 @@ export default function DashboardPage() {
             </Link>
           </div>
 
+          {/* RESUMEN GLOBAL (visible en móvil; lateral en XL) */}
+          {stats && !loading && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 xl:hidden">
+              {[
+                { label: 'Simulacros', value: stats.totalSessions, color: '#00C87A' },
+                { label: 'Correctas', value: stats.totalCorrect, color: '#69F0AE' },
+                { label: 'Incorrectas', value: stats.totalIncorrect, color: '#FF5252' },
+                { label: 'Sin responder', value: stats.totalUnanswered, color: '#9CA3AF' },
+              ].map((item, i) => (
+                <div key={i} className="rounded-xl p-3 text-center"
+                  style={{ background: 'rgba(0,10,5,0.7)', border: `1px solid ${item.color}25` }}>
+                  <div className="text-xl font-bold" style={{ color: item.color }}>{item.value}</div>
+                  <div className="text-gray-500 text-xs mt-0.5">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* CTA NUEVO USUARIO */}
           {isNew && (
             <div className="relative overflow-hidden rounded-2xl p-6"
@@ -290,10 +313,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 {[
                   { label: 'Correctas', value: latest.correctAnswers, color: '#00E5A0', bg: 'rgba(0,229,160,0.06)', border: '#00E5A020' },
-                  { label: 'Incorrectas', value: latest.totalQuestions - latest.correctAnswers, color: '#FF5252', bg: 'rgba(255,82,82,0.06)', border: '#FF525220' },
+                  { label: 'Incorrectas', value: latest.incorrectAnswers ?? Math.max(0, latest.totalQuestions - latest.correctAnswers - (latest.unansweredCount ?? 0)), color: '#FF5252', bg: 'rgba(255,82,82,0.06)', border: '#FF525220' },
+                  { label: 'Sin responder', value: latest.unansweredCount ?? 0, color: '#9CA3AF', bg: 'rgba(156,163,175,0.06)', border: '#9CA3AF20' },
                   { label: 'Tiempo', value: formatTime(latest.timeSpentSeconds), color: '#4FC3F7', bg: 'rgba(79,195,247,0.06)', border: '#4FC3F720' },
                 ].map((item, i) => (
                   <div key={i} className="rounded-xl p-4 text-center"
