@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
+import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
 
 interface Question {
   id: string
@@ -90,7 +91,7 @@ export default function PreguntasPage() {
     setLoading(true)
     try {
       const [qRes, eRes, cRes] = await Promise.all([
-        apiClient.get('/admin/Questions'),
+        apiClient.get(`/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}`),
         apiClient.get('/exams/list'),
         apiClient.get('/categories'),
       ])
@@ -155,13 +156,18 @@ export default function PreguntasPage() {
   const handleDeleteCategory = async (id: string, name: string) => {
     if (!confirm(`¿Eliminar la categoría "${name}"? También se eliminarán TODAS sus preguntas.`)) return
     try {
-      await apiClient.delete(`/categories/${id}`)
+      const res = await apiClient.delete(`/categories/${id}`)
       setCategories(prev => prev.filter(c => c.id !== id))
+      await loadAll()
       if (selectedCategory === name && categories.length > 1) {
         const remaining = categories.filter(c => c.id !== id)
         setSelectedCategory(remaining[0]?.name || '')
       }
-      setMsg({ text: `🗑️ Categoría eliminada`, ok: false })
+      const deletedCount = res.data?.deletedQuestions as number | undefined
+      setMsg({
+        text: `🗑️ Categoría eliminada${deletedCount != null ? ` (${deletedCount} preguntas)` : ''}`,
+        ok: false
+      })
       setTimeout(() => setMsg(null), 2000)
     } catch (err: any) {
       setMsg({ text: err.response?.data?.message || 'Error', ok: false })
@@ -356,7 +362,9 @@ export default function PreguntasPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-xl font-semibold text-white">Banco de preguntas</h1>
-          <p className="text-gray-600 text-xs mt-0.5">{questions.length} preguntas · {categories.length} categorías</p>
+          <p className="text-gray-600 text-xs mt-0.5">
+            {questions.length} preguntas cargadas (máx. {ADMIN_QUESTIONS_PAGE_SIZE}) · {categories.length} categorías
+          </p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <button onClick={handleDownloadTemplate}

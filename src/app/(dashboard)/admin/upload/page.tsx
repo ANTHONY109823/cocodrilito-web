@@ -54,7 +54,7 @@ export default function UploadPage() {
         </button>
         <h1 className="text-2xl font-bold text-white">Carga masiva de preguntas 📤</h1>
         <p className="text-gray-400 text-sm mt-1">
-          Importa hasta 1000 preguntas de una sola vez desde un archivo CSV
+          Hasta 400 preguntas por CSV (por categoría). El banco admite hasta 1000 preguntas en total.
         </p>
       </div>
 

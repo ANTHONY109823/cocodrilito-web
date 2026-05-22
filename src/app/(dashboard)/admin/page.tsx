@@ -589,7 +589,7 @@ export default function AdminPage() {
           <div className="text-6xl mb-5">📝</div>
           <h2 className="text-white font-bold text-xl mb-2">Banco de preguntas</h2>
           <p className="text-gray-500 text-sm mb-8">
-            Gestiona las preguntas por categoría con filtros, búsqueda y paginación para hasta 1000 preguntas.
+            Gestiona hasta 1000 preguntas en el banco (300+ por categoría), con filtros, búsqueda y paginación.
           </p>
           <Link href="/admin/preguntas"
             className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-base transition-all hover:scale-105"

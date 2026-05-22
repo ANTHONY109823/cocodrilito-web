@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api/client'
+import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 
@@ -51,7 +52,7 @@ export default function ExamsPage() {
       const [examsRes, catsRes, qRes] = await Promise.all([
         apiClient.get('/exams/list'),
         apiClient.get('/categories'),
-        apiClient.get('/admin/Questions?pageSize=500'),
+        apiClient.get(`/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}`),
       ])
       const examsData = Array.isArray(examsRes.data) ? examsRes.data : examsRes.data?.items || []
       const catsData = Array.isArray(catsRes.data) ? catsRes.data : []
