@@ -1,8 +1,15 @@
 import apiClient from './client'
 
 export const examsApi = {
-  start: (examId: string) =>
-    apiClient.post(`/exams/${examId}/start`),
+  start: (examId: string, params?: { mode?: string; category?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.mode) qs.set('mode', params.mode)
+    if (params?.category) qs.set('category', params.category)
+    const query = qs.toString()
+    return apiClient.post(`/exams/${examId}/start${query ? `?${query}` : ''}`)
+  },
+  getQuestionCounts: () =>
+    apiClient.get('/exams/question-counts'),
   submitAnswer: (sessionId: string, data: {
     questionId: string
     selectedOptionId: string | null
