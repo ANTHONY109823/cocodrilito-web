@@ -3,6 +3,8 @@
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
+import { getApiErrorMessage } from '@/lib/api/errors'
+import axios from 'axios'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
@@ -33,11 +35,18 @@ function LoginForm() {
     setError('')
     setLoading(true)
     try {
-      const res = await authApi.login({ email, password })
+      const res = await authApi.login({
+        email: email.trim(),
+        password,
+      })
       setUser(normalizeUser(res.data as unknown as Record<string, unknown>))
       router.push('/dashboard')
-    } catch {
-      setError('Credenciales incorrectas. Verifica tu email y contraseña.')
+    } catch (err: unknown) {
+      if (!axios.isAxiosError(err) || !err.response) {
+        setError('No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde.')
+        return
+      }
+      setError(getApiErrorMessage(err, 'Credenciales incorrectas. Verifica tu email y contraseña.'))
     } finally {
       setLoading(false)
     }
