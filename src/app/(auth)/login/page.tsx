@@ -2,23 +2,39 @@
 
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import axios from 'axios'
+import {
+  CheckCircle2,
+  Clock,
+  Lock,
+  Mail,
+  Shield,
+  Trophy,
+  Users,
+} from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import axios from 'axios'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
-import Link from 'next/link'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import { NEON } from '@/lib/constants/theme'
+import { Button, Input } from '@/components/ui'
+
+const FEATURES = [
+  { icon: CheckCircle2, text: '+10,000 preguntas actualizadas' },
+  { icon: Clock, text: 'Simulacros cronometrados' },
+  { icon: Trophy, text: 'Ranking y gamificación' },
+] as const
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { setUser } = useAuthStore()
 
-  const tenantSlug = useMemo(() => {
-    return searchParams.get('academia') || searchParams.get('agencia') || null
-  }, [searchParams])
+  const tenantSlug = useMemo(
+    () => searchParams.get('academia') || searchParams.get('agencia') || null,
+    [searchParams]
+  )
 
   const { config, loading: configLoading } = useTenantConfig(tenantSlug)
 
@@ -28,17 +44,13 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
 
   const brandName = config?.name || 'Cocodrilito'
-  const welcomeMessage = config?.welcomeMessage || 'Simulador de exámenes PNP'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const res = await authApi.login({
-        email: email.trim(),
-        password,
-      })
+      const res = await authApi.login({ email: email.trim(), password })
       setUser(normalizeUser(res.data as unknown as Record<string, unknown>))
       router.push('/dashboard')
     } catch (err: unknown) {
@@ -52,78 +64,146 @@ function LoginForm() {
     }
   }
 
+  const formDisabled = config !== null && !config.isActive
+
   return (
     <ThemeProvider config={config}>
-      <div className="min-h-screen flex items-center justify-center px-4"
-        style={{ backgroundColor: '#0A0F0D' }}>
-        <style>{`
-          @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-          .fade-in { animation: fadeIn 0.4s ease forwards; }
-          .input-custom {
-            width:100%; padding:12px 16px; border-radius:12px;
-            background:rgba(0,8,4,0.8); border:1px solid #ffffff15;
-            color:#fff; font-size:14px; outline:none; transition:border 0.2s;
-          }
-          .input-custom:focus { border-color:${NEON}60; }
-          .input-custom::placeholder { color:#4B5563; }
-        `}</style>
-
-        <div className="w-full max-w-sm fade-in">
-          <div className="text-center mb-8">
-            {config?.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={config.logoUrl} alt={brandName} className="h-16 mx-auto mb-3 object-contain" />
-            ) : (
-              <div className="text-5xl mb-3">🐊</div>
-            )}
-            <h1 className="text-2xl font-bold text-white">{brandName}</h1>
-            <p className="text-gray-500 text-sm mt-1">
-              {configLoading ? 'Cargando...' : welcomeMessage}
+      <div className="min-h-screen flex bg-[#0A0F0D]">
+        {/* Panel izquierdo — solo desktop */}
+        <aside
+          className="relative hidden lg:flex lg:w-[60%] flex-col justify-between overflow-hidden px-12 xl:px-16 py-12"
+          style={{
+            background: 'linear-gradient(180deg, #0A0F0D 0%, #0F1F14 50%, #0A0F0D 100%)',
+          }}
+        >
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.35]"
+            style={{
+              backgroundImage: 'radial-gradient(#4A7C59 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}
+            aria-hidden
+          />
+          <div className="relative z-10">
+            <div className="flex h-[120px] w-[120px] items-center justify-center rounded-2xl border border-[#1E3328] bg-[#111A14]/80 text-6xl shadow-lg shadow-[#4A7C59]/10">
+              {config?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={config.logoUrl} alt="" className="h-20 w-20 object-contain" />
+              ) : (
+                <Shield className="h-16 w-16 text-[#4A7C59]" strokeWidth={1.25} />
+              )}
+            </div>
+            <h1 className="mt-10 max-w-lg text-4xl xl:text-5xl font-extrabold text-white leading-tight">
+              Prepárate para ser Policía
+            </h1>
+            <p className="mt-4 max-w-md text-lg text-[#A8BFB0]">
+              La plataforma #1 de simulacros PNP en el Perú
             </p>
-            {config && !config.isActive && (
-              <p className="text-sm mt-2 text-red-400">Esta institución no está activa actualmente.</p>
-            )}
+            <ul className="mt-10 space-y-4">
+              {FEATURES.map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-3 text-[#A8BFB0]">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#4A7C59]/15 text-[#4A7C59]">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="text-base">{text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-
-          <div className="rounded-2xl p-6"
-            style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff10' }}>
-            <h2 className="text-white font-bold text-lg mb-5">Iniciar sesión</h2>
-
-            {error && (
-              <div className="rounded-xl px-4 py-3 mb-4 text-sm"
-                style={{ backgroundColor: 'rgba(255,82,82,0.1)', border: '1px solid #FF525230', color: '#FF5252' }}>
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1.5">Correo electrónico</label>
-                <input className="input-custom" type="email" placeholder="juan@gmail.com"
-                  value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1.5">Contraseña</label>
-                <input className="input-custom" type="password" placeholder="Tu contraseña"
-                  value={password} onChange={(e) => setPassword(e.target.value)} required />
-              </div>
-              <button type="submit" disabled={loading || (config !== null && !config.isActive)}
-                className="w-full py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
-                style={{
-                  background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
-                  color: '#000', opacity: loading ? 0.7 : 1,
-                  boxShadow: `0 0 20px ${NEON}40`,
-                }}>
-                {loading ? 'Ingresando...' : 'Ingresar'}
-              </button>
-            </form>
-          </div>
-
-          <p className="text-center text-gray-600 text-sm mt-4">
-            ¿No tienes cuenta?{' '}
-            <Link href="/register" style={{ color: NEON }}>Regístrate gratis</Link>
+          <p className="relative z-10 flex items-center gap-2 text-sm text-[#6B8A75]">
+            <Users className="h-4 w-4 text-[#4A7C59]" />
+            Miles de policías ya aprobaron con Cocodrilito
           </p>
-        </div>
+        </aside>
+
+        {/* Panel derecho — formulario */}
+        <main className="flex flex-1 flex-col justify-center border-[#1E3328] lg:border-l lg:w-[40%] bg-[#111A14] px-6 py-10 sm:px-12 lg:px-12 xl:px-[48px]">
+          <div className="mx-auto w-full max-w-md">
+            <div className="mb-10 lg:hidden flex flex-col items-center text-center">
+              {config?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={config.logoUrl} alt={brandName} className="h-14 mb-3 object-contain" />
+              ) : (
+                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-[#4A7C59]/15 text-3xl">
+                  🐊
+                </div>
+              )}
+              <span className="text-lg font-bold text-white">{brandName}</span>
+            </div>
+
+            <div className="mb-8 hidden lg:flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#4A7C59]/15 text-xl">
+                🐊
+              </div>
+              <span className="font-bold text-white">{brandName}</span>
+            </div>
+
+            <h2 className="text-2xl font-bold text-white">Iniciar sesión</h2>
+            <p className="mt-1 text-sm text-[#A8BFB0]">
+              {configLoading ? 'Cargando...' : 'Bienvenido de vuelta'}
+            </p>
+
+            {config && !config.isActive && (
+              <p className="mt-3 rounded-lg border border-[#C0392B]/30 bg-[#C0392B]/10 px-4 py-2 text-sm text-[#e74c3c]">
+                Esta institución no está activa actualmente.
+              </p>
+            )}
+
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <Input
+                label="Correo electrónico"
+                type="email"
+                placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                iconLeft={Mail}
+                required
+                autoComplete="email"
+                disabled={formDisabled}
+              />
+              <Input
+                label="Contraseña"
+                type="password"
+                placeholder="Tu contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                iconLeft={Lock}
+                required
+                autoComplete="current-password"
+                disabled={formDisabled}
+              />
+
+              <Button
+                type="submit"
+                size="lg"
+                fullWidth
+                loading={loading}
+                disabled={formDisabled}
+              >
+                Ingresar
+              </Button>
+
+              {error && (
+                <div
+                  className="rounded-lg border border-[#C0392B]/40 bg-[#C0392B]/10 px-4 py-3 text-sm text-[#e74c3c]"
+                  role="alert"
+                >
+                  {error}
+                </div>
+              )}
+            </form>
+
+            <p className="mt-8 text-center text-sm text-[#A8BFB0]">
+              ¿No tienes cuenta?{' '}
+              <Link
+                href="/register"
+                className="font-semibold text-[#4A7C59] hover:text-[#6B9E7A] transition-colors"
+              >
+                Regístrate gratis
+              </Link>
+            </p>
+          </div>
+        </main>
       </div>
     </ThemeProvider>
   )
@@ -131,11 +211,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0F0D' }}>
-        <p className="text-gray-500">Cargando...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#0A0F0D]">
+          <p className="text-[#A8BFB0]">Cargando...</p>
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   )
