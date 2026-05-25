@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 
 interface Question {
   id: string

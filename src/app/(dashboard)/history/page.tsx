@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import apiClient from '@/lib/api/client'
 import Link from 'next/link'
 
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 const BLUE = '#4FC3F7'

@@ -7,7 +7,7 @@ import apiClient from '@/lib/api/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 const GOLD = '#FFD700'
 
 type PlanKey = 'monthly' | 'bimonthly' | 'full'

@@ -7,7 +7,7 @@ import { examsApi } from '@/lib/api/exams'
 import { saveExamSessionMeta } from '@/lib/examSession'
 import Link from 'next/link'
 
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 const SIMULACRO_SIZE = 100
 
 interface Exam {

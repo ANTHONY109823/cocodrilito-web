@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 const BLUE = '#4FC3F7'
@@ -39,17 +39,20 @@ export default function ReviewPage() {
   const [revealed, setRevealed] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { loadReview() }, [sessionId])
-
-  const loadReview = async () => {
-    try {
-      const res = await examsApi.getReviewSession(sessionId)
-      setReview(res.data)
-    } catch {
-      router.push('/history')
-    } finally {
-      setLoading(false) }
-  }
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await examsApi.getReviewSession(sessionId)
+        if (!cancelled) setReview(res.data)
+      } catch {
+        if (!cancelled) router.push('/history')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [sessionId, router])
 
   if (loading) {
     return (

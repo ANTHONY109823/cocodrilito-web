@@ -6,7 +6,7 @@ import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
 
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 
 export default function LoginPage() {
   const router = useRouter()

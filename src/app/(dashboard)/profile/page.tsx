@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import apiClient from '@/lib/api/client'
 import Link from 'next/link'
 
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 
