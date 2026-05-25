@@ -2,9 +2,9 @@ import { cn } from '@/lib/utils/cn'
 import type { HTMLAttributes, ReactNode } from 'react'
 
 const variants = {
-  default: 'bg-[#111A14] border border-[#1E3328]',
-  highlighted: 'bg-[#111A14] border border-[#4A7C59]',
-  glass: 'bg-[#111A14]/80 border border-[#1E3328]/80 backdrop-blur-md',
+  default: 'bg-[#0D1A10] border border-[rgba(189,255,223,0.12)]',
+  highlighted: 'bg-[#0D1A10] border border-[#318F48]',
+  glass: 'bg-[#0D1A10]/80 border border-[rgba(189,255,223,0.12)] backdrop-blur-md',
 } as const
 
 export type CardVariant = keyof typeof variants
@@ -97,7 +97,7 @@ export function CardFooter({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('mt-4 flex items-center gap-3 border-t border-[#1E3328] pt-4', className)} {...props}>
+    <div className={cn('mt-4 flex items-center gap-3 border-t border-[rgba(189,255,223,0.12)] pt-4', className)} {...props}>
       {children}
     </div>
   )

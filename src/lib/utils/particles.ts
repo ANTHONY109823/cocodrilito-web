@@ -1,4 +1,4 @@
-/** Partículas con valores estables (sin Math.random en render). */
+﻿/** Partículas con valores estables (sin Math.random en render). */
 export type FloatingParticle = {
   id: number
   width: string
@@ -10,7 +10,7 @@ export type FloatingParticle = {
   animationDelay: string
 }
 
-const COLORS = ['#4A7C59', '#4FC3F7', '#FFD700'] as const
+const COLORS = ['#318F48', '#4FC3F7', '#FFD700'] as const
 
 function pseudo(seed: number, min: number, max: number): number {
   const x = Math.sin(seed * 12.9898) * 43758.5453

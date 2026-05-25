@@ -6,13 +6,13 @@ import { cn } from '@/lib/utils/cn'
 
 const variants = {
   primary:
-    'bg-[#4A7C59] text-white hover:bg-[#2D5A3D] focus-visible:ring-[#4A7C59]/50',
+    'bg-[#318F48] text-white hover:bg-[#1A5C2E] focus-visible:ring-[#318F48]/50',
   secondary:
-    'bg-[#1E3328] text-white hover:bg-[#2D5A3D] focus-visible:ring-[#1E3328]/50',
+    'bg-[rgba(49,143,72,0.15)] text-white hover:bg-[#1A5C2E] focus-visible:ring-[#318F48]/30',
   outline:
-    'border border-[#4A7C59] bg-transparent text-[#4A7C59] hover:bg-[#4A7C59]/10 focus-visible:ring-[#4A7C59]/30',
+    'border border-[#318F48] bg-transparent text-[#318F48] hover:bg-[rgba(49,143,72,0.12)] focus-visible:ring-[#318F48]/30',
   ghost:
-    'bg-transparent text-[#A8BFB0] hover:bg-[#1E3328] hover:text-white focus-visible:ring-[#1E3328]/50',
+    'bg-transparent text-[#A8BFB0] hover:bg-[rgba(49,143,72,0.07)] hover:text-white focus-visible:ring-[#318F48]/30',
   danger:
     'bg-[#C0392B] text-white hover:bg-[#962d22] focus-visible:ring-[#C0392B]/50',
 } as const
@@ -54,7 +54,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         className={cn(
           'inline-flex items-center justify-center font-semibold transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F0D]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#080E0A]',
           'disabled:cursor-not-allowed disabled:opacity-50',
           variants[variant],
           sizes[size],

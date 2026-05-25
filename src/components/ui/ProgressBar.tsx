@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils/cn'
 
 const barColors = {
-  green: 'bg-[#4A7C59]',
+  green: 'bg-gradient-to-r from-[#318F48] to-[#BDFFDF]',
   blue: 'bg-[#2E86AB]',
   orange: 'bg-[#E67E22]',
   gold: 'bg-[#C9943A]',
@@ -61,7 +61,7 @@ export function ProgressBar({
         </div>
       )}
       <div
-        className={cn('w-full overflow-hidden rounded-full bg-[#1E3328]', trackHeight)}
+        className={cn('w-full overflow-hidden rounded-full bg-[rgba(189,255,223,0.12)]', trackHeight)}
         role="progressbar"
         aria-valuenow={value}
         aria-valuemin={0}

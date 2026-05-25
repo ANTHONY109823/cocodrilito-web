@@ -294,7 +294,7 @@ export default function ExamPage() {
     <button onClick={handleFinish} disabled={finishing}
       className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
       style={{
-        background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
+        background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
         color: '#000', boxShadow: `0 0 20px ${NEON}40`
       }}>
       {finishing ? 'Finalizando...' : 'Finalizar examen ✓'}

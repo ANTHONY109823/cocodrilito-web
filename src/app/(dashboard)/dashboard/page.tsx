@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -60,7 +60,7 @@ function StatCard({
   value,
   label,
   trend,
-  trendColor = 'text-[#4A7C59]',
+  trendColor = 'text-[#318F48]',
 }: {
   icon: typeof FileText
   iconClass: string
@@ -70,7 +70,7 @@ function StatCard({
   trendColor?: string
 }) {
   return (
-    <div className="rounded-xl border border-[#1E3328] bg-[#111A14] px-3.5 py-4">
+    <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-3.5 py-4">
       <div
         className={cn(
           'mb-2.5 flex h-[34px] w-[34px] items-center justify-center rounded-lg',
@@ -161,7 +161,7 @@ export default function DashboardPage() {
             </p>
           )}
         </div>
-        <span className="rounded-full border border-[#4A7C59] bg-[#4A7C59]/15 px-3 py-1.5 text-xs font-medium text-[#4A7C59]">
+        <span className="rounded-full border border-[#318F48] bg-[#318F48]/15 px-3 py-1.5 text-xs font-medium text-[#318F48]">
           {ligaCfg.emoji} Liga {liga}
         </span>
       </div>
@@ -173,7 +173,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             <StatCard
               icon={FileText}
-              iconClass="bg-[#4A7C59]/15 text-[#4A7C59]"
+              iconClass="bg-[#318F48]/15 text-[#318F48]"
               value={sessions}
               label="Exámenes realizados"
               trend="↑ Actividad registrada"
@@ -194,7 +194,7 @@ export default function DashboardPage() {
               trend={streak > 0 ? '🔥 ¡Sigue así!' : 'Practica hoy'}
               trendColor="text-[#BA7517]"
             />
-            <div className="rounded-xl border border-[#1E3328] bg-[#111A14] px-3.5 py-4">
+            <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-3.5 py-4">
               <div className="mb-2.5 flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[rgba(201,148,58,0.15)]">
                 <Trophy className="h-[18px] w-[18px] text-[#C9943A]" />
               </div>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-[#1E3328] bg-[#111A14] p-4">
+            <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-4">
               <h3 className="mb-3 text-[13px] font-semibold text-white">
                 Rendimiento últimos 7 exámenes
               </h3>
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                     <div
                       className={cn(
                         'w-full rounded-t transition-colors',
-                        i === chartScores.length - 2 ? 'bg-[#4A7C59]' : 'bg-[#1E3328] hover:bg-[#4A7C59]/70'
+                        i === chartScores.length - 2 ? 'bg-[#318F48]' : 'bg-[rgba(189,255,223,0.12)] hover:bg-[#318F48]/70'
                       )}
                       style={{ height: `${Math.max(8, h)}%` }}
                     />
@@ -233,7 +233,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 rounded-xl border border-[#1E3328] bg-[#111A14] p-4">
+            <div className="flex flex-col gap-3 rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-4">
               <div className="flex items-center gap-2.5">
                 <span className="text-[32px]">{ligaCfg.emoji}</span>
                 <div>
@@ -278,7 +278,7 @@ export default function DashboardPage() {
           </div>
 
           {latest && (
-            <div className="rounded-xl border border-[#1E3328] bg-[#111A14] p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-white">Último simulacro</p>
                 <p className="text-xs text-[#6B8A75]">
@@ -287,7 +287,7 @@ export default function DashboardPage() {
               </div>
               <Link
                 href="/history"
-                className="text-sm font-medium text-[#4A7C59] hover:text-[#6B9E7A]"
+                className="text-sm font-medium text-[#318F48] hover:text-[#5EC97A]"
               >
                 Ver historial →
               </Link>

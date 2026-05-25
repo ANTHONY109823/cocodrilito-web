@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import { getApiErrorMessage } from '@/lib/api/errors'
@@ -188,15 +188,15 @@ export default function ExamsPage() {
       {loading ? (
         <p className="py-12 text-center text-[#6B8A75]">Cargando...</p>
       ) : !mainExam?.id ? (
-        <div className="rounded-xl border border-[#1E3328] bg-[#111A14] py-16 text-center">
+        <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] py-16 text-center">
           <p className="text-sm text-[#6B8A75]">No hay examen activo en la base de datos.</p>
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-5 rounded-[14px] border border-[#4A7C59] bg-[#111A14] p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-5 rounded-[14px] border border-[#318F48] bg-[#0D1A10] p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-2">
-              <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-xl bg-[#4A7C59]/20">
-                <ShieldCheck className="h-7 w-7 text-[#4A7C59]" />
+              <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-xl bg-[#318F48]/20">
+                <ShieldCheck className="h-7 w-7 text-[#318F48]" />
               </div>
               <h2 className="text-[17px] font-bold text-white">Simulacro General</h2>
               <p className="text-[13px] text-[#6B8A75]">
@@ -204,15 +204,15 @@ export default function ExamsPage() {
               </p>
               <div className="mt-1 flex flex-wrap gap-4 text-xs text-[#A8BFB0]">
                 <span className="flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5 text-[#4A7C59]" />
+                  <FileText className="h-3.5 w-3.5 text-[#318F48]" />
                   {simulacroCount} preguntas
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-[#4A7C59]" />
+                  <Clock className="h-3.5 w-3.5 text-[#318F48]" />
                   {minutes} minutos
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <BarChart3 className="h-3.5 w-3.5 text-[#4A7C59]" />
+                  <BarChart3 className="h-3.5 w-3.5 text-[#318F48]" />
                   Nota mín. {mainExam.passingScore || 65} pts
                 </span>
               </div>
@@ -240,7 +240,7 @@ export default function ExamsPage() {
                   return (
                     <div
                       key={cat.id}
-                      className="rounded-xl border border-[#1E3328] bg-[#111A14] p-3.5 transition-all duration-150 hover:-translate-y-0.5 hover:border-[#4A7C59]"
+                      className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-3.5 transition-all duration-150 hover:-translate-y-0.5 hover:border-[#318F48]"
                     >
                       <div className="mb-2 text-2xl">{categoryIcon(cat.name)}</div>
                       <div className="text-[13px] font-semibold text-white">{cat.name}</div>

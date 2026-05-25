@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -34,7 +34,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: '#0A0F0D' }}>
+      style={{ backgroundColor: '#080E0A' }}>
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         .fade-in { animation: fadeIn 0.4s ease forwards; }
@@ -106,7 +106,7 @@ export default function RegisterPage() {
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl font-bold text-sm mt-2 transition-all hover:scale-[1.01]"
               style={{
-                background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
+                background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
                 color: '#000', opacity: loading ? 0.7 : 1,
                 boxShadow: `0 0 20px ${NEON}40`
               }}>

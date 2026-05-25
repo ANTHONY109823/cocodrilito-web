@@ -2,11 +2,11 @@ import { cn } from '@/lib/utils/cn'
 import type { HTMLAttributes } from 'react'
 
 const colors = {
-  green: 'bg-[#4A7C59]/20 text-[#6B9E7A] border-[#4A7C59]/40',
+  green: 'bg-[rgba(49,143,72,0.15)] text-[#BDFFDF] border-[rgba(49,143,72,0.35)]',
   blue: 'bg-[#2E86AB]/20 text-[#5ba8cc] border-[#2E86AB]/40',
   orange: 'bg-[#E67E22]/20 text-[#F39C12] border-[#E67E22]/40',
   red: 'bg-[#C0392B]/20 text-[#e74c3c] border-[#C0392B]/40',
-  gray: 'bg-[#1E3328] text-[#A8BFB0] border-[#1E3328]',
+  gray: 'bg-[rgba(49,143,72,0.08)] text-[#A8BFB0] border-[rgba(189,255,223,0.12)]',
   gold: 'bg-[#C9943A]/20 text-[#C9943A] border-[#C9943A]/40',
 } as const
 

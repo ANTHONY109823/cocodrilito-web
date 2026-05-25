@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -236,7 +236,7 @@ export default function SuperAdminPage() {
         </div>
         <button type="button" onClick={() => setShowCreate(!showCreate)}
           className="px-4 py-2 rounded-xl text-sm font-bold"
-          style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+          style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
           ➕ Nuevo tenant
         </button>
       </div>
@@ -381,7 +381,7 @@ export default function SuperAdminPage() {
           </p>
           <Link href="/admin/preguntas"
             className="inline-flex px-6 py-3 rounded-xl font-bold text-sm"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
             Ir al banco de preguntas →
           </Link>
         </div>

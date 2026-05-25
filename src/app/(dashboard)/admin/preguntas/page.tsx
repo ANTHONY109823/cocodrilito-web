@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
@@ -372,7 +372,7 @@ export default function PreguntasPage() {
                 </button>
                 <button onClick={handleSaveEdit} disabled={saving}
                   className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-opacity"
-                  style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
+                  style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
                   {saving ? 'Guardando...' : 'Guardar cambios'}
                 </button>
               </div>
@@ -514,7 +514,7 @@ export default function PreguntasPage() {
             </div>
             <button type="submit" disabled={saving}
               className="w-full py-2.5 rounded-xl font-semibold text-sm transition-opacity"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
+              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Guardando...' : 'Guardar pregunta'}
             </button>
           </form>
@@ -560,7 +560,7 @@ export default function PreguntasPage() {
               </div>
               <button onClick={handleAddCategory} disabled={saving || !newCatName.trim()}
                 className="px-4 py-2 rounded-lg text-xs font-semibold shrink-0 transition-opacity"
-                style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', opacity: saving || !newCatName.trim() ? 0.5 : 1 }}>
+                style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', opacity: saving || !newCatName.trim() ? 0.5 : 1 }}>
                 Crear
               </button>
             </div>

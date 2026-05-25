@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0F0D]">
+      <div className="min-h-screen flex items-center justify-center bg-[#080E0A]">
         <p className="text-[#A8BFB0] text-sm">Cargando...</p>
       </div>
     )

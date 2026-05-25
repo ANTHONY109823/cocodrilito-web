@@ -71,7 +71,7 @@ export default function ReviewPage() {
         <p className="text-gray-400 text-sm mb-6">Respondiste todo correctamente en este simulacro.</p>
         <Link href="/history"
           className="inline-flex px-6 py-3 rounded-xl font-bold text-sm"
-          style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+          style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
           Volver al historial
         </Link>
       </div>
@@ -186,20 +186,20 @@ export default function ReviewPage() {
           <button
             onClick={() => setRevealed(true)}
             className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
             Ver respuesta correcta
           </button>
         ) : isLast ? (
           <Link href="/history"
             className="flex-1 py-3 rounded-xl font-bold text-sm text-center transition-all hover:scale-[1.01]"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
             ✅ Repaso completado
           </Link>
         ) : (
           <button
             onClick={() => { setCurrentIdx(prev => prev + 1); setRevealed(false) }}
             className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
             Siguiente pregunta →
           </button>
         )}

@@ -3,28 +3,27 @@
 @config "../../tailwind.config.ts";
 
 :root {
-  --color-primary: #4A7C59;
-  --color-primary-dark: #2D5A3D;
-  --color-primary-light: #6B9E7A;
-  --color-primary-bg: #E8F0EB;
-  --color-primary-pale: #F2F6F3;
+  --color-primary: #318F48;
+  --color-primary-dark: #1A5C2E;
+  --color-primary-light: #BDFFDF;
+  --color-primary-bg: rgba(49, 143, 72, 0.12);
+  --color-accent: #BDFFDF;
 
-  --color-surface: #0A0F0D;
-  --color-surface-card: #111A14;
-  --color-surface-border: #1E3328;
+  --color-surface: #080E0A;
+  --color-surface-card: #0D1A10;
+  --color-surface-border: rgba(189, 255, 223, 0.12);
 
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #A8BFB0;
   --color-text-muted: #6B8A75;
 
-  --color-success: #4A7C59;
+  --color-success: #318F48;
   --color-warning: #C9943A;
   --color-danger: #C0392B;
   --color-info: #2E86AB;
 
-  --brand-gradient: linear-gradient(135deg, #2D5A3D 0%, #4A7C59 50%, #6B9E7A 100%);
+  --brand-gradient: linear-gradient(135deg, #1A5C2E 0%, #318F48 50%, #5EC97A 100%);
 
-  /* Alias legacy */
   --green-primary: var(--color-primary);
   --green-dark: var(--color-primary-dark);
   --green-light: var(--color-primary-bg);
@@ -88,17 +87,18 @@ h3 {
 
 .input-field {
   width: 100%;
-  background-color: #0F1A14;
+  background-color: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--color-surface-border);
-  border-radius: 0.75rem;
+  border-radius: 0.625rem;
   padding: 0.75rem 1rem;
   color: var(--color-text-primary);
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input-field:focus {
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(49, 143, 72, 0.2);
 }
 
 .badge-league {
@@ -111,9 +111,18 @@ h3 {
   font-weight: 600;
 }
 
-/* ===== RESPONSIVE MOBILE ===== */
-@media (max-width: 768px) {
+.login-page-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 25% 50%, rgba(49, 143, 72, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 75% 20%, rgba(49, 143, 72, 0.05) 0%, transparent 50%);
+}
 
+@media (max-width: 768px) {
   nav {
     padding: 12px 16px !important;
   }

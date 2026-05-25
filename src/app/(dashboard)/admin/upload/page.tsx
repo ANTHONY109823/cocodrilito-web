@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -81,7 +81,7 @@ export default function UploadPage() {
                 <td className="p-2 text-gray-300">Opción C</td>
                 <td className="p-2 text-gray-300">Opción D</td>
                 <td className="p-2 text-gray-300">-</td>
-                <td className="p-2" style={{ color: '#4A7C59' }}>A</td>
+                <td className="p-2" style={{ color: '#318F48' }}>A</td>
                 <td className="p-2 text-gray-300">Explicación</td>
               </tr>
             </tbody>
@@ -93,7 +93,7 @@ export default function UploadPage() {
         </div>
         <button onClick={handleDownloadTemplate}
           className="mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-          style={{ backgroundColor: '#1A2E24', color: '#4A7C59', border: '1px solid #4A7C59' }}>
+          style={{ backgroundColor: '#1A2E24', color: '#318F48', border: '1px solid #318F48' }}>
           📥 Descargar plantilla CSV
         </button>
       </div>
@@ -104,7 +104,7 @@ export default function UploadPage() {
 
         <div
           className="border-2 border-dashed rounded-xl p-8 text-center mb-4 transition-all"
-          style={{ borderColor: file ? '#4A7C59' : '#1A2E24' }}
+          style={{ borderColor: file ? '#318F48' : '#1A2E24' }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault()
@@ -126,7 +126,7 @@ export default function UploadPage() {
               <div className="text-3xl mb-2">📂</div>
               <div className="text-gray-400 mb-2">Arrastra tu CSV aquí o</div>
               <label className="cursor-pointer px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ backgroundColor: '#1A2E24', color: '#4A7C59' }}>
+                style={{ backgroundColor: '#1A2E24', color: '#318F48' }}>
                 Seleccionar archivo
                 <input type="file" accept=".csv" className="hidden"
                   onChange={(e) => setFile(e.target.files?.[0] || null)} />
@@ -147,11 +147,11 @@ export default function UploadPage() {
       {/* Resultado */}
       {result && (
         <div className="card"
-          style={{ borderColor: result.totalErrors === 0 ? '#4A7C59' : '#EF9F27' }}>
+          style={{ borderColor: result.totalErrors === 0 ? '#318F48' : '#EF9F27' }}>
           <h3 className="text-white font-semibold mb-3">Resultado de la importación</h3>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#1A3D2E' }}>
-              <div className="text-2xl font-bold" style={{ color: '#4A7C59' }}>
+              <div className="text-2xl font-bold" style={{ color: '#318F48' }}>
                 {result.imported}
               </div>
               <div className="text-gray-400 text-sm">Preguntas importadas</div>
@@ -159,7 +159,7 @@ export default function UploadPage() {
             <div className="text-center p-3 rounded-lg"
               style={{ backgroundColor: result.totalErrors > 0 ? '#2A1A10' : '#1A3D2E' }}>
               <div className="text-2xl font-bold"
-                style={{ color: result.totalErrors > 0 ? '#EF9F27' : '#4A7C59' }}>
+                style={{ color: result.totalErrors > 0 ? '#EF9F27' : '#318F48' }}>
                 {result.totalErrors}
               </div>
               <div className="text-gray-400 text-sm">Errores</div>

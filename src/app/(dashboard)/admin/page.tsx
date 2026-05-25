@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
@@ -492,7 +492,7 @@ export default function AdminPage() {
                         style={{ backgroundColor: `${NEON}10`, color: NEON, border: `1px solid ${NEON}20` }}>+180d</button>
                       <button onClick={() => handleReactivate(u.id)}
                         className="px-4 py-1.5 rounded-lg text-xs font-bold"
-                        style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+                        style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
                         ✅ Reactivar
                       </button>
                       <button onClick={() => handleDeletePermanent(u.id)}
@@ -579,7 +579,7 @@ export default function AdminPage() {
 
             <button type="submit" disabled={saving}
               className="w-full py-3 rounded-xl font-bold text-sm"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
+              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Creando...' : '➕ Crear usuario con acceso inmediato'}
             </button>
           </form>
@@ -643,7 +643,7 @@ export default function AdminPage() {
           </p>
           <Link href="/admin/preguntas"
             className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-base transition-all hover:scale-105"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', boxShadow: `0 0 20px ${NEON}40` }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', boxShadow: `0 0 20px ${NEON}40` }}>
             Ir al banco de preguntas →
           </Link>
         </div>
@@ -707,7 +707,7 @@ export default function AdminPage() {
                 onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })} />
               <button type="submit" disabled={saving}
                 className="md:col-span-2 py-3 rounded-xl font-bold text-sm"
-                style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+                style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
                 {saving ? 'Guardando...' : '➕ Crear plan'}
               </button>
             </form>

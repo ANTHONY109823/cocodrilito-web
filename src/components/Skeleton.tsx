@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import clsx from 'clsx'
 
@@ -20,7 +20,7 @@ export function Skeleton({ className }: SkeletonProps) {
 
 export function SkeletonCard() {
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(0,10,5,0.8)', border: '1px solid #1E3328' }}>
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(0,10,5,0.8)', border: '1px solid rgba(189,255,223,0.12)' }}>
       <Skeleton className="h-4 w-1/3" />
       <Skeleton className="h-3 w-2/3" />
       <Skeleton className="h-3 w-1/2" />

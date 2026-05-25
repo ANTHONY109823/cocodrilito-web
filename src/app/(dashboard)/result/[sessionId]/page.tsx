@@ -137,7 +137,7 @@ export default function ResultPage() {
         <Link href="/exams"
           className="py-3 rounded-xl text-sm font-bold text-center transition-all hover:scale-[1.02]"
           style={{
-            background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
+            background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
             color: '#000', boxShadow: `0 0 15px ${NEON}30`
           }}>
           Otro examen →
