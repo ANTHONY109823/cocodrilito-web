@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { isAnyAdmin } from '@/lib/auth/roles'
+import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
 import { NEON } from '@/lib/constants/theme'
 
 interface User {
@@ -42,7 +43,7 @@ const PURPLE = '#A855F7'
 export default function AdminPage() {
   const { user, loadFromStorage } = useAuthStore()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'subscriptions' | 'inactive' | 'create' | 'questions'>('users')
+  const [tab, setTab] = useState<'users' | 'subscriptions' | 'inactive' | 'create' | 'questions' | 'plans'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,6 +53,15 @@ export default function AdminPage() {
   const [inactiveFilter, setInactiveFilter] = useState<'all' | 'admin' | 'web'>('all')
   const excelInputRef = useRef<HTMLInputElement>(null)
   const [uploadingExcel, setUploadingExcel] = useState(false)
+
+  const [plans, setPlans] = useState<TenantPlan[]>([])
+  const [planForm, setPlanForm] = useState({
+    trackType: 3,
+    name: '',
+    price: 0,
+    durationDays: 30,
+    description: '',
+  })
 
   const [form, setForm] = useState({
     fullName: '', dni: '', email: '', password: '',
@@ -106,6 +116,9 @@ export default function AdminPage() {
       } else if (tab === 'subscriptions') {
         const res = await apiClient.get('/subscriptions/pending')
         setSubscriptions(res.data)
+      } else if (tab === 'plans') {
+        const res = await tenantPlansApi.list(user?.tenantId ?? undefined)
+        setPlans(res.data)
       }
     } catch { } finally { setLoading(false) }
   }
@@ -187,6 +200,33 @@ export default function AdminPage() {
     }
   }
 
+  const handleCreatePlan = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await tenantPlansApi.create(planForm, user?.tenantId ?? undefined)
+      setMsg({ text: '✅ Plan creado', ok: true })
+      setPlanForm({ trackType: 3, name: '', price: 0, durationDays: 30, description: '' })
+      loadData()
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      setMsg({ text: ax.response?.data?.message || 'Error al crear plan', ok: false })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeactivatePlan = async (id: string) => {
+    if (!confirm('¿Desactivar este plan?')) return
+    try {
+      await tenantPlansApi.deactivate(id, user?.tenantId ?? undefined)
+      setPlans((prev) => prev.filter((p) => p.id !== id))
+      setMsg({ text: 'Plan desactivado', ok: true })
+    } catch {
+      setMsg({ text: 'Error al desactivar plan', ok: false })
+    }
+  }
+
   const daysLeft = (expiresAt?: string | null) => {
     if (!expiresAt) return null
     return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000)
@@ -214,6 +254,7 @@ export default function AdminPage() {
     { key: 'inactive',      label: '🔴 Inactivos',          count: inactiveUsers.length,  countColor: RED  },
     { key: 'create',        label: '➕ Crear usuario',       count: null,                  countColor: NEON },
     { key: 'questions',     label: '📝 Banco de preguntas', count: null,                  countColor: NEON2 },
+    { key: 'plans',         label: '💎 Planes tenant',       count: null,                  countColor: GOLD },
   ]
 
   return (
@@ -597,6 +638,72 @@ export default function AdminPage() {
             style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', boxShadow: `0 0 20px ${NEON}40` }}>
             Ir al banco de preguntas →
           </Link>
+        </div>
+      )}
+
+      {/* TAB: PLANES TENANT */}
+      {tab === 'plans' && (
+        <div className="fade-in space-y-4">
+          <div className="rounded-2xl p-5"
+            style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
+            <h2 className="text-white font-bold mb-4">Planes de suscripción del tenant</h2>
+            {loading ? (
+              <p className="text-gray-500">Cargando planes...</p>
+            ) : plans.length === 0 ? (
+              <p className="text-gray-500 text-sm">No hay planes configurados. Crea el primero abajo.</p>
+            ) : (
+              <div className="space-y-3 mb-6">
+                {plans.map((plan) => (
+                  <div key={plan.id} className="rounded-xl p-4 flex flex-wrap justify-between gap-3"
+                    style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}15` }}>
+                    <div>
+                      <div className="text-white font-semibold">{plan.name}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        S/. {plan.price} · {plan.durationDays} días · Track {plan.trackType}
+                        {!plan.isActive && <span style={{ color: RED }}> · Inactivo</span>}
+                      </div>
+                      {plan.description && (
+                        <p className="text-xs text-gray-600 mt-1">{plan.description}</p>
+                      )}
+                    </div>
+                    {plan.isActive && (
+                      <button type="button" onClick={() => handleDeactivatePlan(plan.id)}
+                        className="px-3 py-1.5 rounded-lg text-xs"
+                        style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}25` }}>
+                        Desactivar
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={handleCreatePlan} className="grid md:grid-cols-2 gap-3">
+              <input placeholder="Nombre del plan" required
+                className="input-admin" value={planForm.name}
+                onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })} />
+              <input type="number" placeholder="Precio S/." required
+                className="input-admin" value={planForm.price || ''}
+                onChange={(e) => setPlanForm({ ...planForm, price: Number(e.target.value) })} />
+              <input type="number" placeholder="Duración (días)" required
+                className="input-admin" value={planForm.durationDays}
+                onChange={(e) => setPlanForm({ ...planForm, durationDays: Number(e.target.value) })} />
+              <select className="input-admin" value={planForm.trackType}
+                onChange={(e) => setPlanForm({ ...planForm, trackType: Number(e.target.value) })}>
+                <option value={1}>Oficiales</option>
+                <option value={2}>Suboficiales</option>
+                <option value={3}>Postulantes</option>
+              </select>
+              <input placeholder="Descripción (opcional)" className="input-admin md:col-span-2"
+                value={planForm.description}
+                onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })} />
+              <button type="submit" disabled={saving}
+                className="md:col-span-2 py-3 rounded-xl font-bold text-sm"
+                style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
+                {saving ? 'Guardando...' : '➕ Crear plan'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

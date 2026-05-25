@@ -60,6 +60,7 @@ export default function PreguntasPage() {
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0])
+  const [questionScope, setQuestionScope] = useState<'base' | 'own'>('base')
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
@@ -269,7 +270,13 @@ export default function PreguntasPage() {
     }
   }
 
-  const filtered = questions.filter(q => {
+  const scopedQuestions = questions.filter((q) => {
+    const qWithTenant = q as Question & { tenantId?: string | null }
+    if (questionScope === 'base') return !qWithTenant.tenantId
+    return Boolean(qWithTenant.tenantId)
+  })
+
+  const filtered = scopedQuestions.filter(q => {
     const matchCat = q.category === selectedCategory
     const matchSearch = search === '' || q.questionText.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
@@ -278,7 +285,7 @@ export default function PreguntasPage() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const counts = categories.reduce((acc, cat) => {
-    acc[cat.name] = questions.filter(q => q.category === cat.name).length
+    acc[cat.name] = scopedQuestions.filter(q => q.category === cat.name).length
     return acc
   }, {} as Record<string, number>)
 
@@ -413,6 +420,27 @@ export default function PreguntasPage() {
             </button>
           )}
         </div>
+      </div>
+
+      <div className="flex gap-2 mb-5 flex-wrap">
+        {[
+          { key: 'base' as const, label: '📚 Banco base', hint: 'Preguntas compartidas de la plataforma' },
+          { key: 'own' as const, label: '🏷️ Propias del tenant', hint: 'Preguntas creadas por tu institución' },
+        ].map((s) => (
+          <button key={s.key} type="button" onClick={() => { setQuestionScope(s.key); setPage(1) }}
+            className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
+            title={s.hint}
+            style={{
+              backgroundColor: questionScope === s.key ? `${NEON}20` : 'rgba(0,5,2,0.5)',
+              color: questionScope === s.key ? NEON : '#6B7280',
+              border: `1px solid ${questionScope === s.key ? NEON : '#ffffff10'}`,
+            }}>
+            {s.label}
+          </button>
+        ))}
+        <span className="text-xs text-gray-600 self-center ml-auto">
+          {scopedQuestions.length} en esta vista
+        </span>
       </div>
 
       {msg && (

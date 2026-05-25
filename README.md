@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cocodrilito Web
 
-## Getting Started
+Frontend Next.js del simulador de exámenes PNP — plataforma multi-tenant con paneles Admin, SuperAdmin y white label.
 
-First, run the development server:
+## Requisitos
+
+- Node.js 20+
+- Backend Cocodrilito API en ejecución
+
+## Configuración
 
 ```bash
+cp .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Variables de entorno
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Descripción |
+|----------|-------------|
+| `NEXT_PUBLIC_API_URL` | URL base del API (ej. `http://localhost:5034/api`) |
+| `API_URL` | URL del backend para rewrites del servidor (opcional) |
 
-## Learn More
+## Credenciales de prueba
 
-To learn more about Next.js, take a look at the following resources:
+Tras aplicar la migración multi-tenant del backend:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Rol | Email | Contraseña |
+|-----|-------|------------|
+| SuperAdmin | `superadmin@cocodrilito.pe` | `CocodriloPNP2025!` |
+| Admin Agencia | `agencia.demo@cocodrilito.pe` | `AgenciaDemo2025!` |
+| Admin Academia | `academia.demo@cocodrilito.pe` | `AcademiaDemo2025!` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## White label (login)
 
-## Deploy on Vercel
+Accede con branding del tenant usando query params:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Academia: `/login?academia=demo-academia`
+- Agencia: `/login?agencia=demo-agencia`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+El slug debe coincidir con el tenant registrado en el backend.
+
+## Estructura principal
+
+```
+src/
+├── app/(dashboard)/superadmin/   # Panel SuperAdmin (FASE 6)
+├── app/(dashboard)/admin/        # Panel admin tenant (FASE 8)
+├── components/ThemeProvider.tsx    # White label (FASE 7)
+├── hooks/use*.ts                 # SWR data hooks (FASE 9)
+└── lib/api/superadmin.ts         # Cliente API SuperAdmin
+```
+
+## Scripts
+
+```bash
+npm run dev      # Desarrollo
+npm run build    # Build producción
+npm run lint     # ESLint
+npm run start    # Servidor producción
+```
+
+## Deploy
+
+El proyecto incluye configuración Netlify (`netlify.toml`). Define `NEXT_PUBLIC_API_URL` apuntando al backend en producción.
+
+## CI
+
+GitHub Actions ejecuta lint y build en cada push/PR a `main` y `develop` (`.github/workflows/frontend-ci.yml`).
