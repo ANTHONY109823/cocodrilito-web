@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
+import { isAnyAdmin } from '@/lib/auth/roles'
 import { NEON } from '@/lib/constants/theme'
 
 interface User {
@@ -90,7 +91,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (user) {
-      const isAdmin = user.role === 'Admin' || user.role === 'SuperAdmin'
+      const isAdmin = isAnyAdmin(user.role)
       if (!isAdmin) { router.push('/dashboard'); return }
       loadData()
     }

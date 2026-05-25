@@ -1,20 +1,20 @@
 import axios from 'axios'
+import { useAuthStore } from '@/lib/store/authStore'
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true,
+  headers: {
+    'X-Requested-With': 'XMLHttpRequest',
+  },
 })
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-
-  // FormData debe llevar boundary automático; application/json provoca 415
   if (config.data instanceof FormData) {
     config.headers.delete('Content-Type')
   } else if (!config.headers['Content-Type']) {
     config.headers['Content-Type'] = 'application/json'
   }
-
   return config
 })
 
@@ -22,26 +22,18 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
+    if (error.response?.status === 401 && original && !original._retry) {
       original._retry = true
       try {
-        const accessToken = localStorage.getItem('access_token')
-        const refreshToken = localStorage.getItem('refresh_token')
-        if (!accessToken || !refreshToken) throw new Error('No tokens')
-        const res = await axios.post(
+        await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/Auth/refresh`,
-          { accessToken, refreshToken }
+          {},
+          { withCredentials: true }
         )
-        const { accessToken: newAccess, refreshToken: newRefresh } = res.data
-        localStorage.setItem('access_token', newAccess)
-        localStorage.setItem('refresh_token', newRefresh)
-        original.headers.Authorization = `Bearer ${newAccess}`
         return apiClient(original)
       } catch {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
+        useAuthStore.getState().clearUser()
+        if (typeof window !== 'undefined') window.location.href = '/login'
       }
     }
     return Promise.reject(error)

@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
-import { useAuthStore } from '@/lib/store/authStore'
+import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
 
 import { NEON } from '@/lib/constants/theme'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { setAuth } = useAuthStore()
+  const { setUser } = useAuthStore()
   const [form, setForm] = useState({
     fullName: '', dni: '', rank: '', unit: '', email: '', password: ''
   })
@@ -23,7 +23,7 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       const res = await authApi.register(form)
-      setAuth(res.data.user, res.data.accessToken)
+      setUser(normalizeUser(res.data as unknown as Record<string, unknown>))
       router.push('/premium?new=1')
     } catch {
       setError('Error al registrarse. Verifica que tu DNI y email no estén en uso.')

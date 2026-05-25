@@ -1,4 +1,5 @@
 import apiClient from './client'
+import type { AuthUser } from '@/lib/store/authStore'
 
 export interface LoginRequest {
   email: string
@@ -14,25 +15,13 @@ export interface RegisterRequest {
   unit: string
 }
 
-export interface AuthResponse {
-  accessToken: string
-  refreshToken: string
-  expiresAt: string
-  user: {
-    id: string
-    fullName: string
-    email: string
-    dni: string
-    rank: string
-    unit: string
-    planType: string
-    role: string
-  }
-}
+export type AuthProfileResponse = AuthUser
 
 export const authApi = {
   login: (data: LoginRequest) =>
-    apiClient.post<AuthResponse>('/Auth/login', data),
+    apiClient.post<AuthProfileResponse>('/Auth/login', data),
   register: (data: RegisterRequest) =>
-    apiClient.post<AuthResponse>('/Auth/register', data),
+    apiClient.post<AuthProfileResponse>('/Auth/register', data),
+  logout: () => apiClient.post('/Auth/logout'),
+  me: () => apiClient.get('/Auth/me'),
 }

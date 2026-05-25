@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
+import { isAnyAdmin } from '@/lib/auth/roles'
 import { NEON } from '@/lib/constants/theme'
 
 interface Question {
@@ -81,7 +82,7 @@ export default function PreguntasPage() {
 
   useEffect(() => {
     if (user) {
-      const isAdmin = user.role === 'Admin' || user.role === 'SuperAdmin'
+      const isAdmin = isAnyAdmin(user.role)
       if (!isAdmin) { router.push('/dashboard'); return }
       loadAll()
     }

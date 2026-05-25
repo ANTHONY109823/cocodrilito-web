@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
+import { isAnyAdmin } from '@/lib/auth/roles'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -13,8 +15,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => { loadFromStorage() }, [])
   useEffect(() => { if (!isAuthenticated) router.push('/login') }, [isAuthenticated])
 
-  const handleLogout = () => { logout(); router.push('/login') }
-  const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin'
+  const handleLogout = async () => {
+    try { await authApi.logout() } catch { /* ignore */ }
+    logout()
+    router.push('/login')
+  }
+  const isAdmin = isAnyAdmin(user?.role)
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0F0D' }}>

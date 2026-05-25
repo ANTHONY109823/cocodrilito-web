@@ -10,7 +10,7 @@ const RED = '#FF5252'
 const GOLD = '#FFD700'
 
 export default function ProfilePage() {
-  const { user, setAuth, loadFromStorage } = useAuthStore()
+  const { user, setUser, loadFromStorage } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [subInfo, setSubInfo] = useState<{ expiresAt: string; daysLeft: number } | null>(null)
@@ -47,9 +47,8 @@ export default function ProfilePage() {
     setLoading(true)
     setMsg(null)
     try {
-      const res = await apiClient.put('/Auth/profile', profileForm)
-      const token = localStorage.getItem('access_token') || ''
-      setAuth({ ...user!, ...profileForm }, token)
+      await apiClient.put('/Auth/profile', profileForm)
+      if (user) setUser({ ...user, ...profileForm })
       setMsg({ text: '✅ Perfil actualizado correctamente', ok: true })
     } catch {
       setMsg({ text: 'Error al actualizar perfil', ok: false })

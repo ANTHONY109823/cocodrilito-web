@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
-import { useAuthStore } from '@/lib/store/authStore'
+import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
 
 import { NEON } from '@/lib/constants/theme'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { setAuth } = useAuthStore()
+  const { setUser } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -22,7 +22,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const res = await authApi.login({ email, password })
-      setAuth(res.data.user, res.data.accessToken)
+      setUser(normalizeUser(res.data as unknown as Record<string, unknown>))
       router.push('/dashboard')
     } catch {
       setError('Credenciales incorrectas. Verifica tu email y contraseña.')
