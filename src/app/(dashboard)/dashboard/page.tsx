@@ -72,7 +72,7 @@ function Particles() {
             height: Math.random() * 4 + 2 + 'px',
             left: Math.random() * 100 + '%',
             top: Math.random() * 100 + '%',
-            backgroundColor: i % 3 === 0 ? '#00C87A' : i % 3 === 1 ? '#4FC3F7' : '#FFD700',
+            backgroundColor: i % 3 === 0 ? '#4A7C59' : i % 3 === 1 ? '#4FC3F7' : '#FFD700',
             animation: `float ${Math.random() * 6 + 4}s ease-in-out infinite`,
             animationDelay: Math.random() * 4 + 's',
           }} />
@@ -83,7 +83,7 @@ function Particles() {
 
 function SideStats({ stats, latest }: { stats: Stats | null, latest: LatestSession | null }) {
   const items = [
-    { label: 'Simulacros', value: stats?.totalSessions || 0, color: '#00C87A', icon: '📝' },
+    { label: 'Simulacros', value: stats?.totalSessions || 0, color: '#4A7C59', icon: '📝' },
     { label: 'Correctas', value: stats?.totalCorrect || 0, color: '#69F0AE', icon: '✅' },
     { label: 'Último score', value: latest ? `${latest.score}%` : '—', color: latest?.passed ? '#00E5A0' : '#FF5252', icon: '🎯' },
   ]
@@ -121,7 +121,7 @@ export default function DashboardPage() {
   const [slide, setSlide] = useState(0)
 
   const slides = [
-    { bg: 'linear-gradient(135deg, #003D25 0%, #001A10 100%)', text: '🐊 Entrena como cocodrilo', sub: 'Cada pregunta correcta te acerca al siguiente nivel', color: '#00C87A' },
+    { bg: 'linear-gradient(135deg, #2D5A3D 0%, #0F1F14 100%)', text: '🐊 Entrena como cocodrilo', sub: 'Cada pregunta correcta te acerca al siguiente nivel', color: '#4A7C59' },
     { bg: 'linear-gradient(135deg, #1A0D00 0%, #0A0500 100%)', text: '🎯 Domina el examen PNP', sub: 'Más de 1,000 preguntas del valorario oficial', color: '#FF7043' },
     { bg: 'linear-gradient(135deg, #001A2A 0%, #000D15 100%)', text: '🏆 Compite en el ranking', sub: 'Demuestra quién manda en tu unidad', color: '#4FC3F7' },
   ]
@@ -177,7 +177,7 @@ export default function DashboardPage() {
             <Particles />
             <div className="absolute inset-0 opacity-5"
               style={{
-                backgroundImage: 'linear-gradient(#00C87A 1px, transparent 1px), linear-gradient(90deg, #00C87A 1px, transparent 1px)',
+                backgroundImage: 'linear-gradient(#4A7C59 1px, transparent 1px), linear-gradient(90deg, #4A7C59 1px, transparent 1px)',
                 backgroundSize: '40px 40px'
               }} />
             <div className="absolute right-8 top-1/2 -translate-y-1/2 w-32 h-32 rounded-full opacity-20 blur-3xl"
@@ -207,7 +207,7 @@ export default function DashboardPage() {
             </div>
             <Link href="/exams"
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
-              style={{ background: 'linear-gradient(135deg, #00C87A, #009A5E)', color: '#000', boxShadow: '0 0 20px #00C87A50' }}>
+              style={{ background: 'linear-gradient(135deg, #4A7C59, #2D5A3D)', color: '#000', boxShadow: '0 0 20px #4A7C5950' }}>
               📝 Nuevo simulacro
             </Link>
           </div>
@@ -215,11 +215,11 @@ export default function DashboardPage() {
           {/* CTA NUEVO USUARIO */}
           {isNew && (
             <div className="relative overflow-hidden rounded-2xl p-6"
-              style={{ background: 'rgba(0,30,18,0.9)', border: '1px solid #00C87A30', boxShadow: '0 0 30px #00C87A15' }}>
+              style={{ background: 'rgba(0,30,18,0.9)', border: '1px solid #4A7C5930', boxShadow: '0 0 30px #4A7C5915' }}>
               <p className="text-gray-400 text-base mb-4">Descubre tu nivel y empieza a escalar en el ranking PNP.</p>
               <Link href="/exams"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base"
-                style={{ background: 'linear-gradient(135deg, #00C87A, #009A5E)', color: '#000' }}>
+                style={{ background: 'linear-gradient(135deg, #4A7C59, #2D5A3D)', color: '#000' }}>
                 Comenzar mi primer simulacro →
               </Link>
             </div>

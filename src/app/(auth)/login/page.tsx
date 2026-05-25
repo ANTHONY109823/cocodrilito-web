@@ -6,7 +6,7 @@ import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
 
-const NEON = '#00C87A'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -78,7 +78,7 @@ export default function LoginPage() {
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
               style={{
-                background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
+                background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
                 color: '#000', opacity: loading ? 0.7 : 1,
                 boxShadow: `0 0 20px ${NEON}40`
               }}>

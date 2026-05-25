@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 
-const NEON = '#00C87A'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 const BLUE = '#4FC3F7'
@@ -88,7 +88,7 @@ export default function ResultPage() {
       {/* RESULTADO PRINCIPAL */}
       <div className="rounded-2xl p-8 text-center mb-4 fade-in"
         style={{
-          background: result.passed ? 'rgba(0,200,122,0.06)' : 'rgba(255,82,82,0.06)',
+          background: result.passed ? 'rgba(74,124,89,0.06)' : 'rgba(255,82,82,0.06)',
           border: `1px solid ${scoreColor}25`,
           boxShadow: `0 0 40px ${scoreColor}15`
         }}>
@@ -112,7 +112,7 @@ export default function ResultPage() {
       {/* STATS */}
       <div className="grid grid-cols-3 gap-3 mb-4 fade-in">
         {[
-          { label: 'Correctas', value: result.correctAnswers, color: NEON, bg: 'rgba(0,200,122,0.06)', border: 'rgba(0,200,122,0.15)' },
+          { label: 'Correctas', value: result.correctAnswers, color: NEON, bg: 'rgba(74,124,89,0.06)', border: 'rgba(74,124,89,0.15)' },
           { label: 'Incorrectas', value: result.totalQuestions - result.correctAnswers, color: RED, bg: 'rgba(255,82,82,0.06)', border: 'rgba(255,82,82,0.15)' },
           { label: 'Tiempo', value: formatTime(result.timeSpentSeconds), color: BLUE, bg: 'rgba(79,195,247,0.06)', border: 'rgba(79,195,247,0.15)' },
         ].map((item, i) => (
@@ -138,7 +138,7 @@ export default function ResultPage() {
         <Link href="/exams"
           className="py-3 rounded-xl text-sm font-bold text-center transition-all hover:scale-[1.02]"
           style={{
-            background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
+            background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
             color: '#000', boxShadow: `0 0 15px ${NEON}30`
           }}>
           Otro examen →

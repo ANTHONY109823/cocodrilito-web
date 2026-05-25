@@ -7,7 +7,7 @@ import { examsApi } from '@/lib/api/exams'
 import { saveExamSessionMeta } from '@/lib/examSession'
 import Link from 'next/link'
 
-const NEON = '#00C87A'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 const SIMULACRO_SIZE = 100
 
 interface Exam {
@@ -121,7 +121,7 @@ export default function ExamsPage() {
         <p className="text-gray-400 text-sm mb-6">Necesitas un plan activo para acceder a los simulacros.</p>
         <Link href="/premium?blocked=1"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm"
-          style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000' }}>
+          style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
           Ver planes →
         </Link>
       </div>
@@ -181,7 +181,7 @@ export default function ExamsPage() {
               disabled={!!starting || simulacroCount === 0}
               className="px-8 py-3 rounded-xl font-bold text-sm"
               style={{
-                background: simulacroCount === 0 ? 'rgba(0,200,122,0.2)' : `linear-gradient(135deg, ${NEON}, #009A5E)`,
+                background: simulacroCount === 0 ? 'rgba(74,124,89,0.2)' : `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
                 color: simulacroCount === 0 ? '#374151' : '#000',
                 opacity: starting ? 0.7 : 1,
               }}>

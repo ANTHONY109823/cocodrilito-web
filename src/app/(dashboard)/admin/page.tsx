@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 
 interface User {
   id: string
@@ -32,7 +33,6 @@ interface Subscription {
   createdAt: string
 }
 
-const NEON = '#00C87A'
 const NEON2 = '#4FC3F7'
 const GOLD = '#FFD700'
 const RED = '#FF5252'
@@ -240,7 +240,7 @@ export default function AdminPage() {
 
       {msg && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium fade-in"
-          style={{ backgroundColor: msg.ok ? 'rgba(0,200,122,0.1)' : 'rgba(255,82,82,0.1)', border: `1px solid ${msg.ok ? NEON : RED}40`, color: msg.ok ? NEON : RED }}>
+          style={{ backgroundColor: msg.ok ? 'rgba(74,124,89,0.1)' : 'rgba(255,82,82,0.1)', border: `1px solid ${msg.ok ? NEON : RED}40`, color: msg.ok ? NEON : RED }}>
           {msg.text}
         </div>
       )}
@@ -444,7 +444,7 @@ export default function AdminPage() {
                         style={{ backgroundColor: `${NEON}10`, color: NEON, border: `1px solid ${NEON}20` }}>+180d</button>
                       <button onClick={() => handleReactivate(u.id)}
                         className="px-4 py-1.5 rounded-lg text-xs font-bold"
-                        style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000' }}>
+                        style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
                         ✅ Reactivar
                       </button>
                       <button onClick={() => handleDeletePermanent(u.id)}
@@ -495,7 +495,7 @@ export default function AdminPage() {
                   <button key={plan.days} type="button"
                     onClick={() => setForm({ ...form, planDays: plan.days })}
                     className="p-4 rounded-xl text-left transition-all"
-                    style={{ border: `2px solid ${form.planDays === plan.days ? NEON : '#ffffff10'}`, backgroundColor: form.planDays === plan.days ? 'rgba(0,200,122,0.08)' : 'rgba(0,10,5,0.5)' }}>
+                    style={{ border: `2px solid ${form.planDays === plan.days ? NEON : '#ffffff10'}`, backgroundColor: form.planDays === plan.days ? 'rgba(74,124,89,0.08)' : 'rgba(0,10,5,0.5)' }}>
                     <div className="font-bold text-white text-sm">{plan.label}</div>
                     <div className="text-xs mt-0.5" style={{ color: form.planDays === plan.days ? NEON : '#6B7280' }}>
                       {plan.price} · {plan.sub}
@@ -529,7 +529,7 @@ export default function AdminPage() {
 
             <button type="submit" disabled={saving}
               className="w-full py-3 rounded-xl font-bold text-sm"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
+              style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Creando...' : '➕ Crear usuario con acceso inmediato'}
             </button>
           </form>
@@ -593,7 +593,7 @@ export default function AdminPage() {
           </p>
           <Link href="/admin/preguntas"
             className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-base transition-all hover:scale-105"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000', boxShadow: `0 0 20px ${NEON}40` }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', boxShadow: `0 0 20px ${NEON}40` }}>
             Ir al banco de preguntas →
           </Link>
         </div>

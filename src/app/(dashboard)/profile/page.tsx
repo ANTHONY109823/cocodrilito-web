@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import apiClient from '@/lib/api/client'
 import Link from 'next/link'
 
-const NEON = '#00C87A'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 
@@ -146,7 +146,7 @@ export default function ProfilePage() {
               <div className="text-sm" style={{ color: RED }}>Sin plan activo</div>
               <Link href="/premium"
                 className="px-3 py-1.5 rounded-lg text-xs font-bold"
-                style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000' }}>
+                style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
                 Ver planes →
               </Link>
             </div>
@@ -158,7 +158,7 @@ export default function ProfilePage() {
       {msg && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium fade-in"
           style={{
-            backgroundColor: msg.ok ? 'rgba(0,200,122,0.1)' : 'rgba(255,82,82,0.1)',
+            backgroundColor: msg.ok ? 'rgba(74,124,89,0.1)' : 'rgba(255,82,82,0.1)',
             border: `1px solid ${msg.ok ? NEON : RED}40`,
             color: msg.ok ? NEON : RED
           }}>
@@ -186,7 +186,7 @@ export default function ProfilePage() {
           <button type="submit" disabled={loading}
             className="w-full py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
             style={{
-              background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
+              background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
               color: '#000', opacity: loading ? 0.7 : 1
             }}>
             {loading ? 'Guardando...' : 'Guardar cambios'}

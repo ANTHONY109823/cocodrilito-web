@@ -1,23 +1,46 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 :root {
-  --green-primary: #1D9E75;
-  --green-dark: #085041;
-  --green-light: #E1F5EE;
-  --gold: #EF9F27;
-  --danger: #D85A30;
-  --bg-dark: #0A0F0D;
-  --bg-card: #111916;
+  --color-primary: #4A7C59;
+  --color-primary-dark: #2D5A3D;
+  --color-primary-light: #6B9E7A;
+  --color-primary-bg: #E8F0EB;
+  --color-primary-pale: #F2F6F3;
+
+  --color-surface: #0A0F0D;
+  --color-surface-card: #111A14;
+  --color-surface-border: #1E3328;
+
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A8BFB0;
+  --color-text-muted: #6B8A75;
+
+  --color-success: #4A7C59;
+  --color-warning: #C9943A;
+  --color-danger: #C0392B;
+  --color-info: #2E86AB;
+
+  --brand-gradient: linear-gradient(135deg, #2D5A3D 0%, #4A7C59 50%, #6B9E7A 100%);
+
+  /* Alias legacy */
+  --green-primary: var(--color-primary);
+  --green-dark: var(--color-primary-dark);
+  --green-light: var(--color-primary-bg);
+  --gold: var(--color-warning);
+  --danger: var(--color-danger);
+  --bg-dark: var(--color-surface);
+  --bg-card: var(--color-surface-card);
 }
 
 body {
-  background-color: var(--bg-dark);
-  color: #F0F4F1;
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
   font-family: 'Inter', sans-serif;
 }
 
 .btn-primary {
-  background-color: var(--green-primary);
+  background-color: var(--color-primary);
   color: white;
   padding: 0.75rem 1.5rem;
   border-radius: 0.75rem;
@@ -29,13 +52,13 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: var(--green-dark);
+  background-color: var(--color-primary-dark);
   transform: translateY(-1px);
 }
 
 .card {
-  background-color: var(--bg-card);
-  border: 1px solid #1A2E24;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-surface-border);
   border-radius: 1rem;
   padding: 1.5rem;
 }
@@ -43,16 +66,16 @@ body {
 .input-field {
   width: 100%;
   background-color: #0F1A14;
-  border: 1px solid #1A2E24;
+  border: 1px solid var(--color-surface-border);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
-  color: #F0F4F1;
+  color: var(--color-text-primary);
   outline: none;
   transition: border-color 0.2s;
 }
 
 .input-field:focus {
-  border-color: var(--green-primary);
+  border-color: var(--color-primary);
 }
 
 .badge-league {
@@ -68,7 +91,6 @@ body {
 /* ===== RESPONSIVE MOBILE ===== */
 @media (max-width: 768px) {
 
-  /* Navbar */
   nav {
     padding: 12px 16px !important;
   }
@@ -77,7 +99,6 @@ body {
     display: none;
   }
 
-  /* Dashboard cards */
   .grid.grid-cols-2 {
     grid-template-columns: 1fr 1fr !important;
   }
@@ -92,22 +113,18 @@ body {
     grid-template-columns: 1fr !important;
   }
 
-  /* Cards padding */
   .card {
     padding: 1rem !important;
   }
 
-  /* Exam interface */
   .max-w-3xl {
     padding: 0 8px;
   }
 
-  /* Result page */
   .max-w-2xl {
     padding: 0 8px;
   }
 
-  /* Ranking table */
   table {
     font-size: 12px;
   }
@@ -117,12 +134,10 @@ body {
     display: none;
   }
 
-  /* Buttons */
   .flex.gap-3 {
     flex-direction: column;
   }
 
-  /* Timer en examen */
   .font-mono {
     font-size: 1.25rem !important;
   }

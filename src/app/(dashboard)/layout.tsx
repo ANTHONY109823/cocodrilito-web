@@ -18,13 +18,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0F0D' }}>
-      <nav style={{ backgroundColor: '#0A0F0D', borderBottom: '1px solid #1A2E24' }}
+      <nav style={{ backgroundColor: '#0A0F0D', borderBottom: '1px solid #1E3328' }}
         className="px-4 md:px-6 py-4">
         <div className="flex items-center justify-between">
 
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="text-2xl">🐊</span>
-            <span className="text-white font-bold text-lg">Cocodrilito</span>
+            <span className="font-bold text-lg text-police-green-400">Cocodrilito</span>
           </Link>
 
           {/* Desktop nav */}
@@ -68,17 +68,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setMenuOpen(!menuOpen)}>
             <div style={{ width: '24px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <span style={{
-                height: '2px', backgroundColor: menuOpen ? '#00C87A' : 'currentColor',
+                height: '2px', backgroundColor: menuOpen ? '#4A7C59' : 'currentColor',
                 display: 'block', transition: 'all 0.2s',
                 transform: menuOpen ? 'rotate(45deg) translateY(7px)' : 'none'
               }} />
               <span style={{
-                height: '2px', backgroundColor: menuOpen ? '#00C87A' : 'currentColor',
+                height: '2px', backgroundColor: menuOpen ? '#4A7C59' : 'currentColor',
                 display: 'block', transition: 'all 0.2s',
                 opacity: menuOpen ? 0 : 1
               }} />
               <span style={{
-                height: '2px', backgroundColor: menuOpen ? '#00C87A' : 'currentColor',
+                height: '2px', backgroundColor: menuOpen ? '#4A7C59' : 'currentColor',
                 display: 'block', transition: 'all 0.2s',
                 transform: menuOpen ? 'rotate(-45deg) translateY(-7px)' : 'none'
               }} />
@@ -88,11 +88,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden mt-4 pb-4" style={{ borderTop: '1px solid #1A2E24', paddingTop: '1rem' }}>
+          <div className="md:hidden mt-4 pb-4" style={{ borderTop: '1px solid #1E3328', paddingTop: '1rem' }}>
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                  style={{ backgroundColor: '#00C87A20', color: '#00C87A' }}>
+                  style={{ backgroundColor: '#4A7C5920', color: '#4A7C59' }}>
                   {user?.fullName?.charAt(0)}
                 </div>
                 <div>

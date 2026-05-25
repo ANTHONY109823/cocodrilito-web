@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 
 interface Question {
   id: string
@@ -29,7 +30,6 @@ interface Category {
   orderIndex: number
 }
 
-const NEON = '#00C87A'
 const NEON2 = '#4FC3F7'
 const RED = '#FF5252'
 const PAGE_SIZE = 50
@@ -369,7 +369,7 @@ export default function PreguntasPage() {
                 </button>
                 <button onClick={handleSaveEdit} disabled={saving}
                   className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-opacity"
-                  style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
+                  style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
                   {saving ? 'Guardando...' : 'Guardar cambios'}
                 </button>
               </div>
@@ -398,9 +398,9 @@ export default function PreguntasPage() {
           <button onClick={() => setShowAddForm(!showAddForm)}
             className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
             style={{
-              backgroundColor: showAddForm ? 'rgba(255,255,255,0.05)' : 'rgba(0,200,122,0.12)',
+              backgroundColor: showAddForm ? 'rgba(255,255,255,0.05)' : 'rgba(74,124,89,0.12)',
               color: showAddForm ? '#6B7280' : NEON,
-              border: `1px solid ${showAddForm ? 'rgba(255,255,255,0.08)' : 'rgba(0,200,122,0.25)'}`
+              border: `1px solid ${showAddForm ? 'rgba(255,255,255,0.08)' : 'rgba(74,124,89,0.25)'}`
             }}>
             {showAddForm ? '✕ Cancelar' : '+ Nueva pregunta'}
           </button>
@@ -417,8 +417,8 @@ export default function PreguntasPage() {
       {msg && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm fade-in"
           style={{
-            backgroundColor: msg.ok ? 'rgba(0,200,122,0.08)' : 'rgba(255,82,82,0.08)',
-            border: `1px solid ${msg.ok ? 'rgba(0,200,122,0.2)' : 'rgba(255,82,82,0.2)'}`,
+            backgroundColor: msg.ok ? 'rgba(74,124,89,0.08)' : 'rgba(255,82,82,0.08)',
+            border: `1px solid ${msg.ok ? 'rgba(74,124,89,0.2)' : 'rgba(255,82,82,0.2)'}`,
             color: msg.ok ? NEON : '#ef4444'
           }}>
           {msg.text}
@@ -490,7 +490,7 @@ export default function PreguntasPage() {
             </div>
             <button type="submit" disabled={saving}
               className="w-full py-2.5 rounded-xl font-semibold text-sm transition-opacity"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
+              style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Guardando...' : 'Guardar pregunta'}
             </button>
           </form>
@@ -506,9 +506,9 @@ export default function PreguntasPage() {
           <button onClick={() => setShowAddCategory(!showAddCategory)}
             className="text-xs px-3 py-1.5 rounded-lg transition-colors"
             style={{
-              backgroundColor: showAddCategory ? 'rgba(255,255,255,0.05)' : 'rgba(0,200,122,0.1)',
+              backgroundColor: showAddCategory ? 'rgba(255,255,255,0.05)' : 'rgba(74,124,89,0.1)',
               color: showAddCategory ? '#6B7280' : NEON,
-              border: `1px solid ${showAddCategory ? 'rgba(255,255,255,0.08)' : 'rgba(0,200,122,0.2)'}`
+              border: `1px solid ${showAddCategory ? 'rgba(255,255,255,0.08)' : 'rgba(74,124,89,0.2)'}`
             }}>
             {showAddCategory ? '✕ Cancelar' : '+ Agregar categoría'}
           </button>
@@ -516,7 +516,7 @@ export default function PreguntasPage() {
 
         {showAddCategory && (
           <div className="px-4 py-3 fade-in"
-            style={{ background: 'rgba(0,200,122,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            style={{ background: 'rgba(74,124,89,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div className="flex items-center gap-3 flex-wrap">
               <input className="input-q flex-1 min-w-48"
                 placeholder="Nombre de la categoría (ej. ETICA POLICIAL)"
@@ -536,7 +536,7 @@ export default function PreguntasPage() {
               </div>
               <button onClick={handleAddCategory} disabled={saving || !newCatName.trim()}
                 className="px-4 py-2 rounded-lg text-xs font-semibold shrink-0 transition-opacity"
-                style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000', opacity: saving || !newCatName.trim() ? 0.5 : 1 }}>
+                style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000', opacity: saving || !newCatName.trim() ? 0.5 : 1 }}>
                 Crear
               </button>
             </div>

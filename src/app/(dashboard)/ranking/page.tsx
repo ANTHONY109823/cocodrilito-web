@@ -5,7 +5,7 @@ import apiClient from '@/lib/api/client'
 import { useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
 
-const NEON = '#00C87A'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 const GOLD = '#FFD700'
 const SILVER = '#C0C0C0'
 const BRONZE = '#CD7F32'
@@ -93,7 +93,7 @@ export default function RankingPage() {
       {myRanking && (
         <div className="rounded-2xl p-4 mb-4 fade-in"
           style={{
-            background: 'rgba(0,200,122,0.06)',
+            background: 'rgba(74,124,89,0.06)',
             border: `1px solid ${NEON}25`,
             boxShadow: `0 0 20px ${NEON}10`
           }}>
@@ -177,7 +177,7 @@ export default function RankingPage() {
               <div key={entry.userId}
                 className="rank-row rounded-2xl p-4 flex items-center gap-3"
                 style={{
-                  background: isMe ? 'rgba(0,200,122,0.06)' : 'rgba(0,5,2,0.8)',
+                  background: isMe ? 'rgba(74,124,89,0.06)' : 'rgba(0,5,2,0.8)',
                   border: `1px solid ${isMe ? NEON : '#ffffff08'}${isMe ? '30' : ''}`,
                 }}>
                 {/* POSICIÓN */}

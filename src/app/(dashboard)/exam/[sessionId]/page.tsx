@@ -10,7 +10,7 @@ import {
   normalizeExamSessionPayload,
 } from '@/lib/examSession'
 
-const NEON = '#00C87A'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 
@@ -247,7 +247,7 @@ export default function ExamPage() {
                   disabled={!!selectedOption}
                   className="w-full text-left rounded-xl p-4 transition-all flex items-start gap-3"
                   style={{
-                    background: isSelected ? 'rgba(0,200,122,0.12)' : 'rgba(0,5,2,0.6)',
+                    background: isSelected ? 'rgba(74,124,89,0.12)' : 'rgba(0,5,2,0.6)',
                     border: `1px solid ${isSelected ? NEON : '#ffffff10'}`,
                     boxShadow: isSelected ? `0 0 15px ${NEON}20` : 'none',
                     cursor: selectedOption ? 'default' : 'pointer',
@@ -294,7 +294,7 @@ export default function ExamPage() {
     <button onClick={handleFinish} disabled={finishing}
       className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
       style={{
-        background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
+        background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
         color: '#000', boxShadow: `0 0 20px ${NEON}40`
       }}>
       {finishing ? 'Finalizando...' : 'Finalizar examen ✓'}

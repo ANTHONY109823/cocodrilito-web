@@ -7,7 +7,7 @@ import apiClient from '@/lib/api/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-const NEON = '#00C87A'
+import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
 const GOLD = '#FFD700'
 
 type PlanKey = 'monthly' | 'bimonthly' | 'full'
@@ -106,7 +106,7 @@ export default function PremiumPage() {
         </div>
         <Link href="/dashboard"
           className="block w-full py-3 rounded-xl font-bold text-sm text-center"
-          style={{ background: `linear-gradient(135deg, ${NEON}, #009A5E)`, color: '#000' }}>
+          style={{ background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`, color: '#000' }}>
           Volver al inicio
         </Link>
       </div>
@@ -129,7 +129,7 @@ export default function PremiumPage() {
       {/* BANNER NUEVO / BLOQUEADO */}
       {(isNew || isBlocked) && (
         <div className="rounded-2xl p-5 mb-6 text-center fade-in"
-          style={{ background: 'rgba(0,200,122,0.08)', border: `1px solid ${NEON}30` }}>
+          style={{ background: 'rgba(74,124,89,0.08)', border: `1px solid ${NEON}30` }}>
           <div className="text-4xl mb-2">🐊</div>
           <h2 className="text-white font-bold text-lg mb-1">
             {isNew ? '¡Cuenta creada! Elige tu plan para comenzar' : '¡Un paso más para practicar!'}
@@ -160,7 +160,7 @@ export default function PremiumPage() {
                   onClick={() => setSelectedPlan(key)}
                   className="relative rounded-2xl p-5 cursor-pointer transition-all hover:scale-[1.02]"
                   style={{
-                    background: isSelected ? 'rgba(0,200,122,0.08)' : 'rgba(0,8,4,0.9)',
+                    background: isSelected ? 'rgba(74,124,89,0.08)' : 'rgba(0,8,4,0.9)',
                     border: `2px solid ${isSelected ? NEON : plan.popular ? `${GOLD}40` : '#ffffff10'}`,
                     boxShadow: isSelected ? `0 0 25px ${NEON}30` : 'none'
                   }}>
@@ -214,7 +214,7 @@ export default function PremiumPage() {
             disabled={!selectedPlan}
             className="w-full py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
             style={{
-              background: selectedPlan ? `linear-gradient(135deg, ${NEON}, #009A5E)` : '#1A2A20',
+              background: selectedPlan ? `linear-gradient(135deg, ${NEON}, #2D5A3D)` : '#1A2A20',
               color: selectedPlan ? '#000' : '#4B5563',
               boxShadow: selectedPlan ? `0 0 20px ${NEON}40` : 'none',
               cursor: selectedPlan ? 'pointer' : 'not-allowed'
@@ -253,7 +253,7 @@ export default function PremiumPage() {
                   className="p-3 rounded-xl text-center font-bold transition-all"
                   style={{
                     border: `2px solid ${paymentMethod === method ? NEON : '#ffffff10'}`,
-                    backgroundColor: paymentMethod === method ? 'rgba(0,200,122,0.08)' : 'rgba(0,5,2,0.5)',
+                    backgroundColor: paymentMethod === method ? 'rgba(74,124,89,0.08)' : 'rgba(0,5,2,0.5)',
                     color: paymentMethod === method ? NEON : '#6B7280'
                   }}>
                   {method === 'yape' ? '💜 Yape' : '💙 Plin'}
@@ -275,7 +275,7 @@ export default function PremiumPage() {
 
             {/* INSTRUCCIONES */}
             <div className="rounded-xl p-4 mb-5 space-y-2"
-              style={{ backgroundColor: 'rgba(0,200,122,0.05)', border: `1px solid ${NEON}15` }}>
+              style={{ backgroundColor: 'rgba(74,124,89,0.05)', border: `1px solid ${NEON}15` }}>
               {[
                 'Realiza el pago al número de arriba',
                 'Toma captura del comprobante',
@@ -317,7 +317,7 @@ export default function PremiumPage() {
               <button onClick={handleRequestPremium} disabled={loading}
                 className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
                 style={{
-                  background: `linear-gradient(135deg, ${NEON}, #009A5E)`,
+                  background: `linear-gradient(135deg, ${NEON}, #2D5A3D)`,
                   color: '#000',
                   opacity: loading ? 0.7 : 1,
                   boxShadow: `0 0 20px ${NEON}40`
