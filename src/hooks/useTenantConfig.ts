@@ -5,15 +5,11 @@ import { fetchTenantConfig, type TenantConfig } from '@/lib/api/tenants'
 
 export function useTenantConfig(slug: string | null) {
   const [config, setConfig] = useState<TenantConfig | null>(null)
-  const [loading, setLoading] = useState(Boolean(slug))
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!slug) {
-      setConfig(null)
-      setLoading(false)
-      return
-    }
+    if (!slug) return
 
     let cancelled = false
     setLoading(true)
@@ -41,5 +37,9 @@ export function useTenantConfig(slug: string | null) {
     }
   }, [slug])
 
-  return { config, loading, error }
+  return {
+    config: slug ? config : null,
+    loading: slug ? loading : false,
+    error: slug ? error : null,
+  }
 }

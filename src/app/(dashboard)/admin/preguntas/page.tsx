@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -32,7 +33,6 @@ interface Category {
 }
 
 const NEON2 = '#4FC3F7'
-const RED = '#FF5252'
 const PAGE_SIZE = 50
 
 const PRESET_COLORS = [
@@ -79,17 +79,7 @@ export default function PreguntasPage() {
     ]
   })
 
-  useEffect(() => { loadFromStorage() }, [])
-
-  useEffect(() => {
-    if (user) {
-      const isAdmin = isAnyAdmin(user.role)
-      if (!isAdmin) { router.push('/dashboard'); return }
-      loadAll()
-    }
-  }, [user])
-
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     setLoading(true)
     try {
       const [qRes, eRes, cRes] = await Promise.all([
@@ -102,12 +92,24 @@ export default function PreguntasPage() {
       setQuestions(qs)
       setExams(Array.isArray(eRes.data) ? eRes.data : [])
       setCategories(cats)
-      if (cats.length > 0 && !selectedCategory) {
-        setSelectedCategory(cats[0].name)
-        setQForm(f => ({ ...f, category: cats[0].name }))
+      const firstCat = cats[0]?.name
+      if (firstCat) {
+        setSelectedCategory((prev) => prev || firstCat)
+        setQForm((f) => ({ ...f, category: f.category || firstCat }))
       }
-    } catch { } finally { setLoading(false) }
-  }
+    } catch { /* ignore */ } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { loadFromStorage() }, [loadFromStorage])
+
+  useEffect(() => {
+    if (!user) return
+    if (!isAnyAdmin(user.role)) {
+      router.push('/dashboard')
+      return
+    }
+    void loadAll()
+  }, [user, loadAll, router])
 
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const file = e.target.files?.[0]
@@ -138,15 +140,8 @@ export default function PreguntasPage() {
       }
       setTimeout(() => setMsg(null), totalErrors > 0 || imported === 0 ? 12000 : 4000)
       loadAll()
-    } catch (err: any) {
-      const status = err.response?.status
-      const detail =
-        err.response?.data?.errors?.[0]
-        || err.response?.data?.message
-        || (status === 415 ? 'Error 415: el archivo no se envió como multipart. Actualiza el frontend en Vercel.' : null)
-        || err.message
-        || 'Error al subir'
-      setMsg({ text: `${status ? `[${status}] ` : ''}${detail}`, ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorDetail(err, 'Error al subir'), ok: false })
     } finally {
       setUploadingCat(null)
       if (fileRefs.current[category]) fileRefs.current[category]!.value = ''
@@ -173,8 +168,8 @@ export default function PreguntasPage() {
       setShowAddCategory(false)
       setMsg({ text: `✅ Categoría "${res.data.name}" creada`, ok: true })
       setTimeout(() => setMsg(null), 3000)
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error al crear categoría', ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al crear categoría'), ok: false })
     } finally { setSaving(false) }
   }
 
@@ -194,8 +189,8 @@ export default function PreguntasPage() {
         ok: false
       })
       setTimeout(() => setMsg(null), 2000)
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error', ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
     }
   }
 
@@ -218,8 +213,8 @@ export default function PreguntasPage() {
       setQForm({ ...qForm, questionText: '', explanation: '', orderIndex: qForm.orderIndex + 1 })
       setShowAddForm(false)
       loadAll()
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error', ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
     } finally { setSaving(false) }
   }
 
@@ -265,8 +260,8 @@ export default function PreguntasPage() {
       const res = await apiClient.delete('/admin/Questions/bulk')
       setMsg({ text: `🗑️ ${res.data.deleted} preguntas eliminadas`, ok: false })
       setTimeout(() => { setMsg(null); loadAll() }, 2000)
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error', ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
     }
   }
 

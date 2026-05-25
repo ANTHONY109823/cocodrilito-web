@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { createFloatingParticles } from '@/lib/utils/particles'
 import { useAuthStore } from '@/lib/store/authStore'
 import { gamificationApi } from '@/lib/api/gamification'
 import { examsApi } from '@/lib/api/exams'
@@ -62,19 +63,20 @@ const getLeague = (n: number) => {
 const formatTime = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`
 
 function Particles() {
+  const particles = useMemo(() => createFloatingParticles(20), [])
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: 20 }).map((_, i) => (
-        <div key={i}
+      {particles.map((p) => (
+        <div key={p.id}
           className="absolute rounded-full opacity-20"
           style={{
-            width: Math.random() * 4 + 2 + 'px',
-            height: Math.random() * 4 + 2 + 'px',
-            left: Math.random() * 100 + '%',
-            top: Math.random() * 100 + '%',
-            backgroundColor: i % 3 === 0 ? '#4A7C59' : i % 3 === 1 ? '#4FC3F7' : '#FFD700',
-            animation: `float ${Math.random() * 6 + 4}s ease-in-out infinite`,
-            animationDelay: Math.random() * 4 + 's',
+            width: p.width,
+            height: p.height,
+            left: p.left,
+            top: p.top,
+            backgroundColor: p.backgroundColor,
+            animation: p.animation,
+            animationDelay: p.animationDelay,
           }} />
       ))}
     </div>

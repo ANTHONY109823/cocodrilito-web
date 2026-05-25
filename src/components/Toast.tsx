@@ -1,7 +1,7 @@
 'use client'
 
 import { useToastStore, type ToastType } from '@/lib/store/toastStore'
-import { DANGER, INFO, NEON, WARNING } from '@/lib/constants/theme'
+import { DANGER, INFO, NEON } from '@/lib/constants/theme'
 
 const TYPE_STYLES: Record<ToastType, { bg: string; border: string; color: string }> = {
   success: { bg: 'rgba(74,124,89,0.15)', border: `${NEON}50`, color: NEON },

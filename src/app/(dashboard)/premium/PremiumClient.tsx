@@ -2,9 +2,8 @@
 
 export const dynamic = 'force-dynamic'
 import { useState } from 'react'
-import { useAuthStore } from '@/lib/store/authStore'
 import apiClient from '@/lib/api/client'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 import { NEON } from '@/lib/constants/theme'
@@ -43,8 +42,6 @@ const plans: Record<PlanKey, { name: string; price: number; days: number; saving
 }
 
 export default function PremiumPage() {
-  const { user } = useAuthStore()
-  const router = useRouter()
   const searchParams = useSearchParams()
   const isNew = searchParams.get('new') === '1'
   const isBlocked = searchParams.get('blocked') === '1'

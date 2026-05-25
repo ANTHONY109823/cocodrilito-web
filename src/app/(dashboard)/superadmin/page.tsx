@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
@@ -11,7 +11,7 @@ import {
   type DashboardStats,
   type TenantSummary,
 } from '@/lib/api/superadmin'
-import { Skeleton, SkeletonCard, SkeletonTable } from '@/components/Skeleton'
+import { SkeletonCard, SkeletonTable } from '@/components/Skeleton'
 import { toast } from '@/components/Toast'
 import {
   NEON,
@@ -81,12 +81,7 @@ export default function SuperAdminPage() {
     }
   }, [user, router])
 
-  useEffect(() => {
-    if (!user || !isSuperAdmin(user.role)) return
-    loadTabData()
-  }, [user, tab])
-
-  const loadTabData = async () => {
+  const loadTabData = useCallback(async () => {
     setLoading(true)
     try {
       if (tab === 'overview' || tab === 'payments') {
@@ -110,7 +105,12 @@ export default function SuperAdminPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [tab])
+
+  useEffect(() => {
+    if (!user || !isSuperAdmin(user.role)) return
+    void loadTabData()
+  }, [user, tab, loadTabData])
 
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault()

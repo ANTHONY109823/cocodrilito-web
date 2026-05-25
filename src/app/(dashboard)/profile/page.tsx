@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
 import apiClient from '@/lib/api/client'
+import { getApiErrorMessage } from '@/lib/api/errors'
 import Link from 'next/link'
 
 import { NEON } from '@/lib/constants/theme'
@@ -26,21 +27,18 @@ export default function ProfilePage() {
     confirmPassword: '',
   })
 
-  useEffect(() => {
-    loadFromStorage()
-    loadSubInfo()
+  const loadSubInfo = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/Auth/me')
+      const data = res.data as { subscription?: { expiresAt: string; daysLeft: number } }
+      if (data.subscription) setSubInfo(data.subscription)
+    } catch { /* ignore */ }
   }, [])
 
   useEffect(() => {
-    if (user) setProfileForm({ rank: user.rank, unit: user.unit })
-  }, [user])
-
-  const loadSubInfo = async () => {
-    try {
-      const res = await apiClient.get('/Auth/me')
-      if (res.data.subscription) setSubInfo(res.data.subscription)
-    } catch { }
-  }
+    loadFromStorage()
+    void loadSubInfo()
+  }, [loadFromStorage, loadSubInfo])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,8 +72,8 @@ export default function ProfilePage() {
       })
       setMsg({ text: '✅ Contraseña actualizada correctamente', ok: true })
       setPassForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error al cambiar contraseña', ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al cambiar contraseña'), ok: false })
     } finally { setLoading(false) }
   }
 

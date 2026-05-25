@@ -10,7 +10,7 @@ import {
   normalizeExamSessionPayload,
 } from '@/lib/examSession'
 
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 
@@ -50,23 +50,18 @@ export default function ExamPage() {
   const [finishing, setFinishing] = useState(false)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadSession()
-  }, [sessionId])
+  const handleFinish = useCallback(async () => {
+    if (finishing) return
+    setFinishing(true)
+    try {
+      await examsApi.finish(sessionId)
+      router.push(`/result/${sessionId}`)
+    } catch {
+      router.push(`/result/${sessionId}`)
+    }
+  }, [finishing, sessionId, router])
 
-  useEffect(() => {
-    if (!session) return
-    const t = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) { handleFinish(); return 0 }
-        return prev - 1
-      })
-      setQuestionTime(prev => prev + 1000)
-    }, 1000)
-    return () => clearInterval(t)
-  }, [session])
-
-  const loadSession = async () => {
+  const loadSession = useCallback(async () => {
     try {
       // Verificar si ya está completada
       const resultRes = await examsApi.getResult(sessionId)
@@ -127,7 +122,23 @@ export default function ExamPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [sessionId, router])
+
+  useEffect(() => {
+    void loadSession()
+  }, [loadSession])
+
+  useEffect(() => {
+    if (!session) return
+    const t = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) { void handleFinish(); return 0 }
+        return prev - 1
+      })
+      setQuestionTime(prev => prev + 1000)
+    }, 1000)
+    return () => clearInterval(t)
+  }, [session, handleFinish])
 
   const handleAnswer = async (optionId: string) => {
     if (!session) return
@@ -150,17 +161,6 @@ export default function ExamPage() {
       }
     }, 600)
   }
-
-  const handleFinish = useCallback(async () => {
-    if (finishing) return
-    setFinishing(true)
-    try {
-      await examsApi.finish(sessionId)
-      router.push(`/result/${sessionId}`)
-    } catch {
-      router.push(`/result/${sessionId}`)
-    }
-  }, [finishing, sessionId])
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60)

@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
+import { getApiErrorMessage } from '@/lib/api/errors'
 import { isAnyAdmin } from '@/lib/auth/roles'
 import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
 import { NEON } from '@/lib/constants/theme'
@@ -40,17 +41,20 @@ const GOLD = '#FFD700'
 const RED = '#FF5252'
 const PURPLE = '#A855F7'
 
+type AdminTab = 'users' | 'subscriptions' | 'inactive' | 'create' | 'questions' | 'plans'
+type UserFilterKey = 'all' | 'admin' | 'web'
+
 export default function AdminPage() {
   const { user, loadFromStorage } = useAuthStore()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'subscriptions' | 'inactive' | 'create' | 'questions' | 'plans'>('users')
+  const [tab, setTab] = useState<AdminTab>('users')
   const [users, setUsers] = useState<User[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
-  const [userFilter, setUserFilter] = useState<'all' | 'admin' | 'web'>('all')
-  const [inactiveFilter, setInactiveFilter] = useState<'all' | 'admin' | 'web'>('all')
+  const [userFilter, setUserFilter] = useState<UserFilterKey>('all')
+  const [inactiveFilter, setInactiveFilter] = useState<UserFilterKey>('all')
   const excelInputRef = useRef<HTMLInputElement>(null)
   const [uploadingExcel, setUploadingExcel] = useState(false)
 
@@ -68,6 +72,22 @@ export default function AdminPage() {
     rank: '', unit: '', planDays: 180
   })
 
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      if (tab === 'users' || tab === 'inactive') {
+        const res = await apiClient.get('/admin/users')
+        setUsers(res.data)
+      } else if (tab === 'subscriptions') {
+        const res = await apiClient.get('/subscriptions/pending')
+        setSubscriptions(res.data)
+      } else if (tab === 'plans') {
+        const res = await tenantPlansApi.list(user?.tenantId ?? undefined)
+        setPlans(res.data)
+      }
+    } catch { /* ignore */ } finally { setLoading(false) }
+  }, [tab, user])
+
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -80,9 +100,9 @@ export default function AdminPage() {
       })
       setMsg({ text: `✅ ${res.data.created} usuarios importados`, ok: true })
       if (res.data.errors?.length > 0) console.warn('Errores:', res.data.errors)
-      loadData()
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error al importar', ok: false })
+      void loadData()
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al importar'), ok: false })
     } finally {
       setUploadingExcel(false)
       if (excelInputRef.current) excelInputRef.current.value = ''
@@ -100,28 +120,13 @@ export default function AdminPage() {
   useEffect(() => { loadFromStorage() }, [])
 
   useEffect(() => {
-    if (user) {
-      const isAdmin = isAnyAdmin(user.role)
-      if (!isAdmin) { router.push('/dashboard'); return }
-      loadData()
+    if (!user) return
+    if (!isAnyAdmin(user.role)) {
+      router.push('/dashboard')
+      return
     }
-  }, [user, tab])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      if (tab === 'users' || tab === 'inactive') {
-        const res = await apiClient.get('/admin/users')
-        setUsers(res.data)
-      } else if (tab === 'subscriptions') {
-        const res = await apiClient.get('/subscriptions/pending')
-        setSubscriptions(res.data)
-      } else if (tab === 'plans') {
-        const res = await tenantPlansApi.list(user?.tenantId ?? undefined)
-        setPlans(res.data)
-      }
-    } catch { } finally { setLoading(false) }
-  }
+    void loadData()
+  }, [user, loadData, router])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,8 +137,8 @@ export default function AdminPage() {
       setMsg({ text: '✅ Usuario creado exitosamente', ok: true })
       setForm({ fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180 })
       setTimeout(() => { setTab('users'); setMsg(null) }, 2000)
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error al crear usuario', ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al crear usuario'), ok: false })
     } finally { setSaving(false) }
   }
 
@@ -166,8 +171,8 @@ export default function AdminPage() {
       setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: false } : u))
       setMsg({ text: '⛔ Usuario desactivado', ok: false })
       setTimeout(() => setMsg(null), 2000)
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error al desactivar', ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al desactivar'), ok: false })
     }
   }
 
@@ -195,8 +200,8 @@ export default function AdminPage() {
       setUsers(prev => prev.filter(u => u.id !== id))
       setMsg({ text: '🗑️ Usuario eliminado permanentemente', ok: false })
       setTimeout(() => setMsg(null), 3000)
-    } catch (err: any) {
-      setMsg({ text: err.response?.data?.message || 'Error al eliminar', ok: false })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al eliminar'), ok: false })
     }
   }
 
@@ -209,8 +214,7 @@ export default function AdminPage() {
       setPlanForm({ trackType: 3, name: '', price: 0, durationDays: 30, description: '' })
       loadData()
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } }
-      setMsg({ text: ax.response?.data?.message || 'Error al crear plan', ok: false })
+      setMsg({ text: getApiErrorMessage(err, 'Error al crear plan'), ok: false })
     } finally {
       setSaving(false)
     }
@@ -227,9 +231,11 @@ export default function AdminPage() {
     }
   }
 
+  const [referenceNow] = useState(() => Date.now())
+
   const daysLeft = (expiresAt?: string | null) => {
     if (!expiresAt) return null
-    return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000)
+    return Math.ceil((new Date(expiresAt).getTime() - referenceNow) / 86400000)
   }
 
   const activeUsers = users.filter(u => u.isActive)
@@ -248,7 +254,7 @@ export default function AdminPage() {
     return true
   })
 
-  const tabs = [
+  const tabs: { key: AdminTab; label: string; count: number | null; countColor: string }[] = [
     { key: 'users',         label: '👥 Usuarios',          count: activeUsers.length,    countColor: NEON },
     { key: 'subscriptions', label: '💳 Pendientes',         count: subscriptions.length,  countColor: GOLD },
     { key: 'inactive',      label: '🔴 Inactivos',          count: inactiveUsers.length,  countColor: RED  },
@@ -290,7 +296,7 @@ export default function AdminPage() {
       {/* TABS */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key as any)}
+          <button key={t.key} onClick={() => setTab(t.key)}
             className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
             style={{
               backgroundColor: tab === t.key ? (t.key === 'inactive' ? RED : NEON) : 'rgba(0,10,5,0.8)',
@@ -314,12 +320,12 @@ export default function AdminPage() {
         <div className="fade-in">
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <div className="flex gap-2">
-              {[
-                { key: 'all', label: 'Todos' },
-                { key: 'admin', label: '🛡️ Por admin' },
-                { key: 'web', label: '🌐 Desde web' },
-              ].map(f => (
-                <button key={f.key} onClick={() => setUserFilter(f.key as any)}
+              {([
+                { key: 'all' as const, label: 'Todos' },
+                { key: 'admin' as const, label: '🛡️ Por admin' },
+                { key: 'web' as const, label: '🌐 Desde web' },
+              ]).map(f => (
+                <button key={f.key} onClick={() => setUserFilter(f.key)}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                   style={{
                     backgroundColor: userFilter === f.key ? `${NEON2}20` : 'rgba(0,5,2,0.5)',
@@ -415,12 +421,12 @@ export default function AdminPage() {
             <span className="ml-auto text-2xl font-bold" style={{ color: RED }}>{inactiveUsers.length}</span>
           </div>
           <div className="flex gap-2 mb-4 flex-wrap">
-            {[
-              { key: 'all', label: 'Todos' },
-              { key: 'admin', label: '🛡️ Por admin' },
-              { key: 'web', label: '🌐 Desde web' },
-            ].map(f => (
-              <button key={f.key} onClick={() => setInactiveFilter(f.key as any)}
+            {([
+              { key: 'all' as const, label: 'Todos' },
+              { key: 'admin' as const, label: '🛡️ Por admin' },
+              { key: 'web' as const, label: '🌐 Desde web' },
+            ]).map(f => (
+              <button key={f.key} onClick={() => setInactiveFilter(f.key)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                 style={{
                   backgroundColor: inactiveFilter === f.key ? `${RED}15` : 'rgba(0,5,2,0.5)',
@@ -517,14 +523,16 @@ export default function AdminPage() {
                 { label: 'Contraseña temporal *', key: 'password', placeholder: 'Mínimo 8 caracteres', type: 'password' },
                 { label: 'Grado *', key: 'rank', placeholder: 'Suboficial de 3ra' },
                 { label: 'Unidad *', key: 'unit', placeholder: 'Comisaría Lima Norte' },
-              ].map(field => (
+              ].map(field => {
+                const fieldKey = field.key as keyof typeof form
+                return (
                 <div key={field.key}>
                   <label className="block text-xs text-gray-500 mb-1.5">{field.label}</label>
                   <input className="input-admin" type={field.type || 'text'} placeholder={field.placeholder}
-                    value={(form as any)[field.key]}
-                    onChange={e => setForm({ ...form, [field.key]: e.target.value })} required />
+                    value={String(form[fieldKey])}
+                    onChange={e => setForm({ ...form, [fieldKey]: e.target.value })} required />
                 </div>
-              ))}
+              )})}
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-2">Plan de acceso *</label>

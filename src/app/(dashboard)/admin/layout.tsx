@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/store/authStore'
 import { getTenantBadge } from '@/lib/auth/roles'
-import { NEON, INFO, WARNING, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON, INFO, WARNING } from '@/lib/constants/theme'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()

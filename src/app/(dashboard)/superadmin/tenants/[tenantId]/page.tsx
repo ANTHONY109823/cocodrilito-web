@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
@@ -54,12 +54,7 @@ export default function TenantDetailPage() {
     if (user && !isSuperAdmin(user.role)) router.push('/dashboard')
   }, [user, router])
 
-  useEffect(() => {
-    if (!user || !isSuperAdmin(user.role) || !tenantId) return
-    loadAll()
-  }, [user, tenantId])
-
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     setLoading(true)
     try {
       const [tRes, sRes, uRes] = await Promise.all([
@@ -78,7 +73,12 @@ export default function TenantDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [tenantId])
+
+  useEffect(() => {
+    if (!user || !isSuperAdmin(user.role) || !tenantId) return
+    void loadAll()
+  }, [user, tenantId, loadAll])
 
   const handleSuspend = async () => {
     const reason = prompt('Motivo de suspensión:')

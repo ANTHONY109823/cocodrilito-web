@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 
-import { NEON, NEON_DARK, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 const RED = '#FF5252'
-const GOLD = '#FFD700'
 const BLUE = '#4FC3F7'
 
 interface ResultData {
@@ -37,11 +36,7 @@ export default function ResultPage() {
   const [loading, setLoading] = useState(true)
   const [showAnswers, setShowAnswers] = useState(false)
 
-  useEffect(() => {
-    loadResult()
-  }, [sessionId])
-
-  const loadResult = async () => {
+  const loadResult = useCallback(async () => {
     try {
       const res = await examsApi.getResult(sessionId)
       setResult(res.data)
@@ -50,7 +45,11 @@ export default function ResultPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [sessionId, router])
+
+  useEffect(() => {
+    void loadResult()
+  }, [loadResult])
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`
 

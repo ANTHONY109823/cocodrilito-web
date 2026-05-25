@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import apiClient from '@/lib/api/client'
 import { useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
@@ -50,11 +50,7 @@ export default function RankingPage() {
   const [myRanking, setMyRanking] = useState<MyRanking | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadRanking()
-  }, [])
-
-  const loadRanking = async () => {
+  const loadRanking = useCallback(async () => {
     try {
       const [globalRes, myRes] = await Promise.all([
         apiClient.get('/rankings/global'),
@@ -65,8 +61,12 @@ export default function RankingPage() {
         : globalRes.data?.items || globalRes.data?.data || []
       setRanking(globalData)
       setMyRanking(myRes.data)
-    } catch { } finally { setLoading(false) }
-  }
+    } catch { /* ignore */ } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => {
+    void loadRanking()
+  }, [loadRanking])
   
   return (
     <div className="max-w-2xl mx-auto">
@@ -170,7 +170,7 @@ export default function RankingPage() {
         </div>
       ) : (
         <div className="space-y-2 fade-in">
-          {ranking.map((entry, i) => {
+          {ranking.map((entry) => {
             const isMe = entry.userId === user?.id
             const color = medalColor(entry.position)
             return (

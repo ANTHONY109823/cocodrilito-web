@@ -6,8 +6,6 @@ import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 
 import { NEON } from '@/lib/constants/theme'
-const RED = '#FF5252'
-const GOLD = '#FFD700'
 const BLUE = '#4FC3F7'
 
 interface ReviewQuestion {

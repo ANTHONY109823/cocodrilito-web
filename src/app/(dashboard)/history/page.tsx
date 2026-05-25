@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import apiClient from '@/lib/api/client'
 import Link from 'next/link'
 
@@ -24,14 +24,14 @@ export default function HistoryPage() {
   const [sessions, setSessions] = useState<SessionHistory[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { loadHistory() }, [])
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       const res = await apiClient.get('/exams/sessions/history')
       setSessions(Array.isArray(res.data) ? res.data : res.data?.items || [])
-    } catch { } finally { setLoading(false) }
-  }
+    } catch { /* ignore */ } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { void loadHistory() }, [loadHistory])
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`
   const formatDate = (d: string) => new Date(d).toLocaleDateString('es-PE', {
@@ -76,7 +76,7 @@ export default function HistoryPage() {
         </div>
       ) : (
         <div className="space-y-3 fade-in">
-          {sessions.map((s, i) => (
+          {sessions.map((s) => (
             <div key={s.sessionId} className="rounded-2xl p-4"
               style={{
                 background: 'rgba(0,8,4,0.9)',

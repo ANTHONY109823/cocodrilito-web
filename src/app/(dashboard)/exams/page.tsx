@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { getApiErrorMessage } from '@/lib/api/errors'
+import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api/client'
 import { examsApi } from '@/lib/api/exams'
@@ -34,9 +36,7 @@ export default function ExamsPage() {
   const [blocked, setBlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => { loadData() }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -64,16 +64,17 @@ export default function ExamsPage() {
       setTotalQuestions(total)
       setQuestionCounts(counts)
     } catch (err: unknown) {
-      const ax = err as { response?: { status?: number; data?: { message?: string } }; message?: string }
-      if (ax.response?.status === 403) {
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
         setBlocked(true)
       } else {
-        setError(ax.response?.data?.message || ax.message || 'Error al cargar simulacros')
+        setError(getApiErrorMessage(err, 'Error al cargar simulacros'))
       }
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => { void loadData() }, [loadData])
 
   const startExam = async (
     examId: string,

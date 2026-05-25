@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api/client'
+import { getApiErrorDetail } from '@/lib/api/errors'
 
 export default function UploadPage() {
   const router = useRouter()
@@ -24,18 +25,12 @@ export default function UploadPage() {
       formData.append('file', file)
       const res = await apiClient.post('/admin/import/questions', formData)
       setResult(res.data)
-    } catch (err: any) {
-      const status = err.response?.status
-      const msg =
-        err.response?.data?.errors?.[0]
-        || err.response?.data?.message
-        || (status === 415 ? 'Error 415: multipart incorrecto. Despliega la última versión del frontend.' : null)
-        || err.message
-        || 'Error al importar'
+    } catch (err: unknown) {
+      const msg = getApiErrorDetail(err, 'Error al importar')
       setResult({
         imported: 0,
         totalErrors: 1,
-        errors: [`${status ? `[${status}] ` : ''}${msg}`],
+        errors: [msg],
         message: 'Error'
       })
     } finally {
