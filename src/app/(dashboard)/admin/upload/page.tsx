@@ -1,12 +1,15 @@
 ﻿'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api/client'
 import { getApiErrorDetail } from '@/lib/api/errors'
+import { useAuthStore } from '@/lib/store/authStore'
+import { isSuperAdmin, isTenantAdmin } from '@/lib/auth/roles'
 
 export default function UploadPage() {
   const router = useRouter()
+  const { user, loadFromStorage } = useAuthStore()
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{
@@ -15,6 +18,15 @@ export default function UploadPage() {
     errors: string[]
     message: string
   } | null>(null)
+
+  useEffect(() => { loadFromStorage() }, [loadFromStorage])
+
+  useEffect(() => {
+    if (!user) return
+    if (!isSuperAdmin(user.role) && !isTenantAdmin(user.role)) {
+      router.push('/dashboard')
+    }
+  }, [user, router])
 
   const handleUpload = async () => {
     if (!file) return

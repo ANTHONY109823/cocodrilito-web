@@ -1,16 +1,19 @@
 ﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/authStore'
+import { isTenantAdmin } from '@/lib/auth/roles'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import Link from 'next/link'
-
 import { NEON } from '@/lib/constants/theme'
+
 const RED = '#FF5252'
 const GOLD = '#FFD700'
 
 export default function ProfilePage() {
+  const router = useRouter()
   const { user, setUser, loadFromStorage } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
@@ -39,6 +42,12 @@ export default function ProfilePage() {
     loadFromStorage()
     void loadSubInfo()
   }, [loadFromStorage, loadSubInfo])
+
+  useEffect(() => {
+    if (user && isTenantAdmin(user.role)) {
+      router.replace('/admin/configuracion')
+    }
+  }, [user, router])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,6 +86,10 @@ export default function ProfilePage() {
     } finally { setLoading(false) }
   }
 
+  if (user && isTenantAdmin(user.role)) {
+    return null
+  }
+
   const inputStyle = {
     width: '100%', padding: '10px 14px', borderRadius: '10px',
     background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15',
@@ -85,23 +98,17 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-xl mx-auto">
-      <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        .fade-in { animation: fadeIn 0.3s ease forwards; }
-      `}</style>
-
       <div className="flex items-center gap-4 mb-6">
         <Link href="/dashboard" className="text-gray-500 hover:text-white text-sm transition-colors">
           ← Inicio
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-white">Mi perfil</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Administra tu cuenta</p>
+          <p className="text-gray-500 text-sm mt-0.5">Administra tu cuenta de estudiante</p>
         </div>
       </div>
 
-      {/* INFO BÁSICA */}
-      <div className="rounded-2xl p-5 mb-4 fade-in"
+      <div className="rounded-2xl p-5 mb-4"
         style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}20` }}>
         <div className="flex items-center gap-4 mb-4">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold"
@@ -115,7 +122,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* SUSCRIPCIÓN */}
         {subInfo && (
           <div className="rounded-xl p-3 mb-2"
             style={{ backgroundColor: `${NEON}08`, border: `1px solid ${NEON}20` }}>
@@ -151,9 +157,8 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* MENSAJE */}
       {msg && (
-        <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium fade-in"
+        <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium"
           style={{
             backgroundColor: msg.ok ? 'rgba(74,124,89,0.1)' : 'rgba(255,82,82,0.1)',
             border: `1px solid ${msg.ok ? NEON : RED}40`,
@@ -163,7 +168,6 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* EDITAR GRADO Y UNIDAD */}
       <div className="rounded-2xl p-5 mb-4"
         style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
         <h2 className="text-white font-bold text-base mb-4">Actualizar datos</h2>
@@ -181,7 +185,7 @@ export default function ProfilePage() {
               onChange={e => setProfileForm({ ...profileForm, unit: e.target.value })} />
           </div>
           <button type="submit" disabled={loading}
-            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
+            className="w-full py-2.5 rounded-xl font-bold text-sm"
             style={{
               background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
               color: '#000', opacity: loading ? 0.7 : 1
@@ -191,31 +195,30 @@ export default function ProfilePage() {
         </form>
       </div>
 
-      {/* CAMBIAR CONTRASEÑA */}
       <div className="rounded-2xl p-5"
         style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
         <h2 className="text-white font-bold text-base mb-4">Cambiar contraseña</h2>
         <form onSubmit={handleChangePassword} className="space-y-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1.5">Contraseña actual</label>
-            <input style={inputStyle} type="password" placeholder="Tu contraseña actual"
+            <input style={inputStyle} type="password"
               value={passForm.currentPassword}
               onChange={e => setPassForm({ ...passForm, currentPassword: e.target.value })} required />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1.5">Nueva contraseña</label>
-            <input style={inputStyle} type="password" placeholder="Mínimo 8 caracteres"
+            <input style={inputStyle} type="password"
               value={passForm.newPassword}
               onChange={e => setPassForm({ ...passForm, newPassword: e.target.value })} required />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1.5">Confirmar contraseña</label>
-            <input style={inputStyle} type="password" placeholder="Repite la nueva contraseña"
+            <input style={inputStyle} type="password"
               value={passForm.confirmPassword}
               onChange={e => setPassForm({ ...passForm, confirmPassword: e.target.value })} required />
           </div>
           <button type="submit" disabled={loading}
-            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all"
+            className="w-full py-2.5 rounded-xl font-bold text-sm"
             style={{ backgroundColor: 'rgba(255,82,82,0.1)', color: RED, border: `1px solid ${RED}25` }}>
             {loading ? 'Cambiando...' : 'Cambiar contraseña'}
           </button>

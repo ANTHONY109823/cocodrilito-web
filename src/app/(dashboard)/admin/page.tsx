@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { isAnyAdmin } from '@/lib/auth/roles'
+import { isTenantAdmin, isAdminAgencia } from '@/lib/auth/roles'
 import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
+import { tenantAdminApi, type AdminDashboardData } from '@/lib/api/tenantAdmin'
 import { NEON } from '@/lib/constants/theme'
 
 interface User {
@@ -41,13 +42,19 @@ const GOLD = '#FFD700'
 const RED = '#FF5252'
 const PURPLE = '#A855F7'
 
-type AdminTab = 'users' | 'subscriptions' | 'inactive' | 'create' | 'questions' | 'plans'
+type AdminTab = 'dashboard' | 'users' | 'subscriptions' | 'inactive' | 'create' | 'plans'
 type UserFilterKey = 'all' | 'admin' | 'web'
 
 export default function AdminPage() {
   const { user, loadFromStorage } = useAuthStore()
   const router = useRouter()
-  const [tab, setTab] = useState<AdminTab>('users')
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab') as AdminTab | null
+  const tab: AdminTab = tabParam && ['users', 'subscriptions', 'inactive', 'create', 'plans'].includes(tabParam)
+    ? tabParam
+    : 'dashboard'
+
+  const [dashData, setDashData] = useState<AdminDashboardData | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,7 +82,10 @@ export default function AdminPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      if (tab === 'users' || tab === 'inactive') {
+      if (tab === 'dashboard') {
+        const res = await tenantAdminApi.getDashboard()
+        setDashData(res.data)
+      } else if (tab === 'users' || tab === 'inactive') {
         const res = await apiClient.get('/admin/users')
         setUsers(res.data)
       } else if (tab === 'subscriptions') {
@@ -121,12 +131,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) return
-    if (!isAnyAdmin(user.role)) {
+    if (!isTenantAdmin(user.role)) {
       router.push('/dashboard')
       return
     }
     void loadData()
-  }, [user, loadData, router])
+  }, [user, loadData, router, tab])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -136,7 +146,7 @@ export default function AdminPage() {
       await apiClient.post('/admin/users', form)
       setMsg({ text: '✅ Usuario creado exitosamente', ok: true })
       setForm({ fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180 })
-      setTimeout(() => { setTab('users'); setMsg(null) }, 2000)
+      setTimeout(() => { router.push('/admin?tab=users'); setMsg(null) }, 2000)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error al crear usuario'), ok: false })
     } finally { setSaving(false) }
@@ -254,13 +264,13 @@ export default function AdminPage() {
     return true
   })
 
-  const tabs: { key: AdminTab; label: string; count: number | null; countColor: string }[] = [
-    { key: 'users',         label: '👥 Usuarios',          count: activeUsers.length,    countColor: NEON },
-    { key: 'subscriptions', label: '💳 Pendientes',         count: subscriptions.length,  countColor: GOLD },
-    { key: 'inactive',      label: '🔴 Inactivos',          count: inactiveUsers.length,  countColor: RED  },
-    { key: 'create',        label: '➕ Crear usuario',       count: null,                  countColor: NEON },
-    { key: 'questions',     label: '📝 Banco de preguntas', count: null,                  countColor: NEON2 },
-    { key: 'plans',         label: '💎 Planes tenant',       count: null,                  countColor: GOLD },
+  const tabs: { key: AdminTab; label: string; count: number | null; countColor: string; href: string }[] = [
+    { key: 'dashboard', label: '🏠 Inicio', count: null, countColor: NEON, href: '/admin' },
+    { key: 'users', label: '👥 Usuarios', count: activeUsers.length, countColor: NEON, href: '/admin?tab=users' },
+    { key: 'subscriptions', label: '💳 Ventas', count: subscriptions.length, countColor: GOLD, href: '/admin?tab=subscriptions' },
+    { key: 'inactive', label: '🔴 Inactivos', count: inactiveUsers.length, countColor: RED, href: '/admin?tab=inactive' },
+    { key: 'create', label: '➕ Crear usuario', count: null, countColor: NEON, href: '/admin?tab=create' },
+    { key: 'plans', label: '💎 Planes (en desarrollo)', count: null, countColor: GOLD, href: '/admin?tab=plans' },
   ]
 
   return (
@@ -276,8 +286,14 @@ export default function AdminPage() {
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Panel Admin 🛡️</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Gestión de Cocodrilito</p>
+          <h1 className="text-2xl font-bold text-white">
+            {user?.tenantName ? `${user.tenantName}` : 'Panel Admin'} 🛡️
+          </h1>
+          <p className="text-gray-500 text-sm mt-0.5">
+            {isAdminAgencia(user?.role, user?.tenantType)
+              ? 'Gestión de tu agencia'
+              : 'Gestión de tu academia'}
+          </p>
         </div>
         <div className="flex gap-4 text-right text-sm">
           <div><span className="font-bold" style={{ color: NEON }}>{activeUsers.length}</span> <span className="text-gray-500">activos</span></div>
@@ -293,10 +309,9 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TABS */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <Link key={t.key} href={t.href}
             className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
             style={{
               backgroundColor: tab === t.key ? (t.key === 'inactive' ? RED : NEON) : 'rgba(0,10,5,0.8)',
@@ -311,9 +326,65 @@ export default function AdminPage() {
                 {t.count}
               </span>
             )}
-          </button>
+          </Link>
         ))}
       </div>
+
+      {tab === 'dashboard' && (
+        <div className="fade-in space-y-4">
+          {loading ? (
+            <p className="text-gray-500 text-center py-12">Cargando dashboard...</p>
+          ) : dashData ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: 'Total usuarios', value: dashData.totalUsers, color: NEON },
+                  { label: 'Exámenes realizados', value: dashData.examsCompleted, color: NEON2 },
+                  { label: 'Tasa aprobación', value: `${dashData.passRate}%`, color: GOLD },
+                  { label: 'Suscripciones activas', value: dashData.activeSubscriptions, color: NEON },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-2xl p-4"
+                    style={{ background: 'rgba(0,10,5,0.9)', border: '1px solid #ffffff10' }}>
+                    <div className="text-xs text-gray-500 mb-1">{s.label}</div>
+                    <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: '1px solid #ffffff10' }}>
+                  <h3 className="text-white font-semibold mb-3">🏆 Top alumnos</h3>
+                  {dashData.ranking.length === 0 ? (
+                    <p className="text-gray-500 text-sm">Sin datos aún</p>
+                  ) : dashData.ranking.map((r) => (
+                    <div key={r.userId} className="flex justify-between text-sm py-1.5 border-b border-white/5">
+                      <span className="text-gray-300">{r.position}. {r.fullName}</span>
+                      <span style={{ color: NEON }}>{r.avgScore}% · {r.examsCount} ex.</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: '1px solid #ffffff10' }}>
+                  <h3 className="text-white font-semibold mb-3">👤 Accesos recientes</h3>
+                  {dashData.recentAccess.map((u) => (
+                    <div key={u.id} className="flex justify-between text-sm py-1.5 border-b border-white/5">
+                      <span className="text-gray-300">{u.fullName}</span>
+                      <span className="text-gray-600 text-xs">
+                        {new Date(u.createdAt).toLocaleDateString('es-PE')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {dashData.pendingSubscriptions > 0 && (
+                <Link href="/admin?tab=subscriptions"
+                  className="block rounded-xl p-4 text-sm"
+                  style={{ background: `${GOLD}10`, border: `1px solid ${GOLD}30`, color: GOLD }}>
+                  {dashData.pendingSubscriptions} ventas pendientes de aprobación →
+                </Link>
+              )}
+            </>
+          ) : null}
+        </div>
+      )}
 
       {/* TAB: USUARIOS ACTIVOS */}
       {tab === 'users' && (
@@ -633,85 +704,15 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: BANCO DE PREGUNTAS — redirige a página separada */}
-      {tab === 'questions' && (
-        <div className="fade-in text-center py-16">
-          <div className="text-6xl mb-5">📝</div>
-          <h2 className="text-white font-bold text-xl mb-2">Banco de preguntas</h2>
-          <p className="text-gray-500 text-sm mb-8">
-            Gestiona hasta 1000 preguntas en el banco (300+ por categoría), con filtros, búsqueda y paginación.
-          </p>
-          <Link href="/admin/preguntas"
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-base transition-all hover:scale-105"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', boxShadow: `0 0 20px ${NEON}40` }}>
-            Ir al banco de preguntas →
-          </Link>
-        </div>
-      )}
-
-      {/* TAB: PLANES TENANT */}
+      {/* TAB: PLANES TENANT — en desarrollo */}
       {tab === 'plans' && (
-        <div className="fade-in space-y-4">
-          <div className="rounded-2xl p-5"
-            style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
-            <h2 className="text-white font-bold mb-4">Planes de suscripción del tenant</h2>
-            {loading ? (
-              <p className="text-gray-500">Cargando planes...</p>
-            ) : plans.length === 0 ? (
-              <p className="text-gray-500 text-sm">No hay planes configurados. Crea el primero abajo.</p>
-            ) : (
-              <div className="space-y-3 mb-6">
-                {plans.map((plan) => (
-                  <div key={plan.id} className="rounded-xl p-4 flex flex-wrap justify-between gap-3"
-                    style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}15` }}>
-                    <div>
-                      <div className="text-white font-semibold">{plan.name}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        S/. {plan.price} · {plan.durationDays} días · Track {plan.trackType}
-                        {!plan.isActive && <span style={{ color: RED }}> · Inactivo</span>}
-                      </div>
-                      {plan.description && (
-                        <p className="text-xs text-gray-600 mt-1">{plan.description}</p>
-                      )}
-                    </div>
-                    {plan.isActive && (
-                      <button type="button" onClick={() => handleDeactivatePlan(plan.id)}
-                        className="px-3 py-1.5 rounded-lg text-xs"
-                        style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}25` }}>
-                        Desactivar
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <form onSubmit={handleCreatePlan} className="grid md:grid-cols-2 gap-3">
-              <input placeholder="Nombre del plan" required
-                className="input-admin" value={planForm.name}
-                onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })} />
-              <input type="number" placeholder="Precio S/." required
-                className="input-admin" value={planForm.price || ''}
-                onChange={(e) => setPlanForm({ ...planForm, price: Number(e.target.value) })} />
-              <input type="number" placeholder="Duración (días)" required
-                className="input-admin" value={planForm.durationDays}
-                onChange={(e) => setPlanForm({ ...planForm, durationDays: Number(e.target.value) })} />
-              <select className="input-admin" value={planForm.trackType}
-                onChange={(e) => setPlanForm({ ...planForm, trackType: Number(e.target.value) })}>
-                <option value={1}>Oficiales</option>
-                <option value={2}>Suboficiales</option>
-                <option value={3}>Postulantes</option>
-              </select>
-              <input placeholder="Descripción (opcional)" className="input-admin md:col-span-2"
-                value={planForm.description}
-                onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })} />
-              <button type="submit" disabled={saving}
-                className="md:col-span-2 py-3 rounded-xl font-bold text-sm"
-                style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
-                {saving ? 'Guardando...' : '➕ Crear plan'}
-              </button>
-            </form>
-          </div>
+        <div className="fade-in rounded-2xl p-8 text-center"
+          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
+          <div className="text-4xl mb-3">🚧</div>
+          <h2 className="text-white font-bold mb-2">Planes tenant — en desarrollo</h2>
+          <p className="text-gray-500 text-sm max-w-md mx-auto">
+            La configuración de planes personalizados por agencia estará disponible próximamente.
+          </p>
         </div>
       )}
     </div>

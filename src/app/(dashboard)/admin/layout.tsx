@@ -1,9 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useAuthStore } from '@/lib/store/authStore'
 import { getTenantBadge } from '@/lib/auth/roles'
-import { NEON, INFO, WARNING } from '@/lib/constants/theme'
+import { INFO, WARNING } from '@/lib/constants/theme'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
@@ -11,8 +10,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
+      {(badge || user?.tenantName) && (
+        <div className="flex items-center gap-2 flex-wrap mb-4">
           {badge && (
             <span
               className="text-xs font-bold px-3 py-1 rounded-full tracking-wide"
@@ -26,13 +25,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </span>
           )}
           {user?.tenantName && (
-            <span className="text-sm text-gray-500">{user.tenantName}</span>
+            <span className="text-sm font-medium text-gray-400">{user.tenantName}</span>
           )}
         </div>
-        <Link href="/admin/preguntas" className="text-xs" style={{ color: NEON }}>
-          Banco de preguntas →
-        </Link>
-      </div>
+      )}
       {children}
     </div>
   )

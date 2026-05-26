@@ -3,11 +3,16 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
 import { useAuthStore } from '@/lib/store/authStore'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
-import { isAnyAdmin } from '@/lib/auth/roles'
+import {
+  isSuperAdmin,
+  isTenantAdmin,
+  isAdminAgencia,
+  isAdminAcademia,
+} from '@/lib/auth/roles'
 import { NEON } from '@/lib/constants/theme'
 
 interface Question {
@@ -44,6 +49,12 @@ const PRESET_COLORS = [
 export default function PreguntasPage() {
   const { user, loadFromStorage } = useAuthStore()
   const router = useRouter()
+  const pathname = usePathname()
+
+  const isSuperAdminMode = pathname.startsWith('/superadmin/preguntas') || isSuperAdmin(user?.role)
+  const isAgencia = isAdminAgencia(user?.role, user?.tenantType)
+  const isAcademia = isAdminAcademia(user?.role, user?.tenantType)
+  const showOwnScope = isSuperAdminMode || isAcademia
 
   const [questions, setQuestions] = useState<Question[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -61,6 +72,12 @@ export default function PreguntasPage() {
   const [newCatName, setNewCatName] = useState('')
   const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0])
   const [questionScope, setQuestionScope] = useState<'base' | 'own'>('base')
+
+  const canEditCurrentScope =
+    isSuperAdminMode
+      ? true
+      : questionScope === 'own' && isAcademia
+  const readOnly = isAgencia || !canEditCurrentScope
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
@@ -104,12 +121,16 @@ export default function PreguntasPage() {
 
   useEffect(() => {
     if (!user) return
-    if (!isAnyAdmin(user.role)) {
+    if (isSuperAdminMode && !isSuperAdmin(user.role) && !pathname.startsWith('/superadmin/preguntas')) {
+      router.push('/dashboard')
+      return
+    }
+    if (!isSuperAdminMode && !isTenantAdmin(user.role)) {
       router.push('/dashboard')
       return
     }
     void loadAll()
-  }, [user, loadAll, router])
+  }, [user, loadAll, router, isSuperAdminMode, pathname])
 
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const file = e.target.files?.[0]
@@ -120,7 +141,7 @@ export default function PreguntasPage() {
       const formData = new FormData()
       formData.append('file', file)
       const res = await apiClient.post(
-        `/admin/import/questions?categoria=${encodeURIComponent(category)}`,
+        `/admin/import/questions?categoria=${encodeURIComponent(category)}&forOwnTenant=${questionScope === 'own'}`,
         formData
       )
       const imported = res.data.imported ?? 0
@@ -199,7 +220,7 @@ export default function PreguntasPage() {
     setSaving(true)
     setMsg(null)
     try {
-      await apiClient.post('/admin/Questions', {
+      await apiClient.post(`/admin/Questions?forOwnTenant=${questionScope === 'own'}`, {
         examId: qForm.examId,
         questionText: qForm.questionText,
         category: qForm.category,
@@ -257,7 +278,7 @@ export default function PreguntasPage() {
     if (!confirm('⚠️ ¿Eliminar TODAS las preguntas del banco?')) return
     if (!confirm('¿Estás SEGURO? Esta acción no se puede deshacer.')) return
     try {
-      const res = await apiClient.delete('/admin/Questions/bulk')
+      const res = await apiClient.delete(`/admin/Questions/bulk?ownOnly=${questionScope === 'own'}`)
       setMsg({ text: `🗑️ ${res.data.deleted} preguntas eliminadas`, ok: false })
       setTimeout(() => { setMsg(null); loadAll() }, 2000)
     } catch (err: unknown) {
@@ -383,15 +404,24 @@ export default function PreguntasPage() {
 
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-6 flex-wrap">
-        <Link href="/admin" className="text-gray-600 hover:text-gray-300 text-sm transition-colors">
-          ← Panel Admin
+        <Link href={isSuperAdminMode ? '/superadmin?tab=agencias' : '/admin'} className="text-gray-600 hover:text-gray-300 text-sm transition-colors">
+          ← {isSuperAdminMode ? 'SuperAdmin' : 'Panel Admin'}
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-semibold text-white">Banco de preguntas</h1>
+          <h1 className="text-xl font-semibold text-white">
+            {isSuperAdminMode
+              ? 'Banco de Preguntas de Ascenso'
+              : isAcademia
+                ? 'Banco de Preguntas (Academia)'
+                : 'Banco de Preguntas de Ascenso'}
+          </h1>
           <p className="text-gray-600 text-xs mt-0.5">
-            {questions.length} preguntas cargadas (máx. {ADMIN_QUESTIONS_PAGE_SIZE}) · {categories.length} categorías
+            {readOnly && isAgencia
+              ? 'Solo lectura — las preguntas de ascenso las gestiona Cocodrilito'
+              : `${questions.length} preguntas cargadas · ${categories.length} categorías`}
           </p>
         </div>
+        {!readOnly && (
         <div className="flex gap-2 flex-wrap">
           <button onClick={handleDownloadTemplate}
             className="px-3 py-2 rounded-lg text-xs font-medium transition-colors"
@@ -415,12 +445,15 @@ export default function PreguntasPage() {
             </button>
           )}
         </div>
+        )}
       </div>
 
       <div className="flex gap-2 mb-5 flex-wrap">
         {[
-          { key: 'base' as const, label: '📚 Banco base', hint: 'Preguntas compartidas de la plataforma' },
-          { key: 'own' as const, label: '🏷️ Propias del tenant', hint: 'Preguntas creadas por tu institución' },
+          { key: 'base' as const, label: '📚 Banco de ascenso', hint: 'Preguntas compartidas de la plataforma' },
+          ...(showOwnScope
+            ? [{ key: 'own' as const, label: '🏷️ Propias de academia', hint: 'Preguntas de tu institución' }]
+            : []),
         ].map((s) => (
           <button key={s.key} type="button" onClick={() => { setQuestionScope(s.key); setPage(1) }}
             className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
@@ -450,7 +483,7 @@ export default function PreguntasPage() {
       )}
 
       {/* FORM NUEVA PREGUNTA */}
-      {showAddForm && (
+      {showAddForm && !readOnly && (
         <div className="rounded-xl p-5 mb-4 fade-in"
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <p className="text-white font-medium text-sm mb-4">Nueva pregunta manual</p>
@@ -527,6 +560,7 @@ export default function PreguntasPage() {
         <div className="flex items-center justify-between px-4 py-3"
           style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <p className="text-gray-400 text-xs font-medium">Categorías</p>
+          {(!readOnly || isSuperAdminMode) && (
           <button onClick={() => setShowAddCategory(!showAddCategory)}
             className="text-xs px-3 py-1.5 rounded-lg transition-colors"
             style={{
@@ -536,6 +570,7 @@ export default function PreguntasPage() {
             }}>
             {showAddCategory ? '✕ Cancelar' : '+ Agregar categoría'}
           </button>
+          )}
         </div>
 
         {showAddCategory && (
@@ -596,29 +631,31 @@ export default function PreguntasPage() {
                     style={{ color: count > 0 ? '#6B7280' : '#374151' }}>
                     {count} {count === 1 ? 'pregunta' : 'preguntas'}
                   </span>
-                  <div className="flex items-center gap-1.5 shrink-0"
-                    onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={() => fileRefs.current[cat.name]?.click()}
-                      disabled={isUploading}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                      style={{
-                        backgroundColor: isUploading ? 'rgba(255,255,255,0.05)' : `${cat.color}18`,
-                        color: isUploading ? '#4B5563' : cat.color,
-                        border: `1px solid ${cat.color}30`
-                      }}>
-                      {isUploading ? '⏳ Subiendo...' : '↑ CSV'}
-                    </button>
-                    <input type="file" accept=".csv" className="hidden"
-                      ref={el => { fileRefs.current[cat.name] = el }}
-                      onChange={e => handleCSVUpload(e, cat.name)} />
-                    <button
-                      onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
-                      style={{ backgroundColor: 'rgba(255,82,82,0.06)', color: '#ef4444' }}>
-                      ✕
-                    </button>
-                  </div>
+                    {!readOnly && (
+                    <div className="flex items-center gap-1.5 shrink-0"
+                      onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => fileRefs.current[cat.name]?.click()}
+                        disabled={isUploading}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                        style={{
+                          backgroundColor: isUploading ? 'rgba(255,255,255,0.05)' : `${cat.color}18`,
+                          color: isUploading ? '#4B5563' : cat.color,
+                          border: `1px solid ${cat.color}30`
+                        }}>
+                        {isUploading ? '⏳ Subiendo...' : '↑ CSV'}
+                      </button>
+                      <input type="file" accept=".csv" className="hidden"
+                        ref={el => { fileRefs.current[cat.name] = el }}
+                        onChange={e => handleCSVUpload(e, cat.name)} />
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
+                        style={{ backgroundColor: 'rgba(255,82,82,0.06)', color: '#ef4444' }}>
+                        ✕
+                      </button>
+                    </div>
+                    )}
                 </div>
               )
             })}
@@ -707,6 +744,7 @@ export default function PreguntasPage() {
                         </div>
                       )}
                     </div>
+                    {!readOnly && (
                     <div className="flex gap-1 shrink-0">
                       <button onClick={() => handleEditQuestion(q)}
                         className="px-2.5 py-1.5 rounded-lg text-xs transition-colors"
@@ -715,6 +753,7 @@ export default function PreguntasPage() {
                         className="px-2.5 py-1.5 rounded-lg text-xs transition-colors"
                         style={{ backgroundColor: 'rgba(255,82,82,0.08)', color: '#ef4444' }}>🗑️</button>
                     </div>
+                    )}
                   </div>
                 )
               })}
