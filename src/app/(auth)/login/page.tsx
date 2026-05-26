@@ -177,6 +177,16 @@ function LoginForm() {
         setError('No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde.')
         return
       }
+      const status = err.response?.status
+      if (status === 500) {
+        setError(
+          getApiErrorMessage(
+            err,
+            'Error del servidor al iniciar sesión. El administrador debe aplicar las migraciones de base de datos.'
+          )
+        )
+        return
+      }
       setError(getApiErrorMessage(err, 'Credenciales incorrectas. Verifica tu email y contraseña.'))
     } finally {
       setLoading(false)

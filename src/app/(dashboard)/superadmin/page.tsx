@@ -152,8 +152,16 @@ export default function SuperAdminPage() {
       }
       toast(`Impersonando ${tenant.name}`, 'info')
       router.push('/admin')
-    } catch {
-      toast('No se pudo impersonar el tenant', 'error')
+    } catch (err: unknown) {
+      const ax = err as { response?: { status?: number; data?: { message?: string; detail?: string } } }
+      const detail = ax.response?.data?.detail
+      toast(
+        ax.response?.data?.message ||
+          (ax.response?.status === 500
+            ? `Error del servidor${detail ? `: ${detail}` : ''}`
+            : 'No se pudo ingresar como agencia'),
+        'error'
+      )
     }
   }
 
