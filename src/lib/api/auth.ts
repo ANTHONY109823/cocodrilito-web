@@ -23,5 +23,6 @@ export const authApi = {
   register: (data: RegisterRequest) =>
     apiClient.post<AuthProfileResponse>('/Auth/register', data),
   logout: () => apiClient.post('/Auth/logout'),
+  stopImpersonate: () => apiClient.post<AuthProfileResponse>('/Auth/stop-impersonate'),
   me: () => apiClient.get('/Auth/me'),
 }

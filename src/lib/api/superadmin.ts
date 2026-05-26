@@ -25,6 +25,7 @@ export interface TenantSummary {
   suspended: boolean
   monthlyFee: number
   contactEmail: string
+  contactPhone?: string | null
   createdAt: string
 }
 
@@ -99,4 +100,7 @@ export const superadminApi = {
     apiClient.get('/superadmin/users', { params: { page, pageSize } }),
   getAuditLog: (page = 1, pageSize = 50) =>
     apiClient.get('/superadmin/audit-log', { params: { page, pageSize } }),
+  getPendingSubscriptions: () =>
+    apiClient.get('/superadmin/subscriptions/pending'),
+  deleteTenant: (id: string) => apiClient.delete(`/superadmin/tenants/${id}`),
 }

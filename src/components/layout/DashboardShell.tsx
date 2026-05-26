@@ -1,41 +1,27 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import {
-  Crown,
-  FileText,
-  History,
-  Home,
-  LogOut,
-  LucideIcon,
-  Shield,
-  Star,
-  Trophy,
-  User,
-} from 'lucide-react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { LogOut, LucideIcon, User } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/lib/store/authStore'
-import { isAnyAdmin, isSuperAdmin } from '@/lib/auth/roles'
+import { useImpersonationStore } from '@/lib/store/impersonationStore'
+import { getNavContext, isSuperAdmin } from '@/lib/auth/roles'
+import {
+  isNavActive,
+  pageTitleForPath,
+  STUDENT_NAV,
+  SUPERADMIN_NAV,
+  TENANT_ADMIN_NAV,
+} from '@/lib/navigation'
 import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 import { cn } from '@/lib/utils/cn'
 
-const MAIN_NAV = [
-  { href: '/dashboard', label: 'Inicio', icon: Home },
-  { href: '/exams', label: 'Exámenes', icon: FileText },
-  { href: '/history', label: 'Historial', icon: History },
-  { href: '/ranking', label: 'Ranking', icon: Trophy },
-  { href: '/premium', label: 'Premium', icon: Star },
-] as const
-
-const MOBILE_NAV = MAIN_NAV
-
-function roleLabel(role?: string) {
+function roleLabel(role?: string, impersonating?: boolean) {
   if (!role) return 'Estudiante'
-  if (isSuperAdmin(role)) return 'SuperAdmin'
-  if (role.includes('Academia') || role === 'AdminAcademia' || role === '2') return 'Admin Academia'
-  if (role.includes('Agencia') || role === 'AdminAgencia' || role === '1') return 'Admin Agencia'
-  if (isAnyAdmin(role)) return 'Admin'
+  if (isSuperAdmin(role) && !impersonating) return 'SuperAdmin'
+  if (role.includes('Academia') || role === 'AdminAcademia') return 'Admin Academia'
+  if (role.includes('Agencia') || role === 'AdminAgencia') return 'Admin Agencia'
   return 'Estudiante'
 }
 
@@ -66,36 +52,36 @@ function SidebarNavItem({
   )
 }
 
-function pageTitle(pathname: string) {
-  const map: Record<string, string> = {
-    '/dashboard': 'Inicio',
-    '/exams': 'Exámenes',
-    '/history': 'Historial',
-    '/ranking': 'Ranking',
-    '/premium': 'Premium',
-    '/profile': 'Mi Perfil',
-    '/admin': 'Admin',
-    '/superadmin': 'SuperAdmin',
-  }
-  if (pathname.startsWith('/superadmin')) return 'SuperAdmin'
-  if (pathname.startsWith('/admin')) return 'Admin'
-  return map[pathname] ?? 'Cocodrilito'
-}
-
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const { user, logout } = useAuthStore()
+  const { active: impersonating } = useImpersonationStore()
 
-  const isAdmin = isAnyAdmin(user?.role)
-  const superAdmin = isSuperAdmin(user?.role)
-  const brandName = user?.tenantName || 'Cocodrilito'
+  const navContext = getNavContext(user?.role, impersonating)
+  const brandName = navContext === 'superadmin'
+    ? 'Cocodrilito'
+    : (user?.tenantName || 'Cocodrilito')
+  const brandLogo = navContext === 'tenant-admin' ? user?.tenantLogoUrl : null
+
+  const navItems =
+    navContext === 'superadmin'
+      ? SUPERADMIN_NAV
+      : navContext === 'tenant-admin'
+        ? TENANT_ADMIN_NAV
+        : STUDENT_NAV
+
+  const mobileNav = navContext === 'student' ? STUDENT_NAV : navItems.slice(0, 5)
+
   const initials = user?.fullName
     ?.split(' ')
     .map((n) => n[0])
     .join('')
     .slice(0, 2)
     .toUpperCase() || '?'
+
+  const search = searchParams.toString() ? `?${searchParams.toString()}` : ''
 
   const handleLogout = async () => {
     try {
@@ -107,48 +93,67 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     router.push('/login')
   }
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`)
-
   return (
     <div className="min-h-screen flex flex-col bg-[#080E0A]">
       <ImpersonationBanner />
 
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar desktop */}
         <aside className="hidden lg:flex w-[220px] shrink-0 flex-col border-r border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-3.5 py-5">
           <div className="mb-3 flex items-center gap-2 px-2.5 py-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#318F48] text-base">
-              🐊
-            </div>
-            <div>
-              <div className="text-sm font-bold text-[#BDFFDF] leading-tight">{brandName}</div>
+            {brandLogo ? (
+              <img
+                src={brandLogo}
+                alt=""
+                className="h-8 w-8 shrink-0 rounded-lg object-contain bg-white/5"
+              />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#318F48] text-base">
+                🐊
+              </div>
+            )}
+            <div className="min-w-0">
+              <div className="truncate text-sm font-bold text-[#BDFFDF] leading-tight">
+                {brandName}
+              </div>
               <span className="inline-block rounded-full border border-[rgba(49,143,72,0.3)] bg-[rgba(49,143,72,0.15)] px-1.5 py-0.5 text-[10px] text-[#BDFFDF]">
-                {roleLabel(user?.role)}
+                {roleLabel(user?.role, impersonating)}
               </span>
             </div>
           </div>
 
           <nav className="flex flex-col gap-0.5">
-            {MAIN_NAV.map((item) => (
-              <SidebarNavItem key={item.href} {...item} active={isActive(item.href)} />
-            ))}
-            {(isAdmin || superAdmin) && (
-              <div className="my-2 h-px bg-[rgba(189,255,223,0.12)]" />
-            )}
-            {isAdmin && (
-              <SidebarNavItem href="/admin" label="Admin" icon={Shield} active={isActive('/admin')} />
-            )}
-            {superAdmin && (
+            {navItems.map((item) => (
               <SidebarNavItem
-                href="/superadmin"
-                label="SuperAdmin"
-                icon={Crown}
-                active={isActive('/superadmin')}
+                key={item.href}
+                {...item}
+                active={isNavActive(pathname, item.href, search)}
               />
+            ))}
+
+            {navContext === 'superadmin' && (
+              <>
+                <div className="my-2 h-px bg-[rgba(189,255,223,0.12)]" />
+                <Link
+                  href="/exams"
+                  className="px-2.5 py-1.5 text-[10px] text-[#6B8A75] hover:text-[#A8BFB0] transition-colors"
+                  title="Acceso oculto para pruebas"
+                >
+                  Modo examen (oculto)
+                </Link>
+              </>
             )}
-            <div className="my-2 h-px bg-[rgba(189,255,223,0.12)]" />
-            <SidebarNavItem href="/profile" label="Mi Perfil" icon={User} active={isActive('/profile')} />
+
+            {navContext === 'student' && (
+              <>
+                <div className="my-2 h-px bg-[rgba(189,255,223,0.12)]" />
+                <SidebarNavItem
+                  href="/profile"
+                  label="Mi Perfil"
+                  icon={User}
+                  active={pathname === '/profile'}
+                />
+              </>
+            )}
           </nav>
 
           <div className="mt-auto space-y-2 pt-4">
@@ -158,7 +163,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="min-w-0">
                 <div className="truncate text-xs font-semibold text-white">{user?.fullName}</div>
-                <div className="text-[10px] text-[#BDFFDF]">{roleLabel(user?.role)}</div>
+                <div className="text-[10px] text-[#BDFFDF]">{roleLabel(user?.role, impersonating)}</div>
               </div>
             </div>
             <button
@@ -172,19 +177,36 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        {/* Área principal */}
         <div className="flex flex-1 flex-col min-w-0">
           <header className="hidden lg:flex items-center justify-between border-b border-[rgba(189,255,223,0.12)] bg-[#080E0A] px-8 py-4">
-            <div>
-              <p className="text-xs text-[#6B8A75]">Cocodrilito</p>
-              <h1 className="text-lg font-bold text-white">{pageTitle(pathname)}</h1>
+            <div className="flex items-center gap-3">
+              {brandLogo && (
+                <img src={brandLogo} alt="" className="h-8 w-8 rounded object-contain" />
+              )}
+              <div>
+                <p className="text-xs text-[#6B8A75]">
+                  {navContext === 'superadmin' ? 'Cocodrilito Platform' : brandName}
+                </p>
+                <h1 className="text-lg font-bold text-white">
+                  {pageTitleForPath(pathname, search)}
+                </h1>
+              </div>
             </div>
-            <Link
-              href="/profile"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
-            >
-              {initials}
-            </Link>
+            {navContext === 'tenant-admin' ? (
+              <Link
+                href="/admin/configuracion"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
+              >
+                {initials}
+              </Link>
+            ) : navContext === 'student' ? (
+              <Link
+                href="/profile"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
+              >
+                {initials}
+              </Link>
+            ) : null}
           </header>
 
           <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">
@@ -193,10 +215,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Bottom nav móvil */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-2 py-2 safe-area-pb">
-        {MOBILE_NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href
+        {mobileNav.map(({ href, label, icon: Icon }) => {
+          const active = isNavActive(pathname, href, search)
           return (
             <Link
               key={href}

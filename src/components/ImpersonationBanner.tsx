@@ -9,25 +9,20 @@ import { WARNING } from '@/lib/constants/theme'
 export function ImpersonationBanner() {
   const router = useRouter()
   const { active, tenantName, tenantType, stopImpersonation } = useImpersonationStore()
-  const { setUser, logout } = useAuthStore()
+  const { setUser } = useAuthStore()
 
   if (!active || !tenantName) return null
 
   const handleExit = async () => {
-    stopImpersonation()
     try {
-      await authApi.logout()
-    } catch { /* ignore */ }
-    logout()
-    router.push('/login')
-  }
-
-  const handleRefreshProfile = async () => {
-    try {
-      const res = await authApi.me()
-      const profile = (res.data as { profile?: Record<string, unknown> }).profile ?? res.data
-      setUser(normalizeUser(profile as Record<string, unknown>))
-    } catch { /* ignore */ }
+      const res = await authApi.stopImpersonate()
+      stopImpersonation()
+      setUser(normalizeUser(res.data as unknown as Record<string, unknown>))
+      router.push('/superadmin?tab=agencias')
+    } catch {
+      stopImpersonation()
+      router.push('/login')
+    }
   }
 
   return (
@@ -42,28 +37,18 @@ export function ImpersonationBanner() {
       <div className="flex items-center gap-2">
         <span>🎭</span>
         <span>
-          Impersonando <strong>{tenantName}</strong>
+          Ingresando como <strong>{tenantName}</strong>
           {tenantType ? ` (${tenantType})` : ''}
         </span>
       </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleRefreshProfile}
-          className="px-3 py-1 rounded-lg text-xs font-medium"
-          style={{ backgroundColor: `${WARNING}20`, border: `1px solid ${WARNING}30` }}
-        >
-          Actualizar sesión
-        </button>
-        <button
-          type="button"
-          onClick={handleExit}
-          className="px-3 py-1 rounded-lg text-xs font-bold"
-          style={{ backgroundColor: WARNING, color: '#000' }}
-        >
-          Salir de impersonación
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => void handleExit()}
+        className="px-3 py-1 rounded-lg text-xs font-bold"
+        style={{ backgroundColor: WARNING, color: '#000' }}
+      >
+        Volver a SuperAdmin
+      </button>
     </div>
   )
 }

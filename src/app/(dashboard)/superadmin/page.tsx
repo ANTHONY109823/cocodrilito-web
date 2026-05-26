@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
@@ -11,7 +11,7 @@ import {
   type DashboardStats,
   type TenantSummary,
 } from '@/lib/api/superadmin'
-import { SkeletonCard, SkeletonTable } from '@/components/Skeleton'
+import { SkeletonTable } from '@/components/Skeleton'
 import { toast } from '@/components/Toast'
 import {
   NEON,
@@ -23,12 +23,9 @@ import {
 } from '@/lib/constants/theme'
 
 type TabKey =
-  | 'overview'
   | 'agencias'
   | 'academias'
-  | 'users'
-  | 'questions'
-  | 'payments'
+  | 'aprobaciones'
   | 'audit'
 
 interface AuditLogEntry {
@@ -37,29 +34,36 @@ interface AuditLogEntry {
   entityType: string
   entityId: string
   details?: string | null
+  description?: string | null
+  userFullName?: string | null
   createdAt: string
 }
 
-interface PlatformUser {
+interface PendingSubscription {
   id: string
-  fullName: string
-  email: string
-  dni: string
-  role: string
-  tenantId?: string | null
-  isActive: boolean
+  userFullName?: string
+  userEmail?: string
+  tenantName?: string
+  amountPaid: number
+  paymentMethod: string
+  paymentReference: string
   createdAt: string
 }
 
 export default function SuperAdminPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loadFromStorage, setUser } = useAuthStore()
   const { startImpersonation } = useImpersonationStore()
 
-  const [tab, setTab] = useState<TabKey>('overview')
+  const tabParam = searchParams.get('tab') as TabKey | null
+  const tab: TabKey = tabParam && ['agencias', 'academias', 'aprobaciones', 'audit'].includes(tabParam)
+    ? tabParam
+    : 'agencias'
+
   const [dashboard, setDashboard] = useState<DashboardStats | null>(null)
   const [tenants, setTenants] = useState<TenantSummary[]>([])
-  const [users, setUsers] = useState<PlatformUser[]>([])
+  const [pendingSubs, setPendingSubs] = useState<PendingSubscription[]>([])
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -84,17 +88,17 @@ export default function SuperAdminPage() {
   const loadTabData = useCallback(async () => {
     setLoading(true)
     try {
-      if (tab === 'overview' || tab === 'payments') {
-        const res = await superadminApi.getDashboard()
-        setDashboard(res.data)
-      }
-      if (['overview', 'agencias', 'academias', 'payments'].includes(tab)) {
+      if (['agencias', 'academias'].includes(tab)) {
         const res = await superadminApi.getTenants()
         setTenants(res.data)
       }
-      if (tab === 'users') {
-        const res = await superadminApi.getUsers()
-        setUsers((res.data as { users: PlatformUser[] }).users ?? [])
+      if (tab === 'aprobaciones') {
+        const [dashRes, subsRes] = await Promise.all([
+          superadminApi.getDashboard(),
+          superadminApi.getPendingSubscriptions(),
+        ])
+        setDashboard(dashRes.data)
+        setPendingSubs(subsRes.data as PendingSubscription[])
       }
       if (tab === 'audit') {
         const res = await superadminApi.getAuditLog()
@@ -153,16 +157,24 @@ export default function SuperAdminPage() {
     }
   }
 
+  const handleDeleteTenant = async (tenant: TenantSummary) => {
+    if (!confirm(`¿Desactivar la ${tenant.tenantType.toLowerCase()} "${tenant.name}"?`)) return
+    try {
+      await superadminApi.deleteTenant(tenant.id)
+      toast(`${tenant.name} desactivada`, 'success')
+      loadTabData()
+    } catch {
+      toast('No se pudo eliminar', 'error')
+    }
+  }
+
   const agencias = tenants.filter((t) => t.tenantType === 'Agencia')
   const academias = tenants.filter((t) => t.tenantType === 'Academia')
 
   const tabs: { key: TabKey; label: string }[] = [
-    { key: 'overview', label: '📊 Vista General' },
     { key: 'agencias', label: '🏢 Agencias' },
     { key: 'academias', label: '🎓 Academias' },
-    { key: 'users', label: '👥 Usuarios' },
-    { key: 'questions', label: '📝 Preguntas' },
-    { key: 'payments', label: '💳 Pagos' },
+    { key: 'aprobaciones', label: '💳 Aprobaciones' },
     { key: 'audit', label: '📋 Audit Log' },
   ]
 
@@ -206,8 +218,11 @@ export default function SuperAdminPage() {
                 ) : null}
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                {t.slug} · {t.students} alumnos · {t.examsCompleted} exámenes · S/. {t.monthlyFee}/mes
+                {t.slug} · {t.students} usuarios · {t.examsCompleted} exámenes
+                {t.contactPhone ? ` · ${t.contactPhone}` : ''}
+                {t.monthlyFee > 0 ? ` · S/. ${t.monthlyFee}/mes` : ''}
               </div>
+              <div className="text-xs text-gray-600 mt-0.5">{t.contactEmail}</div>
             </div>
             <div className="flex gap-2 flex-wrap">
               <Link href={`/superadmin/tenants/${t.id}`}
@@ -218,7 +233,12 @@ export default function SuperAdminPage() {
               <button type="button" onClick={() => handleImpersonate(t)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
                 style={{ backgroundColor: `${WARNING}15`, color: WARNING, border: `1px solid ${WARNING}30` }}>
-                🎭 Impersonar
+                Ingresar como agencia
+              </button>
+              <button type="button" onClick={() => handleDeleteTenant(t)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                style={{ backgroundColor: `${DANGER}12`, color: DANGER, border: `1px solid ${DANGER}25` }}>
+                Eliminar
               </button>
             </div>
           </div>
@@ -290,7 +310,7 @@ export default function SuperAdminPage() {
 
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map((t) => (
-          <button key={t.key} type="button" onClick={() => setTab(t.key)}
+          <Link key={t.key} href={`/superadmin?tab=${t.key}`}
             className="px-3 py-2 rounded-xl text-xs md:text-sm font-medium transition-all"
             style={{
               backgroundColor: tab === t.key ? NEON : 'rgba(0,10,5,0.8)',
@@ -298,111 +318,46 @@ export default function SuperAdminPage() {
               border: `1px solid ${tab === t.key ? NEON : '#ffffff10'}`,
             }}>
             {t.label}
-          </button>
+          </Link>
         ))}
       </div>
-
-      {tab === 'overview' && (
-        loading && !dashboard ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-          </div>
-        ) : dashboard ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {statCard('Tenants totales', dashboard.totalTenants)}
-              {statCard('Tenants activos', dashboard.activeTenants, INFO)}
-              {statCard('Estudiantes', dashboard.totalStudents)}
-              {statCard('Exámenes hoy', dashboard.totalExamsToday, WARNING)}
-              {statCard('Exámenes del mes', dashboard.totalExamsThisMonth)}
-              {statCard('Pagos pendientes', dashboard.pendingPayments, DANGER)}
-              {statCard('Ingreso mensual', `S/. ${dashboard.monthlyRevenue}`, WARNING)}
-              {statCard('Agencias activas', `${dashboard.agencias.active}/${dashboard.agencias.total}`)}
-            </div>
-            {dashboard.topTenantsByActivity?.length > 0 && (
-              <div className="rounded-2xl p-4"
-                style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
-                <h3 className="text-white font-semibold mb-3">Top tenants por actividad</h3>
-                <div className="space-y-2">
-                  {dashboard.topTenantsByActivity.map((t, i) => (
-                    <div key={t.tenantId} className="flex justify-between text-sm">
-                      <span className="text-gray-300">{i + 1}. {t.tenantName}</span>
-                      <span style={{ color: NEON }}>{t.examsCompleted} exámenes</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : null
-      )}
 
       {tab === 'agencias' && tenantList(agencias)}
       {tab === 'academias' && tenantList(academias)}
 
-      {tab === 'users' && (
-        loading ? <SkeletonTable /> : (
-          <div className="overflow-x-auto rounded-2xl"
-            style={{ border: `1px solid ${SURFACE_BORDER}` }}>
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: 'rgba(0,10,5,0.9)' }}>
-                  {['Nombre', 'Email', 'Rol', 'Estado', 'Registro'].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-gray-500 font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} style={{ borderTop: `1px solid ${SURFACE_BORDER}` }}>
-                    <td className="px-4 py-3 text-white">{u.fullName}</td>
-                    <td className="px-4 py-3 text-gray-400">{u.email}</td>
-                    <td className="px-4 py-3"><span style={{ color: NEON }}>{u.role}</span></td>
-                    <td className="px-4 py-3">{u.isActive ? '✅ Activo' : '⛔ Inactivo'}</td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {new Date(u.createdAt).toLocaleDateString('es-PE')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-
-      {tab === 'questions' && (
-        <div className="text-center py-16 rounded-2xl"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
-          <div className="text-5xl mb-4">📝</div>
-          <h2 className="text-white font-bold text-lg mb-2">Banco global de preguntas</h2>
-          <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
-            Las preguntas base son compartidas por todos los tenants. Los admins de tenant pueden
-            agregar preguntas propias desde su panel.
-          </p>
-          <Link href="/admin/preguntas"
-            className="inline-flex px-6 py-3 rounded-xl font-bold text-sm"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
-            Ir al banco de preguntas →
-          </Link>
-        </div>
-      )}
-
-      {tab === 'payments' && (
+      {tab === 'aprobaciones' && (
         <div className="space-y-4">
           {dashboard && (
-            <div className="rounded-2xl p-4 flex items-center gap-4"
-              style={{ background: `${WARNING}10`, border: `1px solid ${WARNING}30` }}>
-              <span className="text-3xl">💳</span>
-              <div>
-                <p className="text-white font-semibold">{dashboard.pendingPayments} pagos pendientes</p>
-                <p className="text-gray-500 text-sm">Ingreso mensual estimado: S/. {dashboard.monthlyRevenue}</p>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+              {statCard('Pagos tenants pendientes', dashboard.pendingPayments, DANGER)}
+              {statCard('Suscripciones pendientes', pendingSubs.length, WARNING)}
+              {statCard('Ingreso mensual est.', `S/. ${dashboard.monthlyRevenue}`, INFO)}
             </div>
           )}
-          <p className="text-gray-500 text-sm">
-            Registra pagos desde el detalle de cada tenant. Tenants con cuota mensual:
-          </p>
-          {tenantList(tenants.filter((t) => t.monthlyFee > 0))}
+          {loading ? <SkeletonTable /> : pendingSubs.length === 0 ? (
+            <p className="text-gray-500 text-center py-12">No hay aprobaciones pendientes</p>
+          ) : (
+            pendingSubs.map((sub) => (
+              <div key={sub.id} className="rounded-xl px-4 py-3 text-sm"
+                style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+                <div className="flex flex-wrap justify-between gap-2">
+                  <div>
+                    <div className="text-white font-semibold">{sub.userFullName ?? 'Usuario'}</div>
+                    <div className="text-gray-500 text-xs">{sub.userEmail} · {sub.tenantName ?? 'Sin tenant'}</div>
+                    <div className="text-xs mt-1" style={{ color: WARNING }}>
+                      S/. {sub.amountPaid} · {sub.paymentMethod} · Ref: {sub.paymentReference || '—'}
+                    </div>
+                  </div>
+                  <div className="text-gray-600 text-xs self-center">
+                    {new Date(sub.createdAt).toLocaleString('es-PE')}
+                  </div>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">
+                  Las aprobaciones por tenant se gestionan desde el panel de cada agencia/academia (impersonar).
+                </p>
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -416,12 +371,12 @@ export default function SuperAdminPage() {
                 style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="font-bold" style={{ color: INFO }}>{log.action}</span>
-                  <span className="text-gray-500">{log.entityType} · {log.entityId}</span>
+                  <span className="text-gray-500">{log.userFullName}</span>
                   <span className="text-gray-600 text-xs ml-auto">
                     {new Date(log.createdAt).toLocaleString('es-PE')}
                   </span>
                 </div>
-                {log.details && <p className="text-gray-400 text-xs mt-1">{log.details}</p>}
+                <p className="text-gray-300 text-xs mt-1">{log.description ?? log.details}</p>
               </div>
             ))}
           </div>
