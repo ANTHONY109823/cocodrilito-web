@@ -31,7 +31,7 @@ export interface AdminDashboardData {
     id: string
     fullName: string
     email: string
-    createdAt: string
+    lastLogin: string | null
     isActive: boolean
   }[]
 }

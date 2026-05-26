@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin, isAdminAgencia } from '@/lib/auth/roles'
 import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
 import { tenantAdminApi, type AdminDashboardData } from '@/lib/api/tenantAdmin'
+import { formatRelativeTime } from '@/lib/utils/relativeTime'
 import { NEON } from '@/lib/constants/theme'
 
 interface User {
@@ -364,11 +365,13 @@ export default function AdminPage() {
                 </div>
                 <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: '1px solid #ffffff10' }}>
                   <h3 className="text-white font-semibold mb-3">👤 Accesos recientes</h3>
-                  {dashData.recentAccess.map((u) => (
-                    <div key={u.id} className="flex justify-between text-sm py-1.5 border-b border-white/5">
-                      <span className="text-gray-300">{u.fullName}</span>
-                      <span className="text-gray-600 text-xs">
-                        {new Date(u.createdAt).toLocaleDateString('es-PE')}
+                  {dashData.recentAccess.length === 0 ? (
+                    <p className="text-gray-500 text-sm">Ningún alumno ha iniciado sesión aún</p>
+                  ) : dashData.recentAccess.map((u) => (
+                    <div key={u.id} className="flex justify-between gap-2 text-sm py-1.5 border-b border-white/5">
+                      <span className="text-gray-300 truncate">{u.fullName}</span>
+                      <span className="text-gray-500 text-xs shrink-0">
+                        {formatRelativeTime(u.lastLogin)}
                       </span>
                     </div>
                   ))}
