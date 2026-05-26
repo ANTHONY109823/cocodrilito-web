@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
@@ -9,12 +9,19 @@ import { tenantAdminApi } from '@/lib/api/tenantAdmin'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { NEON } from '@/lib/constants/theme'
 
+const MAX_LOGO_BYTES = 2 * 1024 * 1024
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+
 export default function ConfiguracionPage() {
   const router = useRouter()
   const { user, loadFromStorage, setUser } = useAuthStore()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '',
     logoUrl: '',
@@ -37,6 +44,8 @@ export default function ConfiguracionPage() {
         address: t.address ?? '',
         description: t.description ?? '',
       })
+      setLogoPreview(t.logoUrl ?? null)
+      setLogoFile(null)
     } catch {
       setMsg({ text: 'No se pudo cargar los datos de la agencia', ok: false })
     } finally {
@@ -57,24 +66,71 @@ export default function ConfiguracionPage() {
     void loadProfile()
   }, [user, router, loadProfile])
 
+  useEffect(() => {
+    return () => {
+      if (logoPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(logoPreview)
+      }
+    }
+  }, [logoPreview])
+
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setMsg({ text: 'Solo se permiten imágenes JPG, PNG o WebP', ok: false })
+      return
+    }
+    if (file.size > MAX_LOGO_BYTES) {
+      setMsg({ text: 'El logo no puede superar 2 MB', ok: false })
+      return
+    }
+
+    if (logoPreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(logoPreview)
+    }
+
+    setLogoFile(file)
+    setLogoPreview(URL.createObjectURL(file))
+    setMsg(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setMsg(null)
+
+    let logoUrl = form.logoUrl
+
     try {
-      await tenantAdminApi.updateProfile(form)
+      if (logoFile) {
+        setUploadingLogo(true)
+        const uploadRes = await tenantAdminApi.uploadLogo(logoFile)
+        logoUrl = uploadRes.data.logoUrl
+        setUploadingLogo(false)
+      }
+
+      await tenantAdminApi.updateProfile({ ...form, logoUrl })
+
       if (user) {
         setUser(normalizeUser({
           ...user,
           tenantName: form.name,
-          tenantLogoUrl: form.logoUrl || null,
+          tenantLogoUrl: logoUrl || null,
         }))
       }
+
+      setForm((f) => ({ ...f, logoUrl }))
+      setLogoPreview(logoUrl || null)
+      setLogoFile(null)
       setMsg({ text: 'Datos de la agencia actualizados', ok: true })
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error al guardar'), ok: false })
     } finally {
       setSaving(false)
+      setUploadingLogo(false)
     }
   }
 
@@ -88,6 +144,8 @@ export default function ConfiguracionPage() {
     fontSize: '13px',
     outline: 'none' as const,
   }
+
+  const busy = saving || uploadingLogo
 
   if (loading) {
     return <p className="text-center text-gray-500 py-12">Cargando configuración...</p>
@@ -121,15 +179,48 @@ export default function ConfiguracionPage() {
           <input style={inputStyle} value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })} required />
         </div>
+
         <div>
-          <label className="block text-xs text-gray-500 mb-1.5">URL del logo</label>
-          <input style={inputStyle} placeholder="https://..."
-            value={form.logoUrl}
-            onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} />
-          {form.logoUrl && (
-            <img src={form.logoUrl} alt="" className="mt-2 h-12 object-contain rounded" />
-          )}
+          <label className="block text-xs text-gray-500 mb-1.5">Logo de la agencia</label>
+          <div className="flex items-start gap-4 flex-wrap">
+            <div
+              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/30 overflow-hidden"
+            >
+              {logoPreview ? (
+                <img src={logoPreview} alt="Vista previa del logo" className="h-full w-full object-contain" />
+              ) : (
+                <span className="text-2xl text-gray-600">🏢</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleLogoSelect}
+              />
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 rounded-lg text-xs font-semibold transition-opacity"
+                style={{
+                  backgroundColor: `${NEON}18`,
+                  color: NEON,
+                  border: `1px solid ${NEON}35`,
+                  opacity: busy ? 0.6 : 1,
+                }}
+              >
+                {uploadingLogo ? 'Subiendo logo...' : 'Subir logo'}
+              </button>
+              <p className="text-[11px] text-gray-600 max-w-[200px]">
+                JPG, PNG o WebP · máximo 2 MB
+              </p>
+            </div>
+          </div>
         </div>
+
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Correo de contacto</label>
           <input style={inputStyle} type="email" value={form.contactEmail}
@@ -150,14 +241,14 @@ export default function ConfiguracionPage() {
           <textarea style={{ ...inputStyle, minHeight: 80 }} value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </div>
-        <button type="submit" disabled={saving}
+        <button type="submit" disabled={busy}
           className="w-full py-2.5 rounded-xl font-bold text-sm"
           style={{
             background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
             color: '#000',
-            opacity: saving ? 0.7 : 1,
+            opacity: busy ? 0.7 : 1,
           }}>
-          {saving ? 'Guardando...' : 'Guardar cambios'}
+          {uploadingLogo ? 'Subiendo logo...' : saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
       </form>
     </div>

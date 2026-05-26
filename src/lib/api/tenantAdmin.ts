@@ -40,5 +40,14 @@ export const tenantAdminApi = {
   getProfile: () => apiClient.get<TenantProfile>('/admin/tenant/profile'),
   updateProfile: (data: Partial<TenantProfile>) =>
     apiClient.put('/admin/tenant/profile', data),
+  uploadLogo: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post<{ logoUrl: string; message: string }>(
+      '/admin/tenant/logo',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+  },
   getDashboard: () => apiClient.get<AdminDashboardData>('/admin/dashboard'),
 }
