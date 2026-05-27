@@ -214,6 +214,9 @@ function LoginForm() {
                   'Simulacros cronometrados',
                   'Ranking y gamificación',
                   'Reportes de progreso personalizados',
+                  'Perfiles para postulantes y ascensos a la PNP y FF.AA.',
+                  'Si eres academia o agencia de admición puedes convertirte en un distribuidor de la plataforma y ganar dinero con cada suscripción.',
+                  'Si eres postulante o aspirante a la PNP o FF.AA. puedes suscribirte a la plataforma directamente',
                 ].map((text) => (
                   <div key={text} className="feat">
                     <div className="feat-icon">
@@ -234,7 +237,7 @@ function LoginForm() {
                 ))}
               </div>
 
-              <p className="tagline">ESTAS A UN PASO DE LOGRAR TUS SUEÑOS SUSCRIBETE</p>
+              <p className="tagline">ESTAS A UN PASO DE LOGRAR TUS SUEÑOS ¡SUSCRIBETE YA!</p>
 
               <div className="stats">
                 <div className="stat">
