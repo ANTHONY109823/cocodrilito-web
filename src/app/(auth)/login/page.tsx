@@ -10,7 +10,6 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import { LoginLeftCarousel } from './LoginLeftCarousel'
 import './login-platform.css'
 
 const SOCIAL_LINKS = [
@@ -198,8 +197,6 @@ function LoginForm() {
 
           <div className="card">
             <div className="left">
-              <LoginLeftCarousel />
-
               <div className="headline">
                 <span className="hl-normal">Prepárate para ser</span>
                 <span className="hl-accent">Policía</span>
