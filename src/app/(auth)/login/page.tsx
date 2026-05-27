@@ -145,10 +145,9 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const brandName = config?.name || 'Cocodrilito'
-  const brandSub = config?.welcomeMessage || 'Simulador de exámenes PNP'
   const formDisabled = config !== null && !config.isActive
-  const logoLetter = brandName.trim().charAt(0).toUpperCase() || 'C'
+  const displayName = 'LYON'
+  const displaySub = 'Plataforma de examenes'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -199,20 +198,10 @@ function LoginForm() {
           <div className="brand">
             <div className="brand-sup">
               <span className="brand-line" />
-              <span className="brand-eyebrow">Plataforma Oficial de Ascensos</span>
+              <span className="brand-eyebrow">Plataforma de examenes</span>
               <span className="brand-line r" />
             </div>
-            <h1
-              className="brand-name"
-              style={{
-                fontFamily: "'Cinzel Decorative', serif",
-                fontSize: 'clamp(22px, 4vw, 48px)',
-                letterSpacing: 'clamp(4px, 1.2vw, 14px)',
-                opacity: 1,
-              }}
-            >
-              {brandName.toUpperCase()}
-            </h1>
+            <h1 className="brand-name">{displayName}</h1>
             <div className="brand-ornament">
               <span className="orn-bar" />
               <span className="orn-dot" />
@@ -233,12 +222,12 @@ function LoginForm() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={config.logoUrl} alt="" className="logo-icon-img" />
                   ) : (
-                    logoLetter
+                    'L'
                   )}
                 </div>
                 <div className="logo-text">
-                  <div className="logo-name">{brandName}</div>
-                  <div className="logo-desc">{brandSub}</div>
+                  <div className="logo-name">{displayName}</div>
+                  <div className="logo-desc">{displaySub}</div>
                 </div>
               </div>
 
