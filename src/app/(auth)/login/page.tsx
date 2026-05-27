@@ -10,6 +10,7 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { LoginLeftCarousel } from './LoginLeftCarousel'
 import './login-platform.css'
 
 const SOCIAL_LINKS = [
@@ -74,7 +75,6 @@ function InstagramIcon() {
 function useLoginDecorEffects() {
   const particlesRef = useRef<HTMLDivElement>(null)
   const loginBtnRef = useRef<HTMLButtonElement>(null)
-  const dotIndexRef = useRef(0)
 
   useEffect(() => {
     const container = particlesRef.current
@@ -107,24 +107,6 @@ function useLoginDecorEffects() {
     }
   }, [])
 
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      const sdots = document.querySelectorAll<HTMLElement>('.sdot')
-      if (!sdots.length) return
-      sdots.forEach((d) => {
-        d.classList.remove('on')
-        d.style.width = ''
-        d.style.background = ''
-      })
-      dotIndexRef.current = (dotIndexRef.current + 1) % sdots.length
-      const active = sdots[dotIndexRef.current]
-      active.classList.add('on')
-      active.style.background = 'var(--gold)'
-      active.style.width = '26px'
-    }, 3000)
-    return () => window.clearInterval(interval)
-  }, [])
-
   return { particlesRef, loginBtnRef }
 }
 
@@ -147,7 +129,6 @@ function LoginForm() {
 
   const formDisabled = config !== null && !config.isActive
   const displayName = 'LYON'
-  const displaySub = 'Plataforma de examenes'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -183,6 +164,11 @@ function LoginForm() {
       <div className="loginRoot">
         <div className="bg-wrap">
           <div className="bg-lion" />
+          <div className="bg-clouds" aria-hidden>
+            <div className="cloud-wave cloud-wave-1" />
+            <div className="cloud-wave cloud-wave-2" />
+            <div className="cloud-wave cloud-wave-3" />
+          </div>
           <div className="bg-overlay" />
           <div className="particles" ref={particlesRef} />
         </div>
@@ -196,12 +182,8 @@ function LoginForm() {
 
         <main className="page">
           <div className="brand">
-            <div className="brand-sup">
-              <span className="brand-line" />
-              <span className="brand-eyebrow">Plataforma de examenes</span>
-              <span className="brand-line r" />
-            </div>
             <h1 className="brand-name">{displayName}</h1>
+            <p className="brand-tagline">Plataforma de examenes</p>
             <div className="brand-ornament">
               <span className="orn-bar" />
               <span className="orn-dot" />
@@ -216,20 +198,7 @@ function LoginForm() {
 
           <div className="card">
             <div className="left">
-              <div className="logo-pill">
-                <div className="logo-icon">
-                  {config?.logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={config.logoUrl} alt="" className="logo-icon-img" />
-                  ) : (
-                    'L'
-                  )}
-                </div>
-                <div className="logo-text">
-                  <div className="logo-name">{displayName}</div>
-                  <div className="logo-desc">{displaySub}</div>
-                </div>
-              </div>
+              <LoginLeftCarousel />
 
               <div className="headline">
                 <span className="hl-normal">Prepárate para ser</span>
@@ -254,7 +223,7 @@ function LoginForm() {
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#4aaa54"
+                        stroke="#f5c842"
                         strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -285,12 +254,6 @@ function LoginForm() {
                 </div>
               </div>
 
-              <div className="slide-dots" aria-hidden>
-                <div className="sdot on" />
-                <div className="sdot" />
-                <div className="sdot" />
-                <div className="sdot" />
-              </div>
             </div>
 
             <div className="right">

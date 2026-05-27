@@ -41,9 +41,64 @@
   from { transform: scale(1.0); }
   to   { transform: scale(1.07); }
 }
+/* olas / nubes doradas animadas */
+.bg-clouds {
+  position: absolute;
+  inset: -15%;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cloud-wave {
+  position: absolute;
+  left: -40%;
+  width: 180%;
+  height: 55%;
+  border-radius: 50%;
+  filter: blur(28px);
+  opacity: 0.35;
+  will-change: transform, opacity;
+}
+
+.cloud-wave-1 {
+  top: 0%;
+  background: radial-gradient(ellipse 50% 80% at 40% 60%, rgba(245, 200, 66, 0.55), transparent 72%);
+  animation: cloudWaveDrift1 20s ease-in-out infinite;
+}
+
+.cloud-wave-2 {
+  top: 8%;
+  background: radial-gradient(ellipse 45% 70% at 65% 50%, rgba(255, 230, 140, 0.4), transparent 68%);
+  animation: cloudWaveDrift2 26s ease-in-out infinite;
+}
+
+.cloud-wave-3 {
+  top: 18%;
+  height: 45%;
+  background: radial-gradient(ellipse 60% 90% at 50% 40%, rgba(245, 200, 66, 0.28), transparent 75%);
+  animation: cloudWaveDrift3 16s ease-in-out infinite;
+}
+
+@keyframes cloudWaveDrift1 {
+  0%, 100% { transform: translateX(0) translateY(0) scale(1); opacity: 0.3; }
+  50% { transform: translateX(12%) translateY(-4%) scale(1.06); opacity: 0.45; }
+}
+
+@keyframes cloudWaveDrift2 {
+  0%, 100% { transform: translateX(5%) translateY(2%) scale(1.02); opacity: 0.28; }
+  50% { transform: translateX(-10%) translateY(-6%) scale(1.1); opacity: 0.42; }
+}
+
+@keyframes cloudWaveDrift3 {
+  0%, 100% { transform: translateX(-8%) translateY(0) scale(1); opacity: 0.22; }
+  50% { transform: translateX(6%) translateY(-5%) scale(1.08); opacity: 0.38; }
+}
+
 .bg-overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background:
     radial-gradient(ellipse 90% 70% at 50% 35%,
       transparent 0%,
@@ -122,6 +177,21 @@
   color: var(--green-hi);
   text-transform: uppercase;
 }
+
+.brand-tagline {
+  font-size: clamp(15px, 2.5vw, 22px);
+  font-weight: 600;
+  letter-spacing: clamp(6px, 1.2vw, 10px);
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-top: 14px;
+  margin-bottom: 2px;
+  text-shadow:
+    0 0 24px rgba(245, 200, 66, 0.55),
+    0 0 8px rgba(245, 200, 66, 0.35);
+  animation: fadeDown 0.8s 0.15s ease both;
+}
+
 .brand-name {
   font-family: 'Cinzel Decorative', serif;
   font-size: clamp(52px, 9vw, 82px);
@@ -257,8 +327,9 @@
   font-family: 'Cinzel', serif;
   font-size: clamp(22px, 3.5vw, 30px);
   font-weight: 600;
-  color: var(--white);
+  color: #fffef5;
   display: block;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
 }
 .hl-accent {
   font-family: 'Cinzel Decorative', serif;
@@ -273,10 +344,11 @@
 /* descripción */
 .desc {
   font-size: 13px;
-  font-weight: 300;
-  color: var(--white-dim);
+  font-weight: 400;
+  color: rgba(255, 248, 220, 0.92);
   line-height: 1.65;
   letter-spacing: .2px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.65);
 }
 
 /* features */
@@ -291,8 +363,9 @@
   gap: 10px;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255,255,255,0.78);
+  color: #f0f8f1;
   letter-spacing: .2px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
 }
 .feat-icon {
   width: 22px; height: 22px;
@@ -307,11 +380,66 @@
 /* tagline cursiva */
 .tagline {
   font-style: italic;
-  font-size: 12px;
-  font-weight: 300;
-  color: var(--gold);
-  opacity: .7;
+  font-size: 13px;
+  font-weight: 500;
+  color: #f5c842;
+  opacity: 1;
   letter-spacing: .5px;
+  text-shadow: 0 0 12px rgba(245, 200, 66, 0.35), 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* carrusel panel izquierdo */
+.left-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.left-carousel-track {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 0.5px solid rgba(245, 200, 66, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.left-carousel-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.9s ease-in-out;
+}
+
+.left-carousel-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(6, 14, 7, 0.88) 0%,
+    rgba(6, 14, 7, 0.25) 55%,
+    rgba(6, 14, 7, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+.left-carousel-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #fff8dc;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  z-index: 2;
+  pointer-events: none;
 }
 
 /* stats */
@@ -347,21 +475,28 @@
   display: block;
 }
 
-/* slides dots */
+/* slides dots (carrusel) */
 .slide-dots {
   display: flex;
-  gap: 5px;
+  gap: 6px;
   align-items: center;
+  justify-content: center;
   margin-top: 4px;
 }
 .sdot {
-  width: 16px; height: 2.5px;
+  width: 16px;
+  height: 2.5px;
+  padding: 0;
+  border: none;
   border-radius: 2px;
-  background: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12);
   cursor: pointer;
-  transition: all .3s;
+  transition: all 0.3s;
 }
-.sdot.on { background: var(--gold); width: 26px; }
+.sdot.on {
+  background: var(--gold);
+  width: 26px;
+}
 
 /* ─── LADO DERECHO: LOGIN ─── */
 .right {
