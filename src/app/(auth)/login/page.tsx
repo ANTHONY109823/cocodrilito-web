@@ -191,7 +191,7 @@ function LoginForm() {
           <span className="orn-bar" />
         </div>
         <p className="brand-sub" style={{ color: '#000000', fontWeight: '600', textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>
-          Exámenes &nbsp;·&nbsp; Ascensos &nbsp;·&nbsp; Balotarios &nbsp;·&nbsp; PNP
+          Exámenes &nbsp;·&nbsp; Ascensos &nbsp;·&nbsp; Balotarios &nbsp;·&nbsp; PNP & FF.AA.
          </p>
         </div>
 
@@ -214,8 +214,9 @@ function LoginForm() {
                   'Simulacros cronometrados',
                   'Ranking y gamificación',
                   'Reportes de progreso personalizados',
-                  'Perfiles para postulantes y ascensos a la PNP y FF.AA.',
-                  'Si eres academia o agencia de admición puedes convertirte en un distribuidor de la plataforma y ganar dinero con cada suscripción.',
+                  'especializados en los procesos de ascenso a la PNP',
+                  'Perfiles para usuarios y agencias/academias.',
+                  'Si eres agencias/academia de admición usa nuestra plataforma y genera ingresos con cada suscripción.',
                   'Si eres postulante o aspirante a la PNP o FF.AA. puedes suscribirte a la plataforma directamente',
                 ].map((text) => (
                   <div key={text} className="feat">
