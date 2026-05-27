@@ -180,37 +180,37 @@ function LoginForm() {
         </a>
 
         <main className="page">
-          <div className="brand">
-            <h1 className="brand-name">{displayName}</h1>
-            <p className="brand-tagline">Plataforma de examenes</p>
-            <div className="brand-ornament">
-              <span className="orn-bar" />
-              <span className="orn-dot" />
-              <span className="orn-diamond" />
-              <span className="orn-dot" />
-              <span className="orn-bar" />
-            </div>
-            <p className="brand-sub">
-              Plataforma de Ascensos &nbsp;·&nbsp; PNP &nbsp;·&nbsp; FF.AA. &nbsp;·&nbsp; Perú
-            </p>
-          </div>
+        <div className="brand">
+          <h1 className="brand-name">{displayName}</h1>
+          <p className="brand-tagline">Plataforma de examenes</p>
+          <div className="brand-ornament">
+          <span className="orn-bar" />
+          <span className="orn-dot" />
+          <span className="orn-diamond" />
+         <span className="orn-dot" />
+          <span className="orn-bar" />
+        </div>
+        <p className="brand-sub" style={{ color: '#000000', fontWeight: '600', textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>
+          Exámenes &nbsp;·&nbsp; Ascensos &nbsp;·&nbsp; Balotarios &nbsp;·&nbsp; PNP
+         </p>
+        </div>
 
           <div className="card">
             <div className="left">
               <div className="headline">
-                <span className="hl-normal">Prepárate para ser</span>
-                <span className="hl-accent">Policía</span>
+                <span className="hl-normal">PREPÁRATE PARA LOGRAR</span>
+                <span className="hl-accent">TUS METAS</span>
               </div>
 
               <p className="desc">
-                La plataforma #1 de simulacros de ascenso en el Perú.
+                CON LA PLATAFORMA #1 DE SIMULACROS EN EL PERÚ.
                 <br />
                 Aprueba con confianza — miles ya lo lograron.
               </p>
 
               <div className="features">
                 {[
-                  '+10,000 preguntas actualizadas',
+                  'Preguntas actualizadas',
                   'Simulacros cronometrados',
                   'Ranking y gamificación',
                   'Reportes de progreso personalizados',
@@ -234,20 +234,20 @@ function LoginForm() {
                 ))}
               </div>
 
-              <p className="tagline">Tu futuro en la PNP empieza aquí</p>
+              <p className="tagline">ESTAS A UN PASO DE LOGRAR TUS SUEÑOS SUSCRIBETE</p>
 
               <div className="stats">
                 <div className="stat">
-                  <span className="stat-num">4,888</span>
-                  <span className="stat-lbl">vacantes 2025</span>
+                  <span className="stat-num">100%</span>
+                  <span className="stat-lbl">Amigable</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-num">80K+</span>
-                  <span className="stat-lbl">postulantes/año</span>
+                  <span className="stat-num">24/7</span>
+                  <span className="stat-lbl">A tu disposición</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-num">95%</span>
-                  <span className="stat-lbl">satisfacción</span>
+                  <span className="stat-num">100%</span>
+                  <span className="stat-lbl">Satisfacción</span>
                 </div>
               </div>
 
@@ -358,19 +358,16 @@ function LoginForm() {
                   )}
                 </button>
               </form>
-
+              <div className="register-link">
+                ¿No tienes cuenta? <Link href="/register">Regístrate gratis</Link>
+              </div>
+              
               <div className="divider">
                 <span className="div-line" />
                 <span className="div-text">o síguenos en</span>
                 <span className="div-line" />
-              </div>
-
-              <div className="register-link">
-                ¿No tienes cuenta? <Link href="/register">Regístrate gratis</Link>
-              </div>
-
-              <p className="social-label">Síguenos en</p>
-              <div className="social-btns">
+                </div>
+                <div className="social-btns">
                 {SOCIAL_LINKS.map((social) => (
                   <a
                     key={social.id}
