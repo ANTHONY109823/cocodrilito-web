@@ -104,4 +104,32 @@ export const superadminApi = {
   getPendingSubscriptions: () =>
     apiClient.get('/superadmin/subscriptions/pending'),
   deleteTenant: (id: string) => apiClient.delete(`/superadmin/tenants/${id}`),
+  getExamConfig: () => apiClient.get<ExamDistributionConfig[]>('/superadmin/exam-config'),
+  getExamConfigByTotal: (total: number) =>
+    apiClient.get<ExamDistributionConfig>(`/superadmin/exam-config/${total}`),
+  updateExamConfig: (total: number, payload: UpdateExamDistributionPayload) =>
+    apiClient.put<ExamDistributionConfig>(`/superadmin/exam-config/${total}`, payload),
+}
+
+export interface ExamCategoryDistribution {
+  categoryId: string
+  categoryName: string
+  percentage: number
+  questionCount: number
+  displayOrder: number
+  availableQuestions: number
+}
+
+export interface ExamDistributionConfig {
+  totalQuestions: number
+  isActive: boolean
+  updatedAt: string
+  totalPercentage: number
+  assignedQuestions: number
+  distributions: ExamCategoryDistribution[]
+}
+
+export interface UpdateExamDistributionPayload {
+  totalQuestions: number
+  distributions: { categoryId: string; percentage: number; displayOrder: number }[]
 }

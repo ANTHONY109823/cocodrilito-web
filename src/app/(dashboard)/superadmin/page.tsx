@@ -14,6 +14,7 @@ import {
 import { SkeletonTable } from '@/components/Skeleton'
 import { toast } from '@/components/Toast'
 import { Modal, Button } from '@/components/ui'
+import { ExamDistributionPanel } from './ExamDistributionPanel'
 import {
   NEON,
   INFO,
@@ -27,6 +28,7 @@ type TabKey =
   | 'agencias'
   | 'academias'
   | 'aprobaciones'
+  | 'distribucion'
   | 'audit'
 
 interface AuditLogEntry {
@@ -58,7 +60,7 @@ export default function SuperAdminPage() {
   const { startImpersonation } = useImpersonationStore()
 
   const tabParam = searchParams.get('tab') as TabKey | null
-  const tab: TabKey = tabParam && ['agencias', 'academias', 'aprobaciones', 'audit'].includes(tabParam)
+  const tab: TabKey = tabParam && ['agencias', 'academias', 'aprobaciones', 'distribucion', 'audit'].includes(tabParam)
     ? tabParam
     : 'agencias'
 
@@ -211,6 +213,7 @@ export default function SuperAdminPage() {
     { key: 'agencias', label: '🏢 Agencias' },
     { key: 'academias', label: '🎓 Academias' },
     { key: 'aprobaciones', label: '💳 Aprobaciones' },
+    { key: 'distribucion', label: '📊 Distribución' },
     { key: 'audit', label: '📋 Audit Log' },
   ]
 
@@ -409,6 +412,8 @@ export default function SuperAdminPage() {
           )}
         </div>
       )}
+
+      {tab === 'distribucion' && <ExamDistributionPanel />}
 
       {tab === 'audit' && (
         loading ? <SkeletonTable /> : (

@@ -1,10 +1,11 @@
 import apiClient from './client'
 
 export const examsApi = {
-  start: (examId: string, params?: { mode?: string; category?: string }) => {
+  start: (examId: string, params?: { mode?: string; category?: string; questionCount?: number }) => {
     const qs = new URLSearchParams()
     if (params?.mode) qs.set('mode', params.mode)
     if (params?.category) qs.set('category', params.category)
+    if (params?.questionCount) qs.set('questionCount', String(params.questionCount))
     const query = qs.toString()
     return apiClient.post(`/exams/${examId}/start${query ? `?${query}` : ''}`)
   },

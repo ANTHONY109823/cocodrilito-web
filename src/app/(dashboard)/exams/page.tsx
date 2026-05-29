@@ -19,8 +19,6 @@ import { Button } from '@/components/ui'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Badge } from '@/components/ui'
 
-const SIMULACRO_SIZE = 100
-
 const CATEGORY_EMOJI: Record<string, string> = {
   'Ley PNP': '⚖️',
   'Régimen disciplinario': '📋',
@@ -57,6 +55,7 @@ export default function ExamsPage() {
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedCount, setSelectedCount] = useState<25 | 50 | 100>(100)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -102,10 +101,16 @@ export default function ExamsPage() {
     void loadData()
   }, [loadData])
 
+  const DURATIONS: Record<25 | 50 | 100, string> = {
+    25: '~15 minutos',
+    50: '~30 minutos',
+    100: '~45 minutos',
+  }
+
   const startExam = async (
     examId: string,
     label: string,
-    options?: { mode?: string; category?: string }
+    options?: { mode?: string; category?: string; questionCount?: number }
   ) => {
     if (!examId) {
       setError('No hay examen configurado en el servidor.')
@@ -156,8 +161,7 @@ export default function ExamsPage() {
   }
 
   const mainExam = exams[0]
-  const simulacroCount = Math.min(SIMULACRO_SIZE, totalQuestions)
-  const minutes = Math.floor((mainExam?.timeLimitSeconds || 3600) / 60)
+  const simulacroCount = Math.min(selectedCount, totalQuestions)
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -209,12 +213,35 @@ export default function ExamsPage() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 text-[#318F48]" />
-                  {minutes} minutos
+                  {DURATIONS[selectedCount]}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <BarChart3 className="h-3.5 w-3.5 text-[#318F48]" />
                   Nota mín. {mainExam.passingScore || 65} pts
                 </span>
+              </div>
+
+              <div className="mt-3">
+                <p className="mb-1.5 text-[12px] font-semibold text-[#A8BFB0]">
+                  ¿Cuántas preguntas quieres practicar?
+                </p>
+                <div className="flex gap-2">
+                  {([25, 50, 100] as const).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setSelectedCount(n)}
+                      className="rounded-lg border px-4 py-2 text-sm font-bold transition-all"
+                      style={{
+                        borderColor: selectedCount === n ? '#318F48' : 'rgba(189,255,223,0.15)',
+                        background: selectedCount === n ? '#318F48' : 'transparent',
+                        color: selectedCount === n ? '#fff' : '#A8BFB0',
+                      }}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <Button
@@ -222,7 +249,7 @@ export default function ExamsPage() {
               className="shrink-0 px-7 font-bold"
               loading={starting === 'completo'}
               disabled={!!starting || simulacroCount === 0}
-              onClick={() => startExam(mainExam.id, 'completo', { mode: 'simulacro' })}
+              onClick={() => startExam(mainExam.id, 'completo', { mode: 'simulacro', questionCount: selectedCount })}
             >
               Iniciar Simulacro →
             </Button>
