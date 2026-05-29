@@ -8,12 +8,16 @@ import Link from 'next/link'
 import { NEON } from '@/lib/constants/theme'
 const RED = '#FF5252'
 const BLUE = '#4FC3F7'
+const GOLD = '#FFD700'
 
 interface ResultData {
   sessionId: string
   examTitle: string
   score: number
   correctAnswers: number
+  incorrectAnswers: number
+  unansweredCount: number
+  unansweredQuestions: number
   totalQuestions: number
   timeSpentSeconds: number
   passed: boolean
@@ -68,6 +72,8 @@ export default function ResultPage() {
 
   const scoreColor = result.passed ? NEON : RED
   const scoreEmoji = result.score >= 90 ? '🏆' : result.score >= 70 ? '✅' : result.score >= 50 ? '⚠️' : '💀'
+  const unanswered = result.unansweredCount ?? result.unansweredQuestions ?? 0
+  const incorrect = result.incorrectAnswers ?? Math.max(0, result.totalQuestions - result.correctAnswers - unanswered)
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -109,11 +115,12 @@ export default function ResultPage() {
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-3 gap-3 mb-4 fade-in">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 fade-in">
         {[
-          { label: 'Correctas', value: result.correctAnswers, color: NEON, bg: 'rgba(74,124,89,0.06)', border: 'rgba(74,124,89,0.15)' },
-          { label: 'Incorrectas', value: result.totalQuestions - result.correctAnswers, color: RED, bg: 'rgba(255,82,82,0.06)', border: 'rgba(255,82,82,0.15)' },
-          { label: 'Tiempo', value: formatTime(result.timeSpentSeconds), color: BLUE, bg: 'rgba(79,195,247,0.06)', border: 'rgba(79,195,247,0.15)' },
+          { label: '✅ Correctas', value: result.correctAnswers, color: NEON, bg: 'rgba(74,124,89,0.06)', border: 'rgba(74,124,89,0.15)' },
+          { label: '❌ Incorrectas', value: incorrect, color: RED, bg: 'rgba(255,82,82,0.06)', border: 'rgba(255,82,82,0.15)' },
+          { label: '⬜ Sin responder', value: unanswered, color: GOLD, bg: 'rgba(255,215,0,0.06)', border: 'rgba(255,215,0,0.15)' },
+          { label: '📋 Total', value: result.totalQuestions, color: BLUE, bg: 'rgba(79,195,247,0.06)', border: 'rgba(79,195,247,0.15)' },
         ].map((item, i) => (
           <div key={i} className="rounded-2xl p-4 text-center"
             style={{ backgroundColor: item.bg, border: `1px solid ${item.border}` }}>
@@ -122,6 +129,17 @@ export default function ResultPage() {
           </div>
         ))}
       </div>
+
+      <div className="flex items-center justify-center gap-2 text-xs text-gray-500 mb-3">
+        <span>⏱ Tiempo: {formatTime(result.timeSpentSeconds)}</span>
+      </div>
+
+      {unanswered > 0 && (
+        <div className="rounded-xl px-4 py-2.5 text-xs mb-4 text-center"
+          style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', color: GOLD }}>
+          Las preguntas sin responder cuentan como incorrectas.
+        </div>
+      )}
 
       {/* ACCIONES */}
       <div className="grid grid-cols-2 gap-3 mb-4">

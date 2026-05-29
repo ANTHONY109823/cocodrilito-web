@@ -27,6 +27,7 @@ interface Stats {
   totalSessions: number
   totalCorrect: number
   totalIncorrect: number
+  totalUnanswered: number
   totalQuestions: number
 }
 
@@ -206,6 +207,21 @@ export default function DashboardPage() {
               >
                 Ver ranking →
               </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="rounded-xl border border-[rgba(74,124,89,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
+              <div className="text-[20px] font-extrabold text-[#318F48]">{stats?.totalCorrect ?? 0}</div>
+              <div className="mt-0.5 text-[11px] text-[#6B8A75]">✅ Correctas (total)</div>
+            </div>
+            <div className="rounded-xl border border-[rgba(255,82,82,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
+              <div className="text-[20px] font-extrabold text-[#FF5252]">{stats?.totalIncorrect ?? 0}</div>
+              <div className="mt-0.5 text-[11px] text-[#6B8A75]">❌ Incorrectas (total)</div>
+            </div>
+            <div className="rounded-xl border border-[rgba(255,215,0,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
+              <div className="text-[20px] font-extrabold text-[#FFD700]">{stats?.totalUnanswered ?? 0}</div>
+              <div className="mt-0.5 text-[11px] text-[#6B8A75]">⬜ Sin responder (total)</div>
             </div>
           </div>
 

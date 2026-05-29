@@ -11,8 +11,10 @@ import {
 } from '@/lib/examSession'
 
 import { NEON } from '@/lib/constants/theme'
+import { Modal, Button } from '@/components/ui'
 const RED = '#FF5252'
 const GOLD = '#FFD700'
+const ORANGE = '#FF8A3D'
 
 interface AnswerOption {
   id: string
@@ -24,6 +26,7 @@ interface Question {
   id: string
   questionText: string
   orderIndex: number
+  category: string
   options: AnswerOption[]
 }
 
@@ -49,6 +52,7 @@ export default function ExamPage() {
   const [loading, setLoading] = useState(true)
   const [finishing, setFinishing] = useState(false)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [showFinishModal, setShowFinishModal] = useState(false)
 
   const handleFinish = useCallback(async () => {
     if (finishing) return
@@ -82,12 +86,15 @@ export default function ExamPage() {
         id: string
         questionText: string
         orderIndex: number
+        categoryName?: string
+        category?: string
         options?: AnswerOption[]
         answerOptions?: AnswerOption[]
       }) => ({
         id: q.id,
         questionText: q.questionText,
         orderIndex: q.orderIndex,
+        category: q.categoryName || q.category || '',
         options: (q.options || q.answerOptions || []).map((o: AnswerOption) => ({
           id: o.id,
           optionText: o.optionText,
@@ -189,6 +196,29 @@ export default function ExamPage() {
   )
   const currentQ = session.questions[currentIdx]
   const answeredCount = Object.keys(answers).length
+  const unansweredCount = Math.max(0, effectiveTotal - answeredCount)
+  const allAnswered = answeredCount >= effectiveTotal
+  const isLast = currentIdx === effectiveTotal - 1
+
+  // Indicador de categoría: posición de la pregunta actual dentro de su categoría.
+  const currentCategory = currentQ?.category || ''
+  const categoryQuestions = currentCategory
+    ? session.questions.filter((q) => q.category === currentCategory)
+    : []
+  const positionInCategory = currentCategory
+    ? session.questions.slice(0, currentIdx + 1).filter((q) => q.category === currentCategory).length
+    : 0
+
+  const goPrev = () => {
+    setCurrentIdx((prev) => prev - 1)
+    setSelectedOption(answers[session.questions[currentIdx - 1]?.id] || null)
+    setQuestionTime(0)
+  }
+  const goNext = () => {
+    setCurrentIdx((prev) => prev + 1)
+    setSelectedOption(answers[session.questions[currentIdx + 1]?.id] || null)
+    setQuestionTime(0)
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -204,6 +234,14 @@ export default function ExamPage() {
         style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
         <div>
           <div className="text-white font-bold text-sm">{session.examTitle}</div>
+          {currentCategory ? (
+            <div className="text-xs mt-0.5" style={{ color: NEON }}>
+              {currentCategory}
+              <span className="text-gray-500">
+                {' '}· Pregunta {positionInCategory} de {categoryQuestions.length} en esta categoría
+              </span>
+            </div>
+          ) : null}
           <div className="text-gray-500 text-xs mt-0.5">
             Pregunta {currentIdx + 1} de {effectiveTotal}
           </div>
@@ -271,43 +309,83 @@ export default function ExamPage() {
       </div>
 
       {/* FOOTER */}
-   {/* FOOTER */}
-<div className="flex items-center justify-between gap-3">
-  <div className="flex items-center gap-3">
-    <button
-      onClick={() => { setCurrentIdx(prev => prev - 1); setSelectedOption(answers[session.questions[currentIdx - 1]?.id] || null); setQuestionTime(0) }}
-      disabled={currentIdx === 0}
-      className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
-      style={{
-        backgroundColor: currentIdx === 0 ? 'rgba(0,5,2,0.3)' : 'rgba(0,8,4,0.8)',
-        color: currentIdx === 0 ? '#374151' : '#9CA3AF',
-        border: '1px solid #ffffff10',
-        cursor: currentIdx === 0 ? 'not-allowed' : 'pointer'
-      }}>
-      ← Anterior
-    </button>
-    <div className="text-xs text-gray-600">
-      {answeredCount} de {effectiveTotal} respondidas
-    </div>
-  </div>
-  {currentIdx === effectiveTotal - 1 ? (
-    <button onClick={handleFinish} disabled={finishing}
-      className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
-      style={{
-        background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
-        color: '#000', boxShadow: `0 0 20px ${NEON}40`
-      }}>
-      {finishing ? 'Finalizando...' : 'Finalizar examen ✓'}
-    </button>
-  ) : (
-    <button
-      onClick={() => { setCurrentIdx(prev => prev + 1); setSelectedOption(answers[session.questions[currentIdx + 1]?.id] || null); setQuestionTime(0) }}
-      className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-      style={{ backgroundColor: 'rgba(0,8,4,0.8)', color: '#9CA3AF', border: '1px solid #ffffff10' }}>
-      Siguiente →
-    </button>
-  )}
-</div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={goPrev}
+            disabled={currentIdx === 0}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+            style={{
+              backgroundColor: currentIdx === 0 ? 'rgba(0,5,2,0.3)' : 'rgba(0,8,4,0.8)',
+              color: currentIdx === 0 ? '#374151' : '#9CA3AF',
+              border: '1px solid #ffffff10',
+              cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
+            }}>
+            ← Anterior
+          </button>
+          <div className="text-xs text-gray-600">
+            {answeredCount} de {effectiveTotal} respondidas
+          </div>
+          {isLast ? (
+            allAnswered ? (
+              <button onClick={() => setShowFinishModal(true)}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
+                style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', boxShadow: `0 0 20px ${NEON}40` }}>
+                Ver resultado →
+              </button>
+            ) : (
+              <span className="px-5 py-2.5 text-xs text-gray-600">Última pregunta</span>
+            )
+          ) : (
+            <button onClick={goNext}
+              className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+              style={{ backgroundColor: 'rgba(0,8,4,0.8)', color: '#9CA3AF', border: '1px solid #ffffff10' }}>
+              Siguiente →
+            </button>
+          )}
+        </div>
+
+        {/* Botón Finalizar: siempre visible, distinto de la navegación */}
+        <button
+          onClick={() => setShowFinishModal(true)}
+          disabled={finishing}
+          className="w-full px-6 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90"
+          style={{ background: `${ORANGE}1A`, color: ORANGE, border: `1px solid ${ORANGE}55` }}>
+          ⏹ Finalizar examen
+        </button>
+      </div>
+
+      <Modal
+        open={showFinishModal}
+        onClose={() => { if (!finishing) setShowFinishModal(false) }}
+        title={allAnswered ? '✅ Finalizar examen' : '⚠️ Finalizar examen'}
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={finishing} onClick={() => setShowFinishModal(false)}>
+              {allAnswered ? 'Revisar respuestas' : 'Seguir respondiendo'}
+            </Button>
+            <Button variant={allAnswered ? 'primary' : 'danger'} size="sm" loading={finishing} onClick={handleFinish}>
+              {allAnswered ? 'Ver resultado' : 'Finalizar'}
+            </Button>
+          </>
+        }
+      >
+        {allAnswered ? (
+          <p>
+            Has respondido todas las preguntas ({answeredCount} de {effectiveTotal}). ¿Listo para ver tu
+            resultado?
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex justify-between"><span>Respondidas:</span><strong className="text-white">{answeredCount} de {effectiveTotal}</strong></div>
+            <div className="flex justify-between"><span>Sin responder:</span><strong style={{ color: ORANGE }}>{unansweredCount} preguntas</strong></div>
+            <p className="pt-2 text-gray-400">
+              Las preguntas sin responder contarán como incorrectas en tu resultado. ¿Estás seguro de que
+              quieres finalizar?
+            </p>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
