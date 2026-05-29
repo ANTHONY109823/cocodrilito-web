@@ -85,6 +85,7 @@ export const superadminApi = {
   suspendTenant: (id: string, reason: string) =>
     apiClient.post(`/superadmin/tenants/${id}/suspend`, { reason }),
   reactivateTenant: (id: string) => apiClient.post(`/superadmin/tenants/${id}/reactivate`),
+  activateTenant: (id: string) => apiClient.put(`/superadmin/tenants/${id}/activate`),
   impersonateTenant: (id: string) =>
     apiClient.post<ImpersonateResponse>(`/superadmin/tenants/${id}/impersonate`),
   getTenantUsers: (id: string) => apiClient.get(`/superadmin/tenants/${id}/users`),

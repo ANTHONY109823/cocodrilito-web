@@ -12,3 +12,4 @@ export {
 export { Badge, type BadgeProps, type BadgeColor } from './Badge'
 export { Input, type InputProps } from './Input'
 export { ProgressBar, type ProgressBarProps, type ProgressBarColor } from './ProgressBar'
+export { Modal, type ModalProps } from './Modal'

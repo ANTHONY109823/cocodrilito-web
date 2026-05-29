@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/superadmin'
 import { SkeletonTable } from '@/components/Skeleton'
 import { toast } from '@/components/Toast'
+import { Modal, Button } from '@/components/ui'
 import {
   NEON,
   INFO,
@@ -68,6 +69,11 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [pendingAction, setPendingAction] = useState<
+    { tenant: TenantSummary; kind: 'delete' | 'suspend' } | null
+  >(null)
+  const [suspendReason, setSuspendReason] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
 
   const [newTenant, setNewTenant] = useState({
     name: '',
@@ -165,14 +171,36 @@ export default function SuperAdminPage() {
     }
   }
 
-  const handleDeleteTenant = async (tenant: TenantSummary) => {
-    if (!confirm(`¿Desactivar la ${tenant.tenantType.toLowerCase()} "${tenant.name}"?`)) return
+  const handleReactivate = async (tenant: TenantSummary) => {
     try {
-      await superadminApi.deleteTenant(tenant.id)
-      toast(`${tenant.name} desactivada`, 'success')
+      await superadminApi.reactivateTenant(tenant.id)
+      toast(`${tenant.name} reactivada`, 'success')
       loadTabData()
     } catch {
-      toast('No se pudo eliminar', 'error')
+      toast('No se pudo reactivar', 'error')
+    }
+  }
+
+  const confirmPendingAction = async () => {
+    if (!pendingAction) return
+    const { tenant, kind } = pendingAction
+    setActionLoading(true)
+    try {
+      if (kind === 'delete') {
+        await superadminApi.deleteTenant(tenant.id)
+        toast(`${tenant.name} eliminada`, 'success')
+      } else {
+        await superadminApi.suspendTenant(tenant.id, suspendReason || 'Sin motivo especificado')
+        toast(`${tenant.name} suspendida`, 'success')
+      }
+      setPendingAction(null)
+      setSuspendReason('')
+      loadTabData()
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      toast(ax.response?.data?.message || 'No se pudo completar la acción', 'error')
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -241,9 +269,22 @@ export default function SuperAdminPage() {
               <button type="button" onClick={() => handleImpersonate(t)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
                 style={{ backgroundColor: `${WARNING}15`, color: WARNING, border: `1px solid ${WARNING}30` }}>
-                Ingresar como agencia
+                Ingresar
               </button>
-              <button type="button" onClick={() => handleDeleteTenant(t)}
+              {t.suspended || !t.isActive ? (
+                <button type="button" onClick={() => handleReactivate(t)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                  style={{ backgroundColor: policeGreenRgba(0.12), color: NEON, border: `1px solid ${policeGreenRgba(0.25)}` }}>
+                  Reactivar
+                </button>
+              ) : (
+                <button type="button" onClick={() => { setSuspendReason(''); setPendingAction({ tenant: t, kind: 'suspend' }) }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                  style={{ backgroundColor: `${WARNING}12`, color: WARNING, border: `1px solid ${WARNING}25` }}>
+                  Suspender
+                </button>
+              )}
+              <button type="button" onClick={() => setPendingAction({ tenant: t, kind: 'delete' })}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
                 style={{ backgroundColor: `${DANGER}12`, color: DANGER, border: `1px solid ${DANGER}25` }}>
                 Eliminar
@@ -390,6 +431,48 @@ export default function SuperAdminPage() {
           </div>
         )
       )}
+
+      <Modal
+        open={pendingAction != null}
+        onClose={() => { if (!actionLoading) { setPendingAction(null); setSuspendReason('') } }}
+        title={pendingAction?.kind === 'delete' ? '⚠️ Eliminar tenant' : '⏸️ Suspender tenant'}
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={actionLoading}
+              onClick={() => { setPendingAction(null); setSuspendReason('') }}>
+              Cancelar
+            </Button>
+            <Button variant="danger" size="sm" loading={actionLoading} onClick={confirmPendingAction}>
+              {pendingAction?.kind === 'delete' ? 'Eliminar' : 'Suspender'}
+            </Button>
+          </>
+        }
+      >
+        {pendingAction?.kind === 'delete' ? (
+          <p>
+            ¿Seguro que deseas eliminar <strong className="text-white">{pendingAction?.tenant.name}</strong>?
+            Se cancelarán las suscripciones activas y sus usuarios quedarán bloqueados.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <p>
+              Al suspender <strong className="text-white">{pendingAction?.tenant.name}</strong>, todos sus usuarios
+              quedarán bloqueados hasta que la reactives.
+            </p>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Motivo (opcional)</label>
+              <textarea
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                rows={2}
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                placeholder="Ej: Falta de pago"
+              />
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

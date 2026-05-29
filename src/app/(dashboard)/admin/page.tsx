@@ -11,6 +11,7 @@ import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
 import { tenantAdminApi, type AdminDashboardData } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
 import { NEON } from '@/lib/constants/theme'
+import { Modal, Button } from '@/components/ui'
 
 interface User {
   id: string
@@ -65,6 +66,11 @@ export default function AdminPage() {
   const [inactiveFilter, setInactiveFilter] = useState<UserFilterKey>('all')
   const excelInputRef = useRef<HTMLInputElement>(null)
   const [uploadingExcel, setUploadingExcel] = useState(false)
+
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [modalLoading, setModalLoading] = useState(false)
 
   const [plans, setPlans] = useState<TenantPlan[]>([])
   const [planForm, setPlanForm] = useState({
@@ -166,13 +172,21 @@ export default function AdminPage() {
     } catch { setMsg({ text: 'Error al aprobar', ok: false }) }
   }
 
-  const handleReject = async (id: string) => {
-    const reason = prompt('Motivo del rechazo:')
-    if (!reason) return
+  const confirmReject = async () => {
+    if (!rejectTarget || !rejectReason.trim()) return
+    setModalLoading(true)
     try {
-      await apiClient.put(`/subscriptions/${id}/reject`, { reason })
-      setSubscriptions(prev => prev.filter(s => s.id !== id))
-    } catch { }
+      await apiClient.put(`/subscriptions/${rejectTarget}/reject`, { reason: rejectReason.trim() })
+      setSubscriptions(prev => prev.filter(s => s.id !== rejectTarget))
+      setMsg({ text: 'Pago rechazado', ok: false })
+      setTimeout(() => setMsg(null), 2500)
+      setRejectTarget(null)
+      setRejectReason('')
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al rechazar'), ok: false })
+    } finally {
+      setModalLoading(false)
+    }
   }
 
   const handleDeactivate = async (id: string) => {
@@ -204,15 +218,19 @@ export default function AdminPage() {
     } catch { }
   }
 
-  const handleDeletePermanent = async (id: string) => {
-    if (!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este usuario? Esta acción no se puede deshacer.')) return
+  const confirmDeletePermanent = async () => {
+    if (!deleteTarget) return
+    setModalLoading(true)
     try {
-      await apiClient.delete(`/admin/users/${id}/permanent`)
-      setUsers(prev => prev.filter(u => u.id !== id))
+      await apiClient.delete(`/admin/users/${deleteTarget.id}/permanent`)
+      setUsers(prev => prev.filter(u => u.id !== deleteTarget.id))
       setMsg({ text: '🗑️ Usuario eliminado permanentemente', ok: false })
       setTimeout(() => setMsg(null), 3000)
+      setDeleteTarget(null)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error al eliminar'), ok: false })
+    } finally {
+      setModalLoading(false)
     }
   }
 
@@ -569,7 +587,7 @@ export default function AdminPage() {
                         style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
                         ✅ Reactivar
                       </button>
-                      <button onClick={() => handleDeletePermanent(u.id)}
+                      <button onClick={() => setDeleteTarget({ id: u.id, name: u.fullName })}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ backgroundColor: 'rgba(255,82,82,0.15)', color: '#FF5252', border: '1px solid #FF525230' }}>
                         🗑️ Eliminar
@@ -694,7 +712,7 @@ export default function AdminPage() {
                       style={{ backgroundColor: NEON, color: '#000' }}>
                       ✅ Aprobar {days}d
                     </button>
-                    <button onClick={() => handleReject(sub.id)}
+                    <button onClick={() => { setRejectReason(''); setRejectTarget(sub.id) }}
                       className="px-4 py-2 rounded-lg text-sm font-medium"
                       style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>
                       ❌ Rechazar
@@ -718,6 +736,58 @@ export default function AdminPage() {
           </p>
         </div>
       )}
+
+      <Modal
+        open={rejectTarget != null}
+        onClose={() => { if (!modalLoading) { setRejectTarget(null); setRejectReason('') } }}
+        title="❌ Rechazar pago"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={modalLoading}
+              onClick={() => { setRejectTarget(null); setRejectReason('') }}>
+              Cancelar
+            </Button>
+            <Button variant="danger" size="sm" loading={modalLoading}
+              disabled={!rejectReason.trim()} onClick={confirmReject}>
+              Rechazar
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p>Indica el motivo del rechazo. El usuario lo verá en su notificación.</p>
+          <textarea
+            className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+            style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+            rows={3}
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Ej: El comprobante no coincide con el monto"
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        open={deleteTarget != null}
+        onClose={() => { if (!modalLoading) setDeleteTarget(null) }}
+        title="⚠️ Eliminar usuario"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={modalLoading} onClick={() => setDeleteTarget(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" size="sm" loading={modalLoading} onClick={confirmDeletePermanent}>
+              Eliminar permanentemente
+            </Button>
+          </>
+        }
+      >
+        <p>
+          ¿Eliminar <strong className="text-white">PERMANENTEMENTE</strong> a{' '}
+          <strong className="text-white">{deleteTarget?.name}</strong>? Se borrarán sus sesiones,
+          respuestas y suscripciones. Esta acción no se puede deshacer.
+        </p>
+      </Modal>
     </div>
   )
 }
