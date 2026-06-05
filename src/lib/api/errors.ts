@@ -2,8 +2,22 @@ import axios from 'axios'
 
 export function getApiErrorMessage(err: unknown, fallback = 'Error desconocido'): string {
   if (axios.isAxiosError(err)) {
-    const data = err.response?.data as { message?: string; errors?: string[] } | undefined
-    return data?.errors?.[0] ?? data?.message ?? err.message ?? fallback
+    const data = err.response?.data as {
+      message?: string
+      error?: string
+      detail?: string
+      title?: string
+      errors?: string[]
+    } | undefined
+    return (
+      data?.errors?.[0] ??
+      data?.message ??
+      data?.error ??
+      data?.detail ??
+      data?.title ??
+      err.message ??
+      fallback
+    )
   }
   if (err instanceof Error) return err.message
   return fallback

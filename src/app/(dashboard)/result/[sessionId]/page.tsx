@@ -22,14 +22,17 @@ interface ResultData {
   timeSpentSeconds: number
   passed: boolean
   passingScore: number
-  answers: {
-    questionId: string
-    questionText: string
-    selectedOptionId: string | null
-    correctOptionId: string
-    isCorrect: boolean
-    options: { id: string; optionText: string; optionIndex: number }[]
-  }[]
+  answers?: QuestionAnswer[]
+  questions?: QuestionAnswer[]
+}
+
+interface QuestionAnswer {
+  questionId: string
+  questionText: string
+  selectedOptionId: string | null
+  correctOptionId: string
+  isCorrect: boolean
+  options: { id: string; optionText: string; optionIndex: number }[]
 }
 
 export default function ResultPage() {
@@ -70,6 +73,7 @@ export default function ResultPage() {
 
   if (!result) return null
 
+  const answerList = result.questions ?? result.answers ?? []
   const scoreColor = result.passed ? NEON : RED
   const scoreEmoji = result.score >= 90 ? '🏆' : result.score >= 70 ? '✅' : result.score >= 50 ? '⚠️' : '💀'
   const unanswered = result.unansweredCount ?? result.unansweredQuestions ?? 0
@@ -107,7 +111,7 @@ export default function ResultPage() {
           {result.passed ? '¡Aprobado!' : 'No aprobado'}
         </div>
         <div className="text-gray-500 text-sm">{result.examTitle}</div>
-        {!result.passed && (
+        {!result.passed && result.passingScore != null && (
           <div className="text-xs text-gray-600 mt-1">
             Necesitas {result.passingScore}% para aprobar
           </div>
@@ -169,10 +173,14 @@ export default function ResultPage() {
       </Link>
 
       {/* REVISIÓN DE RESPUESTAS */}
-      {showAnswers && result.answers && (
+      {showAnswers && (
         <div className="space-y-3 fade-in">
           <h3 className="text-white font-bold text-base">Revisión de respuestas</h3>
-          {result.answers.map((ans, i) => {
+          {answerList.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-6">
+              No hay detalle de respuestas disponible para esta sesión.
+            </p>
+          ) : answerList.map((ans, i) => {
             const letters = ['A', 'B', 'C', 'D']
             return (
               <div key={ans.questionId} className="rounded-2xl p-4"

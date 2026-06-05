@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/superadmin'
 import { SkeletonTable } from '@/components/Skeleton'
 import { toast } from '@/components/Toast'
+import { getApiErrorMessage } from '@/lib/api/errors'
 import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { CreateTenantPanel, type CreateTenantFormState } from '@/components/superadmin/CreateTenantPanel'
@@ -147,8 +148,8 @@ export default function SuperAdminPage() {
       toast('Institución y administrador creados correctamente', 'success')
       loadTabData()
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } }
-      toast(ax.response?.data?.message || 'Error al crear tenant', 'error')
+      const msg = getApiErrorMessage(err, 'Error al crear tenant')
+      toast(msg, 'error')
       throw err
     } finally {
       setCreating(false)

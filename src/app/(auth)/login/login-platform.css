@@ -588,13 +588,20 @@
   margin-bottom: 18px;
   letter-spacing: .2px;
 }
-.register-link a {
+.register-link a,
+.register-link .join-request-btn {
   color: var(--green-hi);
   text-decoration: none;
   font-weight: 600;
   transition: color .2s;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
 }
-.register-link a:hover { color: var(--gold); }
+.register-link a:hover,
+.register-link .join-request-btn:hover { color: var(--gold); text-decoration: underline; }
 
 .social-label {
   font-size: 9px;

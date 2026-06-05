@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Modal, Button } from '@/components/ui'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
+import { getApiErrorMessage } from '@/lib/api/errors'
 import { NEON } from '@/lib/constants/theme'
 import type { CreateTenantPayload } from '@/lib/api/superadmin'
 
@@ -40,12 +41,37 @@ const inputStyle = { background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15
 export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTenantPanelProps) {
   const [form, setForm] = useState<CreateTenantFormState>(emptyCreateTenantForm)
   const [error, setError] = useState('')
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
 
-  const handleClose = () => {
-    if (loading) return
+  const isDirty = useMemo(() => {
+    const empty = emptyCreateTenantForm()
+    return (
+      form.name !== empty.name ||
+      form.slug !== empty.slug ||
+      form.contactEmail !== empty.contactEmail ||
+      form.contactPhone !== empty.contactPhone ||
+      form.monthlyFee !== empty.monthlyFee ||
+      form.adminFullName !== empty.adminFullName ||
+      form.adminEmail !== empty.adminEmail ||
+      form.adminDni !== empty.adminDni ||
+      form.adminPassword !== empty.adminPassword
+    )
+  }, [form])
+
+  const resetAndClose = () => {
     setForm(emptyCreateTenantForm())
     setError('')
+    setConfirmDiscard(false)
     onClose()
+  }
+
+  const handleCloseRequest = () => {
+    if (loading) return
+    if (isDirty) {
+      setConfirmDiscard(true)
+      return
+    }
+    resetAndClose()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,23 +91,23 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
 
     try {
       await onSubmit(form)
-      setForm(emptyCreateTenantForm())
-      setError('')
+      resetAndClose()
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } }
-      setError(ax.response?.data?.message || 'No se pudo crear la institución.')
+      setError(getApiErrorMessage(err, 'No se pudo crear la institución.'))
     }
   }
 
   return (
+    <>
     <Modal
       open={open}
-      onClose={handleClose}
+      onClose={handleCloseRequest}
+      closeOnBackdrop={false}
       title="➕ Nueva agencia o academia"
       maxWidth="max-w-3xl"
       footer={
         <>
-          <Button variant="ghost" size="sm" disabled={loading} onClick={handleClose}>Cancelar</Button>
+          <Button variant="ghost" size="sm" disabled={loading} onClick={handleCloseRequest}>Cancelar</Button>
           <Button size="sm" loading={loading} onClick={() => {
             const formEl = document.getElementById('create-tenant-form') as HTMLFormElement | null
             formEl?.requestSubmit()
@@ -173,5 +199,26 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
         </p>
       </form>
     </Modal>
+
+    <Modal
+      open={confirmDiscard}
+      onClose={() => setConfirmDiscard(false)}
+      closeOnBackdrop={false}
+      title="¿Descartar cambios?"
+      maxWidth="max-w-sm"
+      footer={
+        <>
+          <Button variant="ghost" size="sm" onClick={() => setConfirmDiscard(false)}>
+            Seguir editando
+          </Button>
+          <Button variant="danger" size="sm" onClick={resetAndClose}>
+            Descartar
+          </Button>
+        </>
+      }
+    >
+      <p>Tienes datos sin guardar. Si cierras ahora, se perderá lo que escribiste.</p>
+    </Modal>
+    </>
   )
 }
