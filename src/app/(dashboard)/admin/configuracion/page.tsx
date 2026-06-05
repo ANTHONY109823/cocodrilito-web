@@ -8,6 +8,7 @@ import { isTenantAdmin } from '@/lib/auth/roles'
 import { tenantAdminApi } from '@/lib/api/tenantAdmin'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { NEON } from '@/lib/constants/theme'
+import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -24,6 +25,7 @@ export default function ConfiguracionPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '',
+    slug: '',
     logoUrl: '',
     contactEmail: '',
     contactPhone: '',
@@ -38,6 +40,7 @@ export default function ConfiguracionPage() {
       const t = res.data
       setForm({
         name: t.name ?? '',
+        slug: t.slug ?? '',
         logoUrl: t.logoUrl ?? '',
         contactEmail: t.contactEmail ?? '',
         contactPhone: t.contactPhone ?? '',
@@ -160,6 +163,8 @@ export default function ConfiguracionPage() {
           Personaliza el nombre, logo y datos de contacto de tu plataforma
         </p>
       </div>
+
+      {form.slug && <TenantAccessUrl slug={form.slug} />}
 
       {msg && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm"

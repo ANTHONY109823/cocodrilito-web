@@ -115,12 +115,7 @@ function LoginForm() {
   const { setUser } = useAuthStore()
   const { particlesRef, loginBtnRef } = useLoginDecorEffects()
 
-  const tenantSlug = useMemo(
-    () => searchParams.get('academia') || searchParams.get('agencia') || null,
-    [searchParams]
-  )
-
-  const { config, loading: configLoading } = useTenantConfig(tenantSlug)
+  const { config, loading: configLoading } = useTenantConfig()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -134,7 +129,7 @@ function LoginForm() {
   }, [searchParams])
 
   const formDisabled = config !== null && !config.isActive
-  const displayName = 'LYON'
+  const displayName = config?.name ?? 'LYON'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

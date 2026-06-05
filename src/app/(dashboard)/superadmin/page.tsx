@@ -18,6 +18,7 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { CreateTenantPanel, type CreateTenantFormState } from '@/components/superadmin/CreateTenantPanel'
 import { ExamDistributionPanel } from './ExamDistributionPanel'
+import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import {
   NEON,
   INFO,
@@ -276,6 +277,7 @@ export default function SuperAdminPage() {
                 {t.contactPhone ? ` · ${t.contactPhone}` : ''}
                 {t.monthlyFee > 0 ? ` · S/. ${t.monthlyFee}/mes` : ''}
               </div>
+              <TenantAccessUrl slug={t.slug} compact />
               <div className="text-xs text-gray-600 mt-0.5">{t.contactEmail}</div>
             </div>
             <div className="flex gap-2 flex-wrap">

@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { fetchTenantConfig, type TenantConfig } from '@/lib/api/tenants'
+import { useTenantSlug } from './useTenantSlug'
 
-export function useTenantConfig(slug: string | null) {
+export function useTenantConfig(overrideSlug?: string | null) {
+  const autoSlug = useTenantSlug()
+  const slug = overrideSlug ?? autoSlug
   const [config, setConfig] = useState<TenantConfig | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
