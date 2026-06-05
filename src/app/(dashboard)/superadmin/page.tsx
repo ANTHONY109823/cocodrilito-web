@@ -268,7 +268,7 @@ export default function SuperAdminPage() {
                 {!t.isActive || t.suspended ? (
                   <span className="text-xs px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: `${DANGER}20`, color: DANGER }}>
-                    {t.suspended ? 'Suspendido' : 'Inactivo'}
+                    {t.suspended ? 'SUSPENDIDO' : 'Inactivo'}
                   </span>
                 ) : null}
               </div>

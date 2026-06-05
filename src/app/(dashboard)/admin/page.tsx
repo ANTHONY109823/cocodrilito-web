@@ -95,6 +95,7 @@ export default function AdminPage() {
   const [rejectTarget, setRejectTarget] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deactivateTarget, setDeactivateTarget] = useState<{ id: string; name: string } | null>(null)
   const [resetPasswordTarget, setResetPasswordTarget] = useState<User | null>(null)
   const [resetPasswordValue, setResetPasswordValue] = useState('')
   const [studentCredentials, setStudentCredentials] = useState<AdminCredentials | null>(null)
@@ -224,14 +225,23 @@ export default function AdminPage() {
   }
 
   const handleDeactivate = async (id: string) => {
-    if (!confirm('¿Desactivar este usuario?')) return
+    const target = users.find((u) => u.id === id)
+    if (target) setDeactivateTarget({ id, name: target.fullName })
+  }
+
+  const confirmDeactivate = async () => {
+    if (!deactivateTarget) return
+    setModalLoading(true)
     try {
-      await apiClient.delete(`/admin/users/${id}`)
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: false } : u))
+      await apiClient.delete(`/admin/users/${deactivateTarget.id}`)
+      setUsers((prev) => prev.map((u) => u.id === deactivateTarget.id ? { ...u, isActive: false } : u))
       setMsg({ text: '⛔ Usuario desactivado', ok: false })
       setTimeout(() => setMsg(null), 2000)
+      setDeactivateTarget(null)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error al desactivar'), ok: false })
+    } finally {
+      setModalLoading(false)
     }
   }
 
@@ -977,6 +987,28 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      <Modal
+        open={deactivateTarget != null}
+        onClose={() => { if (!modalLoading) setDeactivateTarget(null) }}
+        title="⛔ Desactivar usuario"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={modalLoading}
+              onClick={() => setDeactivateTarget(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" size="sm" loading={modalLoading} onClick={confirmDeactivate}>
+              Desactivar
+            </Button>
+          </>
+        }
+      >
+        <p>
+          ¿Desactivar a <strong className="text-white">{deactivateTarget?.name}</strong>?
+          Perderá acceso hasta que lo reactives.
+        </p>
+      </Modal>
 
       <Modal
         open={rejectTarget != null}
