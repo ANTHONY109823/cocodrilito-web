@@ -25,6 +25,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [isAuthenticated, router])
 
   useEffect(() => {
+    if (!user?.mustChangePassword || impersonating) return
+    if (pathname !== '/cambiar-clave') router.replace('/cambiar-clave')
+  }, [user, pathname, router, impersonating])
+
+  useEffect(() => {
     if (!user) return
 
     const ctx = getNavContext(user.role, impersonating)

@@ -83,6 +83,10 @@ export default function SuperAdminPage() {
     tenantType: 'Academia',
     contactEmail: '',
     monthlyFee: 0,
+    adminFullName: '',
+    adminEmail: '',
+    adminDni: '',
+    adminPassword: '',
   })
 
   useEffect(() => { loadFromStorage() }, [loadFromStorage])
@@ -129,9 +133,12 @@ export default function SuperAdminPage() {
     setCreating(true)
     try {
       await superadminApi.createTenant(newTenant)
-      toast('Tenant creado correctamente', 'success')
+      toast('Tenant y administrador creados correctamente', 'success')
       setShowCreate(false)
-      setNewTenant({ name: '', slug: '', tenantType: 'Academia', contactEmail: '', monthlyFee: 0 })
+      setNewTenant({
+        name: '', slug: '', tenantType: 'Academia', contactEmail: '', monthlyFee: 0,
+        adminFullName: '', adminEmail: '', adminDni: '', adminPassword: '',
+      })
       loadTabData()
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } }
@@ -352,6 +359,34 @@ export default function SuperAdminPage() {
               </select>
             </div>
           </div>
+
+          <div className="pt-2 mt-1" style={{ borderTop: '1px solid #ffffff10' }}>
+            <h3 className="text-white font-semibold text-sm mt-3 mb-1">Cuenta de administrador</h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Credenciales temporales para que la institución ingrese. Se le pedirá cambiar la contraseña en su primer acceso.
+            </p>
+            <div className="grid md:grid-cols-2 gap-3">
+              {[
+                { key: 'adminFullName', label: 'Nombre del administrador', type: 'text', required: true },
+                { key: 'adminEmail', label: 'Email de acceso', type: 'email', required: true },
+                { key: 'adminDni', label: 'DNI (8 dígitos)', type: 'text', required: true },
+                { key: 'adminPassword', label: 'Contraseña temporal (mín. 8)', type: 'password', required: true },
+              ].map((f) => (
+                <div key={f.key}>
+                  <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
+                  <input
+                    className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                    style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                    type={f.type}
+                    value={(newTenant as Record<string, string | number>)[f.key]}
+                    onChange={(e) => setNewTenant({ ...newTenant, [f.key]: e.target.value })}
+                    required={f.required}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           <button type="submit" disabled={creating}
             className="px-6 py-2 rounded-xl text-sm font-bold"
             style={{ backgroundColor: NEON, color: '#000', opacity: creating ? 0.7 : 1 }}>

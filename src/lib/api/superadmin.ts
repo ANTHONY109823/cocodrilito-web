@@ -65,6 +65,10 @@ export interface CreateTenantPayload {
   welcomeMessage?: string
   gamificationEnabled?: boolean
   rankingPublic?: boolean
+  adminFullName?: string
+  adminEmail?: string
+  adminDni?: string
+  adminPassword?: string
 }
 
 export interface ImpersonateResponse {

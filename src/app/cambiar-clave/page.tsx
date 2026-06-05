@@ -1,0 +1,156 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { authApi } from '@/lib/api/auth'
+import { getApiErrorMessage } from '@/lib/api/errors'
+import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
+import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
+
+const NEON = '#4A7C59'
+const GOLD = '#F5C842'
+
+export default function CambiarClavePage() {
+  const router = useRouter()
+  const { user, setUser, loadFromStorage, logout } = useAuthStore()
+
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => { loadFromStorage() }, [loadFromStorage])
+
+  const targetByRole = (role?: string) =>
+    role && isSuperAdmin(role) ? '/superadmin' : role && isTenantAdmin(role) ? '/admin' : '/dashboard'
+
+  useEffect(() => {
+    if (user && !user.mustChangePassword) {
+      router.replace(targetByRole(user.role))
+    }
+  }, [user, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (newPassword.length < 8) {
+      setError('La nueva contraseña debe tener al menos 8 caracteres.')
+      return
+    }
+    if (newPassword !== confirm) {
+      setError('Las contraseñas no coinciden.')
+      return
+    }
+    if (newPassword === currentPassword) {
+      setError('La nueva contraseña debe ser distinta a la temporal.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await authApi.changePassword({ currentPassword, newPassword })
+      if (user) {
+        const updated = normalizeUser({ ...user, mustChangePassword: false })
+        setUser(updated)
+        router.replace(targetByRole(updated.role))
+      } else {
+        router.replace('/login')
+      }
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'No se pudo cambiar la contraseña.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const inputStyle = {
+    background: 'rgba(0,0,0,0.45)',
+    border: '0.5px solid rgba(74,170,84,0.35)',
+  }
+
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: 'radial-gradient(ellipse at 50% 30%, #0b1f0e 0%, #060e07 70%)' }}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl p-8"
+        style={{ background: 'rgba(8,18,9,0.85)', border: `1px solid ${NEON}40` }}
+      >
+        <div className="text-center mb-6">
+          <div className="text-3xl mb-2">🔐</div>
+          <h1 className="text-xl font-bold text-white">Cambia tu contraseña</h1>
+          <p className="text-sm text-gray-400 mt-1">
+            Por seguridad debes definir una contraseña nueva antes de continuar.
+          </p>
+        </div>
+
+        {error && (
+          <div
+            className="mb-4 px-3 py-2 rounded-lg text-sm"
+            style={{ background: 'rgba(255,82,82,0.12)', color: '#ff8a8a', border: '1px solid #ff525233' }}
+          >
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Contraseña temporal actual</label>
+            <input
+              type="password"
+              className="w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none"
+              style={inputStyle}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Nueva contraseña</label>
+            <input
+              type="password"
+              className="w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none"
+              style={inputStyle}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Mínimo 8 caracteres"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Confirmar nueva contraseña</label>
+            <input
+              type="password"
+              className="w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none"
+              style={inputStyle}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 rounded-lg text-sm font-bold transition-all"
+            style={{ background: GOLD, color: '#000', opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Guardando...' : 'Guardar y continuar'}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          onClick={() => { logout(); router.replace('/login') }}
+          className="w-full mt-4 text-xs text-gray-500 hover:text-gray-300"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  )
+}

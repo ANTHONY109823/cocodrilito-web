@@ -25,4 +25,6 @@ export const authApi = {
   logout: () => apiClient.post('/Auth/logout'),
   stopImpersonate: () => apiClient.post<AuthProfileResponse>('/Auth/stop-impersonate'),
   me: () => apiClient.get('/Auth/me'),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    apiClient.put('/Auth/change-password', data),
 }

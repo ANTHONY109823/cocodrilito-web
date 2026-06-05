@@ -44,6 +44,21 @@ const GOLD = '#FFD700'
 const RED = '#FF5252'
 const PURPLE = '#A855F7'
 
+const TRACK_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: 'Ascenso Suboficiales' },
+  { value: 2, label: 'Ascenso Oficiales' },
+  { value: 3, label: 'Postulantes Suboficiales' },
+  { value: 4, label: 'Postulantes Oficiales' },
+]
+
+const trackLabel = (track: string) =>
+  ({
+    AscensosSuboficiales: 'Ascenso Suboficiales',
+    AscensosOficiales: 'Ascenso Oficiales',
+    PostulantesSuboficiales: 'Postulantes Suboficiales',
+    PostulantesOficiales: 'Postulantes Oficiales',
+  } as Record<string, string>)[track] ?? track
+
 type AdminTab = 'dashboard' | 'users' | 'subscriptions' | 'inactive' | 'create' | 'plans'
 type UserFilterKey = 'all' | 'admin' | 'web'
 
@@ -289,7 +304,7 @@ export default function AdminPage() {
     { key: 'subscriptions', label: '💳 Ventas', count: subscriptions.length, countColor: GOLD, href: '/admin?tab=subscriptions' },
     { key: 'inactive', label: '🔴 Inactivos', count: inactiveUsers.length, countColor: RED, href: '/admin?tab=inactive' },
     { key: 'create', label: '➕ Crear usuario', count: null, countColor: NEON, href: '/admin?tab=create' },
-    { key: 'plans', label: '💎 Planes (en desarrollo)', count: null, countColor: GOLD, href: '/admin?tab=plans' },
+    { key: 'plans', label: '💎 Planes', count: null, countColor: GOLD, href: '/admin?tab=plans' },
   ]
 
   return (
@@ -725,15 +740,131 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: PLANES TENANT — en desarrollo */}
+      {/* TAB: PLANES TENANT */}
       {tab === 'plans' && (
-        <div className="fade-in rounded-2xl p-8 text-center"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
-          <div className="text-4xl mb-3">🚧</div>
-          <h2 className="text-white font-bold mb-2">Planes tenant — en desarrollo</h2>
-          <p className="text-gray-500 text-sm max-w-md mx-auto">
-            La configuración de planes personalizados por agencia estará disponible próximamente.
-          </p>
+        <div className="fade-in grid lg:grid-cols-3 gap-5">
+          {/* Formulario crear plan */}
+          <form onSubmit={handleCreatePlan} className="rounded-2xl p-5 space-y-3 h-fit"
+            style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
+            <h2 className="text-white font-bold mb-1">💎 Nuevo plan</h2>
+            <p className="text-xs text-gray-500 mb-2">
+              Define los planes de suscripción que tus alumnos podrán contratar.
+            </p>
+
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Tipo de preparación</label>
+              <select
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                value={planForm.trackType}
+                onChange={(e) => setPlanForm({ ...planForm, trackType: Number(e.target.value) })}
+              >
+                {TRACK_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Nombre del plan</label>
+              <input
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                value={planForm.name}
+                onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                placeholder="Ej. Plan Mensual"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Precio (S/.)</label>
+                <input
+                  type="number" min={0} step="0.01"
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                  style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                  value={planForm.price}
+                  onChange={(e) => setPlanForm({ ...planForm, price: Number(e.target.value) })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Duración (días)</label>
+                <input
+                  type="number" min={1}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                  style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                  value={planForm.durationDays}
+                  onChange={(e) => setPlanForm({ ...planForm, durationDays: Number(e.target.value) })}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Descripción (opcional)</label>
+              <textarea
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                rows={2}
+                value={planForm.description}
+                onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
+              />
+            </div>
+            <button type="submit" disabled={saving}
+              className="w-full py-2 rounded-lg text-sm font-bold"
+              style={{ background: GOLD, color: '#000', opacity: saving ? 0.7 : 1 }}>
+              {saving ? 'Guardando...' : '➕ Crear plan'}
+            </button>
+          </form>
+
+          {/* Lista de planes */}
+          <div className="lg:col-span-2 rounded-2xl p-5"
+            style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
+            <h2 className="text-white font-bold mb-4">Planes activos ({plans.filter((p) => p.isActive).length})</h2>
+            {plans.length === 0 ? (
+              <p className="text-gray-500 text-sm py-8 text-center">
+                Aún no hay planes. Crea el primero con el formulario de la izquierda.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {plans.map((p) => (
+                  <div key={p.id}
+                    className="rounded-xl p-4 flex items-center justify-between gap-3"
+                    style={{
+                      background: 'rgba(0,5,2,0.7)',
+                      border: `1px solid ${p.isActive ? NEON + '30' : '#ffffff10'}`,
+                      opacity: p.isActive ? 1 : 0.55,
+                    }}>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-semibold">{p.name}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: `${NEON2}20`, color: NEON2 }}>
+                          {trackLabel(p.trackType)}
+                        </span>
+                        {!p.isActive && (
+                          <span className="text-xs px-2 py-0.5 rounded-full"
+                            style={{ background: `${RED}20`, color: RED }}>
+                            Inactivo
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        S/. {p.price.toFixed(2)} · {p.durationDays} días
+                        {p.description ? ` · ${p.description}` : ''}
+                      </div>
+                    </div>
+                    {p.isActive && (
+                      <button type="button" onClick={() => handleDeactivatePlan(p.id)}
+                        className="text-xs px-3 py-1.5 rounded-lg font-medium shrink-0"
+                        style={{ background: `${RED}18`, color: RED, border: `1px solid ${RED}40` }}>
+                        Desactivar
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
