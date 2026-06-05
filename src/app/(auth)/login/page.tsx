@@ -139,7 +139,18 @@ function LoginForm() {
       const res = await authApi.login({ email: email.trim(), password })
       const loggedUser = normalizeUser(res.data as unknown as Record<string, unknown>)
       setUser(loggedUser)
-      router.push(loggedUser.mustChangePassword ? '/cambiar-clave' : '/dashboard')
+
+      const nextPath = searchParams.get('next')
+      const safeNext =
+        nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')
+          ? nextPath
+          : null
+
+      if (loggedUser.mustChangePassword) {
+        router.push('/cambiar-clave')
+      } else {
+        router.push(safeNext ?? '/dashboard')
+      }
     } catch (err: unknown) {
       if (!axios.isAxiosError(err) || !err.response) {
         setError('No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde.')

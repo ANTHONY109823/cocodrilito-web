@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { useAuthStore } from '@/lib/store/authStore'
+import { resolveApiBaseUrl } from './apiBaseUrl'
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true,
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
@@ -10,6 +10,8 @@ const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
+  config.baseURL = resolveApiBaseUrl()
+
   if (config.data instanceof FormData) {
     config.headers.delete('Content-Type')
   } else if (!config.headers['Content-Type']) {
@@ -26,7 +28,7 @@ apiClient.interceptors.response.use(
       original._retry = true
       try {
         await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/Auth/refresh`,
+          `${resolveApiBaseUrl()}/Auth/refresh`,
           {},
           { withCredentials: true }
         )

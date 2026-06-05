@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api/client'
+import { resolveApiBaseUrl } from '@/lib/api/apiBaseUrl'
 import { getApiErrorDetail } from '@/lib/api/errors'
 import { useAuthStore } from '@/lib/store/authStore'
 import { isSuperAdmin, isTenantAdmin } from '@/lib/auth/roles'
@@ -51,10 +52,7 @@ export default function UploadPage() {
   }
 
   const handleDownloadTemplate = () => {
-    window.open(
-      `${process.env.NEXT_PUBLIC_API_URL}/admin/import/template`,
-      '_blank'
-    )
+    window.open(`${resolveApiBaseUrl()}/admin/import/template`, '_blank')
   }
 
   return (
