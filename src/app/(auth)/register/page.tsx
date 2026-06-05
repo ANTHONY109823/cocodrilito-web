@@ -7,7 +7,7 @@ export default function RegisterPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/login?join=1')
+    router.replace('/login')
   }, [router])
 
   return (

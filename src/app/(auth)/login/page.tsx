@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { AlertCircle, Loader2 } from 'lucide-react'
@@ -9,7 +9,6 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import { JoinRequestModal } from '@/components/auth/JoinRequestModal'
 import './login-platform.css'
 
 const SOCIAL_LINKS = [
@@ -120,13 +119,6 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showJoinRequest, setShowJoinRequest] = useState(false)
-
-  useEffect(() => {
-    if (searchParams.get('join') === '1') {
-      setShowJoinRequest(true)
-    }
-  }, [searchParams])
 
   const formDisabled = config !== null && !config.isActive
   const displayName = config?.name ?? 'LYON'
@@ -376,22 +368,7 @@ function LoginForm() {
                   )}
                 </button>
               </form>
-              <div className="register-link">
-                ¿Eres agencia o academia?{' '}
-                <button
-                  type="button"
-                  className="join-request-btn"
-                  onClick={() => setShowJoinRequest(true)}
-                >
-                  Solicitar unirse
-                </button>
-              </div>
 
-              <JoinRequestModal
-                open={showJoinRequest}
-                onClose={() => setShowJoinRequest(false)}
-              />
-              
               <div className="divider">
                 <span className="div-line" />
                 <span className="div-text">o síguenos en</span>
