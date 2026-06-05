@@ -31,6 +31,7 @@ export default function ConfiguracionPage() {
     contactPhone: '',
     address: '',
     description: '',
+    customDomain: '',
   })
 
   const loadProfile = useCallback(async () => {
@@ -46,6 +47,7 @@ export default function ConfiguracionPage() {
         contactPhone: t.contactPhone ?? '',
         address: t.address ?? '',
         description: t.description ?? '',
+        customDomain: t.customDomain ?? '',
       })
       setLogoPreview(t.logoUrl ?? null)
       setLogoFile(null)
@@ -164,7 +166,9 @@ export default function ConfiguracionPage() {
         </p>
       </div>
 
-      {form.slug && <TenantAccessUrl slug={form.slug} />}
+      {form.slug && (
+        <TenantAccessUrl slug={form.slug} customDomain={form.customDomain || null} />
+      )}
 
       {msg && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm"
@@ -240,6 +244,18 @@ export default function ConfiguracionPage() {
           <label className="block text-xs text-gray-500 mb-1.5">Dirección</label>
           <input style={inputStyle} value={form.address}
             onChange={(e) => setForm({ ...form, address: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1.5">Dominio personalizado (opcional)</label>
+          <input
+            style={inputStyle}
+            value={form.customDomain}
+            placeholder="ej. academianorte.edu.pe"
+            onChange={(e) => setForm({ ...form, customDomain: e.target.value })}
+          />
+          <p className="text-[11px] text-gray-600 mt-1">
+            Apunta el DNS de tu dominio a Vercel. Si no lo configuras, se usa {form.slug}.{process.env.NEXT_PUBLIC_TENANT_DOMAIN ?? 'simulacros.pe'}.
+          </p>
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Descripción</label>

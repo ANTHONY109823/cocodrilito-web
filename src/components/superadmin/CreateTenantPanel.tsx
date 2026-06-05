@@ -22,6 +22,7 @@ export const emptyCreateTenantForm = (): CreateTenantFormState => ({
   contactEmail: '',
   contactPhone: '',
   monthlyFee: 0,
+  customDomain: '',
   adminFullName: '',
   adminEmail: '',
   adminDni: '',
@@ -50,6 +51,7 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
       form.slug !== empty.slug ||
       form.contactEmail !== empty.contactEmail ||
       form.contactPhone !== empty.contactPhone ||
+      form.customDomain !== empty.customDomain ||
       form.monthlyFee !== empty.monthlyFee ||
       form.adminFullName !== empty.adminFullName ||
       form.adminEmail !== empty.adminEmail ||
@@ -160,6 +162,13 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
               <label className="block text-xs text-gray-500 mb-1">Teléfono</label>
               <input className={inputClass} style={inputStyle}
                 value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs text-gray-500 mb-1">Dominio personalizado (opcional)</label>
+              <input className={inputClass} style={inputStyle}
+                placeholder="ej. academianorte.edu.pe"
+                value={form.customDomain ?? ''}
+                onChange={(e) => setForm({ ...form, customDomain: e.target.value })} />
             </div>
           </div>
         </section>

@@ -11,6 +11,7 @@ export interface TenantProfile {
   contactPhone?: string | null
   address?: string | null
   description?: string | null
+  customDomain?: string | null
 }
 
 export interface AdminDashboardData {

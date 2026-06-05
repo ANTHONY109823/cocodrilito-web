@@ -10,16 +10,17 @@ import { NEON } from '@/lib/constants/theme'
 
 interface TenantAccessUrlProps {
   slug: string
+  customDomain?: string | null
   compact?: boolean
 }
 
-export function TenantAccessUrl({ slug, compact = false }: TenantAccessUrlProps) {
+export function TenantAccessUrl({ slug, customDomain, compact = false }: TenantAccessUrlProps) {
   const [copied, setCopied] = useState(false)
-  const url = getTenantAccessUrl(slug)
-  const host = getTenantAccessHost(slug)
+  const url = getTenantAccessUrl(slug, customDomain)
+  const host = getTenantAccessHost(slug, customDomain)
 
   const handleCopy = async () => {
-    const ok = await copyTenantAccessUrl(slug)
+    const ok = await copyTenantAccessUrl(slug, customDomain)
     if (ok) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)

@@ -65,6 +65,7 @@ export interface CreateTenantPayload {
   welcomeMessage?: string
   gamificationEnabled?: boolean
   rankingPublic?: boolean
+  customDomain?: string
   adminFullName?: string
   adminEmail?: string
   adminDni?: string
