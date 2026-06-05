@@ -16,9 +16,17 @@ interface CredentialsModalProps {
   open: boolean
   credentials: AdminCredentials | null
   onClose: () => void
+  title?: string
+  description?: string
 }
 
-export function CredentialsModal({ open, credentials, onClose }: CredentialsModalProps) {
+export function CredentialsModal({
+  open,
+  credentials,
+  onClose,
+  title = '🔑 Credenciales del administrador',
+  description = 'Entrega estas credenciales al administrador. En su primer ingreso deberá definir una contraseña nueva.',
+}: CredentialsModalProps) {
   if (!credentials) return null
 
   const copyAll = async () => {
@@ -44,7 +52,7 @@ export function CredentialsModal({ open, credentials, onClose }: CredentialsModa
     <Modal
       open={open}
       onClose={onClose}
-      title="🔑 Credenciales del administrador"
+      title={title}
       footer={
         <>
           <Button variant="ghost" size="sm" onClick={copyAll}>Copiar todo</Button>
@@ -52,9 +60,7 @@ export function CredentialsModal({ open, credentials, onClose }: CredentialsModa
         </>
       }
     >
-      <p className="text-sm text-gray-400 mb-4">
-        Entrega estas credenciales al administrador. En su primer ingreso deberá definir una contraseña nueva.
-      </p>
+      <p className="text-sm text-gray-400 mb-4">{description}</p>
       <div className="space-y-3 text-sm">
         {credentials.tenantName && (
           <div className="rounded-lg px-3 py-2" style={{ background: 'rgba(0,5,2,0.6)', border: `1px solid ${NEON}30` }}>

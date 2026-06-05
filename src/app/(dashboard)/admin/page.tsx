@@ -12,6 +12,7 @@ import { tenantAdminApi, type AdminDashboardData } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
 import { NEON } from '@/lib/constants/theme'
 import { Modal, Button } from '@/components/ui'
+import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
 
@@ -94,6 +95,9 @@ export default function AdminPage() {
   const [rejectTarget, setRejectTarget] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<User | null>(null)
+  const [resetPasswordValue, setResetPasswordValue] = useState('')
+  const [studentCredentials, setStudentCredentials] = useState<AdminCredentials | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
 
   const [plans, setPlans] = useState<TenantPlan[]>([])
@@ -246,6 +250,43 @@ export default function AdminPage() {
       setMsg({ text: `✅ Suscripción extendida ${days} días`, ok: true })
       setTimeout(() => { setMsg(null); loadData() }, 2000)
     } catch { }
+  }
+
+  const confirmResetPassword = async () => {
+    if (!resetPasswordTarget) return
+    const pwdError = validatePassword(resetPasswordValue)
+    if (pwdError) {
+      setMsg({ text: pwdError, ok: false })
+      return
+    }
+    setModalLoading(true)
+    try {
+      const res = await apiClient.put(`/admin/users/${resetPasswordTarget.id}/reset-password`, {
+        newPassword: resetPasswordValue,
+      })
+      const creds = res.data.credentials as {
+        fullName: string
+        email: string
+        dni: string
+        role: string
+        temporaryPassword: string
+      }
+      setResetPasswordTarget(null)
+      setResetPasswordValue('')
+      setStudentCredentials({
+        fullName: creds.fullName,
+        email: creds.email,
+        dni: creds.dni,
+        role: creds.role,
+        temporaryPassword: creds.temporaryPassword,
+      })
+      setMsg({ text: '🔑 Contraseña restablecida', ok: true })
+      setTimeout(() => setMsg(null), 3000)
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al restablecer contraseña'), ok: false })
+    } finally {
+      setModalLoading(false)
+    }
   }
 
   const confirmDeletePermanent = async () => {
@@ -530,6 +571,13 @@ export default function AdminPage() {
                       )}
                     </div>
                     <div className="flex gap-2 flex-wrap">
+                      {u.role === 'Student' && (
+                        <button onClick={() => { setResetPasswordTarget(u); setResetPasswordValue('') }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                          style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}35` }}>
+                          🔑 Restablecer clave
+                        </button>
+                      )}
                       <button onClick={() => handleExtend(u.id, 30)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>+30d</button>
@@ -624,6 +672,13 @@ export default function AdminPage() {
                       )}
                     </div>
                     <div className="flex gap-2 flex-wrap items-center">
+                      {u.role === 'Student' && (
+                        <button onClick={() => { setResetPasswordTarget(u); setResetPasswordValue('') }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                          style={{ backgroundColor: `${GOLD}12`, color: GOLD, border: `1px solid ${GOLD}30` }}>
+                          🔑 Restablecer clave
+                        </button>
+                      )}
                       <button onClick={() => handleExtend(u.id, 30)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ backgroundColor: `${NEON2}10`, color: NEON2, border: `1px solid ${NEON2}20` }}>+30d</button>
@@ -952,6 +1007,44 @@ export default function AdminPage() {
           />
         </div>
       </Modal>
+
+      <Modal
+        open={resetPasswordTarget != null}
+        onClose={() => { if (!modalLoading) { setResetPasswordTarget(null); setResetPasswordValue('') } }}
+        title="🔑 Restablecer contraseña del alumno"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={modalLoading}
+              onClick={() => { setResetPasswordTarget(null); setResetPasswordValue('') }}>
+              Cancelar
+            </Button>
+            <Button size="sm" loading={modalLoading} onClick={confirmResetPassword}>
+              Restablecer
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-400 mb-3">
+          Nueva contraseña temporal para{' '}
+          <strong className="text-white">{resetPasswordTarget?.fullName}</strong>.
+          El alumno deberá cambiarla en su próximo ingreso.
+        </p>
+        <input type="password" className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+          style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+          value={resetPasswordValue}
+          onChange={(e) => setResetPasswordValue(e.target.value)}
+          placeholder="Nueva contraseña temporal"
+        />
+        <PasswordPolicyHint password={resetPasswordValue} />
+      </Modal>
+
+      <CredentialsModal
+        open={studentCredentials != null}
+        credentials={studentCredentials}
+        onClose={() => setStudentCredentials(null)}
+        title="🔑 Credenciales del alumno"
+        description="Entrega estas credenciales al alumno. En su próximo ingreso deberá definir una contraseña nueva."
+      />
 
       <Modal
         open={deleteTarget != null}
