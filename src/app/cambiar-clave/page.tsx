@@ -6,6 +6,8 @@ import { authApi } from '@/lib/api/auth'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
+import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
+import { validatePassword } from '@/lib/utils/passwordPolicy'
 
 const NEON = '#4A7C59'
 const GOLD = '#F5C842'
@@ -35,8 +37,9 @@ export default function CambiarClavePage() {
     e.preventDefault()
     setError('')
 
-    if (newPassword.length < 8) {
-      setError('La nueva contraseña debe tener al menos 8 caracteres.')
+    const pwdError = validatePassword(newPassword)
+    if (pwdError) {
+      setError(pwdError)
       return
     }
     if (newPassword !== confirm) {
@@ -120,6 +123,7 @@ export default function CambiarClavePage() {
               placeholder="Mínimo 8 caracteres"
               required
             />
+            <PasswordPolicyHint password={newPassword} />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Confirmar nueva contraseña</label>

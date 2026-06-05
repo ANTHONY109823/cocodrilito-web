@@ -71,6 +71,27 @@ export interface CreateTenantPayload {
   adminPassword?: string
 }
 
+export interface TenantAdminInfo {
+  id: string
+  fullName: string
+  email: string
+  dni: string
+  role: string
+  isActive: boolean
+  mustChangePassword: boolean
+  createdAt: string
+}
+
+export interface TenantAdminCredentials {
+  id: string
+  fullName: string
+  email: string
+  dni: string
+  role: string
+  temporaryPassword: string
+  mustChangePassword: boolean
+}
+
 export interface ImpersonateResponse {
   accessToken: string
   expiresInMinutes: number
@@ -93,6 +114,15 @@ export const superadminApi = {
   impersonateTenant: (id: string) =>
     apiClient.post<ImpersonateResponse>(`/superadmin/tenants/${id}/impersonate`),
   getTenantUsers: (id: string) => apiClient.get(`/superadmin/tenants/${id}/users`),
+  getTenantAdmin: (id: string) =>
+    apiClient.get<{ exists: boolean; admin: TenantAdminInfo | null }>(`/superadmin/tenants/${id}/admin`),
+  updateTenantAdmin: (id: string, data: { fullName: string; email: string; dni: string }) =>
+    apiClient.put(`/superadmin/tenants/${id}/admin`, data),
+  resetTenantAdminPassword: (id: string, newPassword: string) =>
+    apiClient.put<{ message: string; credentials: TenantAdminCredentials }>(
+      `/superadmin/tenants/${id}/admin/reset-password`,
+      { newPassword }
+    ),
   getTenantStats: (id: string) => apiClient.get(`/superadmin/tenants/${id}/stats`),
   registerPayment: (id: string, data: {
     amount: number

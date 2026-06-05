@@ -14,6 +14,8 @@ import {
 import { SkeletonTable } from '@/components/Skeleton'
 import { toast } from '@/components/Toast'
 import { Modal, Button } from '@/components/ui'
+import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
+import { CreateTenantPanel, type CreateTenantFormState } from '@/components/superadmin/CreateTenantPanel'
 import { ExamDistributionPanel } from './ExamDistributionPanel'
 import {
   NEON,
@@ -71,23 +73,12 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [createdCredentials, setCreatedCredentials] = useState<AdminCredentials | null>(null)
   const [pendingAction, setPendingAction] = useState<
     { tenant: TenantSummary; kind: 'delete' | 'suspend' } | null
   >(null)
   const [suspendReason, setSuspendReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
-
-  const [newTenant, setNewTenant] = useState({
-    name: '',
-    slug: '',
-    tenantType: 'Academia',
-    contactEmail: '',
-    monthlyFee: 0,
-    adminFullName: '',
-    adminEmail: '',
-    adminDni: '',
-    adminPassword: '',
-  })
 
   useEffect(() => { loadFromStorage() }, [loadFromStorage])
 
@@ -128,21 +119,37 @@ export default function SuperAdminPage() {
     void loadTabData()
   }, [user, tab, loadTabData])
 
-  const handleCreateTenant = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleCreateTenant = async (data: CreateTenantFormState) => {
     setCreating(true)
     try {
-      await superadminApi.createTenant(newTenant)
-      toast('Tenant y administrador creados correctamente', 'success')
+      const res = await superadminApi.createTenant(data)
+      const payload = res.data as {
+        tenant?: { name?: string }
+        admin?: {
+          fullName: string
+          email: string
+          dni: string
+          role: string
+          temporaryPassword: string
+        }
+      }
       setShowCreate(false)
-      setNewTenant({
-        name: '', slug: '', tenantType: 'Academia', contactEmail: '', monthlyFee: 0,
-        adminFullName: '', adminEmail: '', adminDni: '', adminPassword: '',
-      })
+      if (payload.admin) {
+        setCreatedCredentials({
+          tenantName: payload.tenant?.name ?? data.name,
+          fullName: payload.admin.fullName,
+          email: payload.admin.email,
+          dni: payload.admin.dni,
+          role: payload.admin.role,
+          temporaryPassword: payload.admin.temporaryPassword,
+        })
+      }
+      toast('Institución y administrador creados correctamente', 'success')
       loadTabData()
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } }
       toast(ax.response?.data?.message || 'Error al crear tenant', 'error')
+      throw err
     } finally {
       setCreating(false)
     }
@@ -320,80 +327,18 @@ export default function SuperAdminPage() {
         </button>
       </div>
 
-      {showCreate && (
-        <form onSubmit={handleCreateTenant} className="rounded-2xl p-5 mb-6 space-y-4"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
-          <h2 className="text-white font-bold">Crear tenant</h2>
-          <div className="grid md:grid-cols-2 gap-3">
-            {[
-              { key: 'name', label: 'Nombre', type: 'text' },
-              { key: 'slug', label: 'Slug (opcional)', type: 'text' },
-              { key: 'contactEmail', label: 'Email contacto', type: 'email' },
-              { key: 'monthlyFee', label: 'Cuota mensual (S/.)', type: 'number' },
-            ].map((f) => (
-              <div key={f.key}>
-                <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
-                <input
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                  type={f.type}
-                  value={(newTenant as Record<string, string | number>)[f.key]}
-                  onChange={(e) => setNewTenant({
-                    ...newTenant,
-                    [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value,
-                  })}
-                  required={f.key !== 'slug'}
-                />
-              </div>
-            ))}
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Tipo</label>
-              <select
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                value={newTenant.tenantType}
-                onChange={(e) => setNewTenant({ ...newTenant, tenantType: e.target.value })}
-              >
-                <option value="Agencia">Agencia</option>
-                <option value="Academia">Academia</option>
-              </select>
-            </div>
-          </div>
+      <CreateTenantPanel
+        open={showCreate}
+        loading={creating}
+        onClose={() => setShowCreate(false)}
+        onSubmit={handleCreateTenant}
+      />
 
-          <div className="pt-2 mt-1" style={{ borderTop: '1px solid #ffffff10' }}>
-            <h3 className="text-white font-semibold text-sm mt-3 mb-1">Cuenta de administrador</h3>
-            <p className="text-xs text-gray-500 mb-3">
-              Credenciales temporales para que la institución ingrese. Se le pedirá cambiar la contraseña en su primer acceso.
-            </p>
-            <div className="grid md:grid-cols-2 gap-3">
-              {[
-                { key: 'adminFullName', label: 'Nombre del administrador', type: 'text', required: true },
-                { key: 'adminEmail', label: 'Email de acceso', type: 'email', required: true },
-                { key: 'adminDni', label: 'DNI (8 dígitos)', type: 'text', required: true },
-                { key: 'adminPassword', label: 'Contraseña temporal (mín. 8)', type: 'password', required: true },
-              ].map((f) => (
-                <div key={f.key}>
-                  <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
-                  <input
-                    className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                    style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                    type={f.type}
-                    value={(newTenant as Record<string, string | number>)[f.key]}
-                    onChange={(e) => setNewTenant({ ...newTenant, [f.key]: e.target.value })}
-                    required={f.required}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <button type="submit" disabled={creating}
-            className="px-6 py-2 rounded-xl text-sm font-bold"
-            style={{ backgroundColor: NEON, color: '#000', opacity: creating ? 0.7 : 1 }}>
-            {creating ? 'Creando...' : 'Crear tenant'}
-          </button>
-        </form>
-      )}
+      <CredentialsModal
+        open={createdCredentials != null}
+        credentials={createdCredentials}
+        onClose={() => setCreatedCredentials(null)}
+      />
 
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map((t) => (

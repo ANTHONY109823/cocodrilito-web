@@ -6,9 +6,13 @@ import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { isSuperAdmin } from '@/lib/auth/roles'
-import { superadminApi, type TenantDetail } from '@/lib/api/superadmin'
+import { superadminApi, type TenantAdminInfo, type TenantDetail } from '@/lib/api/superadmin'
 import { Skeleton, SkeletonCard } from '@/components/Skeleton'
 import { toast } from '@/components/Toast'
+import { Modal, Button } from '@/components/ui'
+import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
+import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
+import { validatePassword } from '@/lib/utils/passwordPolicy'
 import { NEON, DANGER, WARNING, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
 
 interface TenantStats {
@@ -37,8 +41,15 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<TenantDetail | null>(null)
   const [stats, setStats] = useState<TenantStats | null>(null)
   const [users, setUsers] = useState<TenantUser[]>([])
+  const [tenantAdmin, setTenantAdmin] = useState<TenantAdminInfo | null>(null)
+  const [hasAdmin, setHasAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showEditAdmin, setShowEditAdmin] = useState(false)
+  const [showResetPassword, setShowResetPassword] = useState(false)
+  const [resetCredentials, setResetCredentials] = useState<AdminCredentials | null>(null)
+  const [adminForm, setAdminForm] = useState({ fullName: '', email: '', dni: '' })
+  const [newPassword, setNewPassword] = useState('')
 
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
@@ -57,14 +68,24 @@ export default function TenantDetailPage() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [tRes, sRes, uRes] = await Promise.all([
+      const [tRes, sRes, uRes, aRes] = await Promise.all([
         superadminApi.getTenant(tenantId),
         superadminApi.getTenantStats(tenantId),
         superadminApi.getTenantUsers(tenantId),
+        superadminApi.getTenantAdmin(tenantId),
       ])
       setTenant(tRes.data)
       setStats(sRes.data as TenantStats)
       setUsers(uRes.data as TenantUser[])
+      setHasAdmin(aRes.data.exists)
+      setTenantAdmin(aRes.data.admin)
+      if (aRes.data.admin) {
+        setAdminForm({
+          fullName: aRes.data.admin.fullName,
+          email: aRes.data.admin.email,
+          dni: aRes.data.admin.dni,
+        })
+      }
       if (tRes.data.monthlyFee) {
         setPaymentForm((p) => ({ ...p, amount: Number(tRes.data.monthlyFee) }))
       }
@@ -124,6 +145,50 @@ export default function TenantDetailPage() {
       router.push('/admin')
     } catch {
       toast('Error al impersonar', 'error')
+    }
+  }
+
+  const handleSaveAdmin = async () => {
+    setSaving(true)
+    try {
+      await superadminApi.updateTenantAdmin(tenantId, adminForm)
+      toast('Administrador actualizado', 'success')
+      setShowEditAdmin(false)
+      loadAll()
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      toast(ax.response?.data?.message || 'Error al actualizar administrador', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleResetPassword = async () => {
+    const pwdError = validatePassword(newPassword)
+    if (pwdError) {
+      toast(pwdError, 'error')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await superadminApi.resetTenantAdminPassword(tenantId, newPassword)
+      setShowResetPassword(false)
+      setNewPassword('')
+      setResetCredentials({
+        tenantName: tenant?.name,
+        fullName: res.data.credentials.fullName,
+        email: res.data.credentials.email,
+        dni: res.data.credentials.dni,
+        role: res.data.credentials.role,
+        temporaryPassword: res.data.credentials.temporaryPassword,
+      })
+      toast('Contraseña restablecida', 'success')
+      loadAll()
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      toast(ax.response?.data?.message || 'Error al restablecer contraseña', 'error')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -217,6 +282,59 @@ export default function TenantDetailPage() {
         </div>
       )}
 
+      <div className="rounded-2xl p-4 mb-6"
+        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-white font-semibold">Administrador del tenant</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              SuperAdmin gestiona la cuenta de acceso del Admin {tenant.tenantType}.
+            </p>
+          </div>
+          {hasAdmin && tenantAdmin && (
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowEditAdmin(true)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                style={{ background: `${NEON}20`, color: NEON, border: `1px solid ${NEON}40` }}>
+                Editar
+              </button>
+              <button type="button" onClick={() => setShowResetPassword(true)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                style={{ background: `${WARNING}20`, color: WARNING, border: `1px solid ${WARNING}40` }}>
+                Restablecer contraseña
+              </button>
+            </div>
+          )}
+        </div>
+
+        {!hasAdmin || !tenantAdmin ? (
+          <p className="text-sm text-gray-500">
+            No hay administrador asignado. Elimina y recrea la institución desde el panel SuperAdmin con credenciales de acceso.
+          </p>
+        ) : (
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div>
+              <div className="text-xs text-gray-500">Nombre</div>
+              <div className="text-white">{tenantAdmin.fullName}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Email</div>
+              <div className="text-white break-all">{tenantAdmin.email}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">DNI</div>
+              <div className="text-white">{tenantAdmin.dni}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Estado</div>
+              <div style={{ color: tenantAdmin.mustChangePassword ? WARNING : NEON }}>
+                {tenantAdmin.mustChangePassword ? 'Debe cambiar contraseña' : 'Activo'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div className="rounded-2xl p-4"
           style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
@@ -261,6 +379,71 @@ export default function TenantDetailPage() {
           </button>
         </form>
       </div>
+
+      <Modal
+        open={showEditAdmin}
+        onClose={() => !saving && setShowEditAdmin(false)}
+        title="Editar administrador"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={saving} onClick={() => setShowEditAdmin(false)}>Cancelar</Button>
+            <Button size="sm" loading={saving} onClick={handleSaveAdmin}>Guardar</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Nombre completo</label>
+            <input className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              value={adminForm.fullName}
+              onChange={(e) => setAdminForm({ ...adminForm, fullName: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Email de acceso</label>
+            <input type="email" className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              value={adminForm.email}
+              onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">DNI</label>
+            <input maxLength={8} className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              value={adminForm.dni}
+              onChange={(e) => setAdminForm({ ...adminForm, dni: e.target.value.replace(/\D/g, '') })} />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={showResetPassword}
+        onClose={() => !saving && setShowResetPassword(false)}
+        title="Restablecer contraseña del administrador"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={saving} onClick={() => setShowResetPassword(false)}>Cancelar</Button>
+            <Button size="sm" loading={saving} onClick={handleResetPassword}>Restablecer</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-400 mb-3">
+          Define una nueva contraseña temporal. El administrador deberá cambiarla en su próximo ingreso.
+        </p>
+        <input type="password" className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+          style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="Nueva contraseña temporal"
+        />
+        <PasswordPolicyHint password={newPassword} />
+      </Modal>
+
+      <CredentialsModal
+        open={resetCredentials != null}
+        credentials={resetCredentials}
+        onClose={() => setResetCredentials(null)}
+      />
 
       <div className="rounded-2xl p-4"
         style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>

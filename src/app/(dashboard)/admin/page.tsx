@@ -12,6 +12,8 @@ import { tenantAdminApi, type AdminDashboardData } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
 import { NEON } from '@/lib/constants/theme'
 import { Modal, Button } from '@/components/ui'
+import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
+import { validatePassword } from '@/lib/utils/passwordPolicy'
 
 interface User {
   id: string
@@ -51,6 +53,13 @@ const TRACK_OPTIONS: { value: number; label: string }[] = [
   { value: 4, label: 'Postulantes Oficiales' },
 ]
 
+const TRACK_TYPE_VALUE: Record<string, number> = {
+  AscensosSuboficiales: 1,
+  AscensosOficiales: 2,
+  PostulantesSuboficiales: 3,
+  PostulantesOficiales: 4,
+}
+
 const trackLabel = (track: string) =>
   ({
     AscensosSuboficiales: 'Ascenso Suboficiales',
@@ -88,6 +97,7 @@ export default function AdminPage() {
   const [modalLoading, setModalLoading] = useState(false)
 
   const [plans, setPlans] = useState<TenantPlan[]>([])
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
   const [planForm, setPlanForm] = useState({
     trackType: 3,
     name: '',
@@ -162,6 +172,11 @@ export default function AdminPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
+    const pwdError = validatePassword(form.password)
+    if (pwdError) {
+      setMsg({ text: pwdError, ok: false })
+      return
+    }
     setSaving(true)
     setMsg(null)
     try {
@@ -249,16 +264,37 @@ export default function AdminPage() {
     }
   }
 
-  const handleCreatePlan = async (e: React.FormEvent) => {
+  const resetPlanForm = () => {
+    setPlanForm({ trackType: 3, name: '', price: 0, durationDays: 30, description: '' })
+    setEditingPlanId(null)
+  }
+
+  const startEditPlan = (plan: TenantPlan) => {
+    setEditingPlanId(plan.id)
+    setPlanForm({
+      trackType: TRACK_TYPE_VALUE[plan.trackType] ?? 3,
+      name: plan.name,
+      price: plan.price,
+      durationDays: plan.durationDays,
+      description: plan.description ?? '',
+    })
+  }
+
+  const handleSavePlan = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     try {
-      await tenantPlansApi.create(planForm, user?.tenantId ?? undefined)
-      setMsg({ text: '✅ Plan creado', ok: true })
-      setPlanForm({ trackType: 3, name: '', price: 0, durationDays: 30, description: '' })
+      if (editingPlanId) {
+        await tenantPlansApi.update(editingPlanId, { ...planForm, isActive: true }, user?.tenantId ?? undefined)
+        setMsg({ text: '✅ Plan actualizado', ok: true })
+      } else {
+        await tenantPlansApi.create(planForm, user?.tenantId ?? undefined)
+        setMsg({ text: '✅ Plan creado', ok: true })
+      }
+      resetPlanForm()
       loadData()
     } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error al crear plan'), ok: false })
+      setMsg({ text: getApiErrorMessage(err, editingPlanId ? 'Error al actualizar plan' : 'Error al crear plan'), ok: false })
     } finally {
       setSaving(false)
     }
@@ -638,6 +674,7 @@ export default function AdminPage() {
                   <input className="input-admin" type={field.type || 'text'} placeholder={field.placeholder}
                     value={String(form[fieldKey])}
                     onChange={e => setForm({ ...form, [fieldKey]: e.target.value })} required />
+                  {field.key === 'password' && <PasswordPolicyHint password={form.password} />}
                 </div>
               )})}
             </div>
@@ -744,9 +781,11 @@ export default function AdminPage() {
       {tab === 'plans' && (
         <div className="fade-in grid lg:grid-cols-3 gap-5">
           {/* Formulario crear plan */}
-          <form onSubmit={handleCreatePlan} className="rounded-2xl p-5 space-y-3 h-fit"
+          <form onSubmit={handleSavePlan} className="rounded-2xl p-5 space-y-3 h-fit"
             style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
-            <h2 className="text-white font-bold mb-1">💎 Nuevo plan</h2>
+            <h2 className="text-white font-bold mb-1">
+              {editingPlanId ? '✏️ Editar plan' : '💎 Nuevo plan'}
+            </h2>
             <p className="text-xs text-gray-500 mb-2">
               Define los planes de suscripción que tus alumnos podrán contratar.
             </p>
@@ -809,11 +848,20 @@ export default function AdminPage() {
                 onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
               />
             </div>
-            <button type="submit" disabled={saving}
-              className="w-full py-2 rounded-lg text-sm font-bold"
-              style={{ background: GOLD, color: '#000', opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'Guardando...' : '➕ Crear plan'}
-            </button>
+            <div className="flex gap-2">
+              {editingPlanId && (
+                <button type="button" onClick={resetPlanForm}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium"
+                  style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', border: '1px solid #ffffff15' }}>
+                  Cancelar
+                </button>
+              )}
+              <button type="submit" disabled={saving}
+                className="flex-1 py-2 rounded-lg text-sm font-bold"
+                style={{ background: GOLD, color: '#000', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Guardando...' : editingPlanId ? 'Guardar cambios' : '➕ Crear plan'}
+              </button>
+            </div>
           </form>
 
           {/* Lista de planes */}
@@ -854,11 +902,18 @@ export default function AdminPage() {
                       </div>
                     </div>
                     {p.isActive && (
-                      <button type="button" onClick={() => handleDeactivatePlan(p.id)}
-                        className="text-xs px-3 py-1.5 rounded-lg font-medium shrink-0"
-                        style={{ background: `${RED}18`, color: RED, border: `1px solid ${RED}40` }}>
-                        Desactivar
-                      </button>
+                      <div className="flex gap-2 shrink-0">
+                        <button type="button" onClick={() => startEditPlan(p)}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                          style={{ background: `${NEON}18`, color: NEON, border: `1px solid ${NEON}40` }}>
+                          Editar
+                        </button>
+                        <button type="button" onClick={() => handleDeactivatePlan(p.id)}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                          style={{ background: `${RED}18`, color: RED, border: `1px solid ${RED}40` }}>
+                          Desactivar
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
