@@ -54,6 +54,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return
     }
 
+    if (ctx === 'superadmin' && pathname === '/dashboard') {
+      router.replace('/superadmin?tab=inicio')
+      return
+    }
+
     if (ctx === 'tenant-admin' && pathname === '/dashboard') {
       router.replace('/admin')
     }

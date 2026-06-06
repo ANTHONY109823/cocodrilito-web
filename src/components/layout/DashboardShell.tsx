@@ -18,9 +18,9 @@ import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 import { cn } from '@/lib/utils/cn'
 import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
 
-function roleLabel(role?: string, impersonating?: boolean) {
+function roleLabel(role?: string, _impersonating?: boolean) {
   if (!role) return 'Estudiante'
-  if (isSuperAdmin(role) && !impersonating) return 'SuperAdmin'
+  if (isSuperAdmin(role)) return 'SuperAdmin'
   if (role.includes('Academia') || role === 'AdminAcademia') return 'Admin Academia'
   if (role.includes('Agencia') || role === 'AdminAgencia') return 'Admin Agencia'
   return 'Estudiante'

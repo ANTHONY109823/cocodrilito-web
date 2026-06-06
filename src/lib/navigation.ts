@@ -1,7 +1,6 @@
 import { BRAND_APP } from '@/lib/constants/brand'
 import {
   Building2,
-  ClipboardCheck,
   FileText,
   GraduationCap,
   History,
@@ -10,7 +9,6 @@ import {
   LucideIcon,
   ScrollText,
   Settings,
-  Shield,
   Star,
   Trophy,
   Users,
@@ -32,10 +30,10 @@ export const STUDENT_NAV: NavItem[] = [
 ]
 
 export const SUPERADMIN_NAV: NavItem[] = [
+  { href: '/superadmin?tab=inicio', label: 'Inicio', icon: Home },
   { href: '/superadmin?tab=agencias', label: 'Agencias', icon: Building2 },
   { href: '/superadmin?tab=academias', label: 'Academias', icon: GraduationCap },
   { href: '/superadmin/preguntas', label: 'Banco de Preguntas', icon: Library },
-  { href: '/superadmin?tab=aprobaciones', label: 'Aprobaciones', icon: ClipboardCheck },
   { href: '/superadmin?tab=audit', label: 'Audit Log', icon: ScrollText },
 ]
 
@@ -53,12 +51,12 @@ export function pageTitleForPath(pathname: string, search?: string): string {
   if (pathname.startsWith('/superadmin')) {
     const tab = new URLSearchParams(search ?? '').get('tab')
     const map: Record<string, string> = {
+      inicio: 'Inicio',
       agencias: 'Agencias',
       academias: 'Academias',
-      aprobaciones: 'Aprobaciones',
       audit: 'Audit Log',
     }
-    return map[tab ?? ''] ?? 'SuperAdmin'
+    return map[tab ?? ''] ?? 'Inicio'
   }
   if (pathname.startsWith('/admin/configuracion')) return 'Configuración'
   if (pathname.startsWith('/admin/preguntas')) return 'Banco de Preguntas'

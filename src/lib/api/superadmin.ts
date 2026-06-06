@@ -27,6 +27,9 @@ export interface TenantSummary {
   contactEmail: string
   contactPhone?: string | null
   createdAt: string
+  accessStartsAt?: string | null
+  accessExpiresAt?: string | null
+  isExpired?: boolean
 }
 
 export interface TenantDetail {
@@ -52,6 +55,9 @@ export interface TenantDetail {
   suspendedAt?: string | null
   suspendedReason?: string | null
   createdAt: string
+  accessStartsAt?: string | null
+  accessExpiresAt?: string | null
+  isExpired?: boolean
 }
 
 export interface CreateTenantPayload {
@@ -112,6 +118,8 @@ export const superadminApi = {
     apiClient.post(`/superadmin/tenants/${id}/suspend`, { reason }),
   reactivateTenant: (id: string) => apiClient.post(`/superadmin/tenants/${id}/reactivate`),
   activateTenant: (id: string) => apiClient.put(`/superadmin/tenants/${id}/activate`),
+  setTenantAccess: (id: string, data: { startsAt: string; days: number }) =>
+    apiClient.put<TenantDetail>(`/superadmin/tenants/${id}/access`, data),
   impersonateTenant: (id: string) =>
     apiClient.post<ImpersonateResponse>(`/superadmin/tenants/${id}/impersonate`),
   getTenantUsers: (id: string) => apiClient.get(`/superadmin/tenants/${id}/users`),

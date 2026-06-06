@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Modal, Button } from '@/components/ui'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
@@ -32,6 +32,7 @@ export const emptyCreateTenantForm = (): CreateTenantFormState => ({
 interface CreateTenantPanelProps {
   open: boolean
   loading: boolean
+  defaultTenantType?: 'Agencia' | 'Academia'
   onClose: () => void
   onSubmit: (data: CreateTenantFormState) => Promise<void>
 }
@@ -39,10 +40,16 @@ interface CreateTenantPanelProps {
 const inputClass = 'w-full px-3 py-2 rounded-lg text-sm text-white outline-none'
 const inputStyle = { background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }
 
-export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTenantPanelProps) {
+export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, onSubmit }: CreateTenantPanelProps) {
   const [form, setForm] = useState<CreateTenantFormState>(emptyCreateTenantForm)
   const [error, setError] = useState('')
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+
+  useEffect(() => {
+    if (open && defaultTenantType) {
+      setForm((f) => (f.tenantType === defaultTenantType ? f : { ...f, tenantType: defaultTenantType }))
+    }
+  }, [open, defaultTenantType])
 
   const isDirty = useMemo(() => {
     const empty = emptyCreateTenantForm()

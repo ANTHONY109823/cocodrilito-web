@@ -17,7 +17,6 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { CreateTenantPanel, type CreateTenantFormState } from '@/components/superadmin/CreateTenantPanel'
-import { ExamDistributionPanel } from './ExamDistributionPanel'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import {
   NEON,
@@ -29,10 +28,9 @@ import {
 } from '@/lib/constants/theme'
 
 type TabKey =
+  | 'inicio'
   | 'agencias'
   | 'academias'
-  | 'aprobaciones'
-  | 'distribucion'
   | 'audit'
 
 interface AuditLogEntry {
@@ -46,17 +44,6 @@ interface AuditLogEntry {
   createdAt: string
 }
 
-interface PendingSubscription {
-  id: string
-  userFullName?: string
-  userEmail?: string
-  tenantName?: string
-  amountPaid: number
-  paymentMethod: string
-  paymentReference: string
-  createdAt: string
-}
-
 export default function SuperAdminPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -64,22 +51,23 @@ export default function SuperAdminPage() {
   const { startImpersonation } = useImpersonationStore()
 
   const tabParam = searchParams.get('tab') as TabKey | null
-  const tab: TabKey = tabParam && ['agencias', 'academias', 'aprobaciones', 'distribucion', 'audit'].includes(tabParam)
+  const tab: TabKey = tabParam && ['inicio', 'agencias', 'academias', 'audit'].includes(tabParam)
     ? tabParam
-    : 'agencias'
+    : 'inicio'
 
   const [dashboard, setDashboard] = useState<DashboardStats | null>(null)
   const [tenants, setTenants] = useState<TenantSummary[]>([])
-  const [pendingSubs, setPendingSubs] = useState<PendingSubscription[]>([])
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
+  const [createType, setCreateType] = useState<'Agencia' | 'Academia'>('Agencia')
   const [creating, setCreating] = useState(false)
   const [createdCredentials, setCreatedCredentials] = useState<AdminCredentials | null>(null)
   const [pendingAction, setPendingAction] = useState<
     { tenant: TenantSummary; kind: 'delete' | 'suspend' } | null
   >(null)
   const [suspendReason, setSuspendReason] = useState('')
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => { loadFromStorage() }, [loadFromStorage])
@@ -93,17 +81,17 @@ export default function SuperAdminPage() {
   const loadTabData = useCallback(async () => {
     setLoading(true)
     try {
+      if (tab === 'inicio') {
+        const [dashRes, tenantsRes] = await Promise.all([
+          superadminApi.getDashboard(),
+          superadminApi.getTenants(),
+        ])
+        setDashboard(dashRes.data)
+        setTenants(tenantsRes.data)
+      }
       if (['agencias', 'academias'].includes(tab)) {
         const res = await superadminApi.getTenants()
         setTenants(res.data)
-      }
-      if (tab === 'aprobaciones') {
-        const [dashRes, subsRes] = await Promise.all([
-          superadminApi.getDashboard(),
-          superadminApi.getPendingSubscriptions(),
-        ])
-        setDashboard(dashRes.data)
-        setPendingSubs(subsRes.data as PendingSubscription[])
       }
       if (tab === 'audit') {
         const res = await superadminApi.getAuditLog()
@@ -213,6 +201,7 @@ export default function SuperAdminPage() {
       }
       setPendingAction(null)
       setSuspendReason('')
+      setDeleteConfirmText('')
       loadTabData()
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } }
@@ -222,14 +211,18 @@ export default function SuperAdminPage() {
     }
   }
 
+  const openCreate = (type: 'Agencia' | 'Academia') => {
+    setCreateType(type)
+    setShowCreate(true)
+  }
+
   const agencias = tenants.filter((t) => t.tenantType === 'Agencia')
   const academias = tenants.filter((t) => t.tenantType === 'Academia')
 
   const tabs: { key: TabKey; label: string }[] = [
+    { key: 'inicio', label: '🏠 Inicio' },
     { key: 'agencias', label: '🏢 Agencias' },
     { key: 'academias', label: '🎓 Academias' },
-    { key: 'aprobaciones', label: '💳 Aprobaciones' },
-    { key: 'distribucion', label: '📊 Distribución' },
     { key: 'audit', label: '📋 Audit Log' },
   ]
 
@@ -271,12 +264,30 @@ export default function SuperAdminPage() {
                     {t.suspended ? 'SUSPENDIDO' : 'Inactivo'}
                   </span>
                 ) : null}
+                {t.isExpired ? (
+                  <span className="text-xs px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: `${DANGER}20`, color: DANGER }}>
+                    EXPIRADO
+                  </span>
+                ) : t.accessExpiresAt ? (
+                  <span className="text-xs px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: policeGreenRgba(0.15), color: NEON }}>
+                    Vigente
+                  </span>
+                ) : null}
               </div>
               <div className="text-xs text-gray-500 mt-1">
                 {t.slug} · {t.students} usuarios · {t.examsCompleted} exámenes
                 {t.contactPhone ? ` · ${t.contactPhone}` : ''}
                 {t.monthlyFee > 0 ? ` · S/. ${t.monthlyFee}/mes` : ''}
               </div>
+              {t.accessExpiresAt ? (
+                <div className="text-xs mt-0.5" style={{ color: t.isExpired ? DANGER : '#6B8A75' }}>
+                  Vigencia: {t.accessStartsAt ? new Date(t.accessStartsAt).toLocaleDateString('es-PE') : '—'}
+                  {' → '}
+                  {new Date(t.accessExpiresAt).toLocaleDateString('es-PE')}
+                </div>
+              ) : null}
               <TenantAccessUrl slug={t.slug} compact />
               <div className="text-xs text-gray-600 mt-0.5">{t.contactEmail}</div>
             </div>
@@ -304,7 +315,7 @@ export default function SuperAdminPage() {
                   Suspender
                 </button>
               )}
-              <button type="button" onClick={() => setPendingAction({ tenant: t, kind: 'delete' })}
+              <button type="button" onClick={() => { setDeleteConfirmText(''); setPendingAction({ tenant: t, kind: 'delete' }) }}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
                 style={{ backgroundColor: `${DANGER}12`, color: DANGER, border: `1px solid ${DANGER}25` }}>
                 Eliminar
@@ -318,21 +329,15 @@ export default function SuperAdminPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Panel SuperAdmin ⚡</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Gestión global de la plataforma Simulacros.pe</p>
-        </div>
-        <button type="button" onClick={() => setShowCreate(!showCreate)}
-          className="px-4 py-2 rounded-xl text-sm font-bold"
-          style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
-          ➕ Nuevo tenant
-        </button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-white">Panel SuperAdmin ⚡</h1>
+        <p className="text-gray-500 text-sm mt-0.5">Gestión global de la plataforma Simulacros.pe</p>
       </div>
 
       <CreateTenantPanel
         open={showCreate}
         loading={creating}
+        defaultTenantType={createType}
         onClose={() => setShowCreate(false)}
         onSubmit={handleCreateTenant}
       />
@@ -357,46 +362,75 @@ export default function SuperAdminPage() {
         ))}
       </div>
 
-      {tab === 'agencias' && tenantList(agencias)}
-      {tab === 'academias' && tenantList(academias)}
-
-      {tab === 'aprobaciones' && (
-        <div className="space-y-4">
-          {dashboard && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-              {statCard('Pagos tenants pendientes', dashboard.pendingPayments, DANGER)}
-              {statCard('Suscripciones pendientes', pendingSubs.length, WARNING)}
-              {statCard('Ingreso mensual est.', `S/. ${dashboard.monthlyRevenue}`, INFO)}
+      {tab === 'inicio' && (
+        loading ? <SkeletonTable rows={4} /> : dashboard ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {statCard('Instituciones', dashboard.totalTenants)}
+              {statCard('Activas', dashboard.activeTenants, INFO)}
+              {statCard('Estudiantes', dashboard.totalStudents, NEON)}
+              {statCard('Ingreso mensual est.', `S/. ${dashboard.monthlyRevenue}`, WARNING)}
             </div>
-          )}
-          {loading ? <SkeletonTable /> : pendingSubs.length === 0 ? (
-            <p className="text-gray-500 text-center py-12">No hay aprobaciones pendientes</p>
-          ) : (
-            pendingSubs.map((sub) => (
-              <div key={sub.id} className="rounded-xl px-4 py-3 text-sm"
-                style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
-                <div className="flex flex-wrap justify-between gap-2">
-                  <div>
-                    <div className="text-white font-semibold">{sub.userFullName ?? 'Usuario'}</div>
-                    <div className="text-gray-500 text-xs">{sub.userEmail} · {sub.tenantName ?? 'Sin tenant'}</div>
-                    <div className="text-xs mt-1" style={{ color: WARNING }}>
-                      S/. {sub.amountPaid} · {sub.paymentMethod} · Ref: {sub.paymentReference || '—'}
-                    </div>
-                  </div>
-                  <div className="text-gray-600 text-xs self-center">
-                    {new Date(sub.createdAt).toLocaleString('es-PE')}
-                  </div>
-                </div>
-                <p className="text-gray-500 text-xs mt-2">
-                  Las aprobaciones por tenant se gestionan desde el panel de cada agencia/academia (impersonar).
-                </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {statCard('Agencias', `${dashboard.agencias.active}/${dashboard.agencias.total}`)}
+              {statCard('Academias', `${dashboard.academias.active}/${dashboard.academias.total}`)}
+              {statCard('Exámenes hoy', dashboard.totalExamsToday, INFO)}
+              {statCard('Exámenes del mes', dashboard.totalExamsThisMonth, INFO)}
+            </div>
+            {dashboard.pendingPayments > 0 && (
+              <div className="rounded-2xl p-4 text-sm"
+                style={{ background: `${DANGER}10`, border: `1px solid ${DANGER}30`, color: DANGER }}>
+                ⚠️ {dashboard.pendingPayments} pago(s) de instituciones pendiente(s) de regularizar.
               </div>
-            ))
-          )}
+            )}
+            <div className="rounded-2xl p-4"
+              style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+              <h3 className="text-white font-semibold mb-3">Instituciones más activas</h3>
+              {dashboard.topTenantsByActivity.length === 0 ? (
+                <p className="text-gray-500 text-sm">Aún no hay actividad registrada.</p>
+              ) : (
+                <div className="space-y-2">
+                  {dashboard.topTenantsByActivity.map((t) => (
+                    <div key={t.tenantId} className="flex justify-between text-sm py-1.5"
+                      style={{ borderBottom: `1px solid ${policeGreenRgba(0.1)}` }}>
+                      <span className="text-gray-300">{t.tenantName}</span>
+                      <span style={{ color: NEON }}>{t.examsCompleted} exámenes</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-12">No se pudieron cargar las métricas</p>
+        )
+      )}
+
+      {tab === 'agencias' && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button type="button" onClick={() => openCreate('Agencia')}
+              className="px-4 py-2 rounded-xl text-sm font-bold"
+              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+              ➕ Nueva agencia
+            </button>
+          </div>
+          {tenantList(agencias)}
         </div>
       )}
 
-      {tab === 'distribucion' && <ExamDistributionPanel />}
+      {tab === 'academias' && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button type="button" onClick={() => openCreate('Academia')}
+              className="px-4 py-2 rounded-xl text-sm font-bold"
+              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+              ➕ Nueva academia
+            </button>
+          </div>
+          {tenantList(academias)}
+        </div>
+      )}
 
       {tab === 'audit' && (
         loading ? <SkeletonTable /> : (
@@ -422,25 +456,50 @@ export default function SuperAdminPage() {
 
       <Modal
         open={pendingAction != null}
-        onClose={() => { if (!actionLoading) { setPendingAction(null); setSuspendReason('') } }}
-        title={pendingAction?.kind === 'delete' ? '⚠️ Eliminar tenant' : '⏸️ Suspender tenant'}
+        onClose={() => { if (!actionLoading) { setPendingAction(null); setSuspendReason(''); setDeleteConfirmText('') } }}
+        title={pendingAction?.kind === 'delete' ? '⚠️ Eliminar institución' : '⏸️ Suspender institución'}
         footer={
           <>
             <Button variant="ghost" size="sm" disabled={actionLoading}
-              onClick={() => { setPendingAction(null); setSuspendReason('') }}>
+              onClick={() => { setPendingAction(null); setSuspendReason(''); setDeleteConfirmText('') }}>
               Cancelar
             </Button>
-            <Button variant="danger" size="sm" loading={actionLoading} onClick={confirmPendingAction}>
-              {pendingAction?.kind === 'delete' ? 'Eliminar' : 'Suspender'}
+            <Button
+              variant="danger"
+              size="sm"
+              loading={actionLoading}
+              disabled={pendingAction?.kind === 'delete' &&
+                deleteConfirmText.trim().toLowerCase() !== (pendingAction?.tenant.name ?? '').trim().toLowerCase()}
+              onClick={confirmPendingAction}
+            >
+              {pendingAction?.kind === 'delete' ? 'Eliminar definitivamente' : 'Suspender'}
             </Button>
           </>
         }
       >
         {pendingAction?.kind === 'delete' ? (
-          <p>
-            ¿Seguro que deseas eliminar <strong className="text-white">{pendingAction?.tenant.name}</strong>?
-            Se cancelarán las suscripciones activas y sus usuarios quedarán bloqueados.
-          </p>
+          <div className="space-y-3">
+            <p>
+              ¿Seguro que deseas eliminar <strong className="text-white">{pendingAction?.tenant.name}</strong>?
+              Se cancelarán las suscripciones activas y sus usuarios quedarán bloqueados.
+            </p>
+            <div className="rounded-lg px-3 py-2 text-xs" style={{ background: `${DANGER}10`, color: DANGER }}>
+              Verificación de seguridad: escribe el nombre exacto de la institución para confirmar.
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">
+                Escribe «{pendingAction?.tenant.name}» para habilitar el botón
+              </label>
+              <input
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: `1px solid ${DANGER}40` }}
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={pendingAction?.tenant.name}
+                autoComplete="off"
+              />
+            </div>
+          </div>
         ) : (
           <div className="space-y-3">
             <p>

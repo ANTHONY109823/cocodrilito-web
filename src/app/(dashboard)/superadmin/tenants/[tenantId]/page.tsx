@@ -59,6 +59,12 @@ export default function TenantDetailPage() {
     notes: '',
   })
 
+  const [accessForm, setAccessForm] = useState({ startsAt: '', days: 30 })
+  const [savingAccess, setSavingAccess] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
   useEffect(() => { loadFromStorage() }, [loadFromStorage])
 
   useEffect(() => {
@@ -88,6 +94,17 @@ export default function TenantDetailPage() {
       }
       if (tRes.data.monthlyFee) {
         setPaymentForm((p) => ({ ...p, amount: Number(tRes.data.monthlyFee) }))
+      }
+      const startsAt = tRes.data.accessStartsAt
+      const expiresAt = tRes.data.accessExpiresAt
+      if (startsAt) {
+        const startDate = new Date(startsAt)
+        const days = expiresAt
+          ? Math.max(1, Math.round((new Date(expiresAt).getTime() - startDate.getTime()) / 86400000))
+          : 30
+        setAccessForm({ startsAt: startDate.toISOString().slice(0, 10), days })
+      } else {
+        setAccessForm({ startsAt: new Date().toISOString().slice(0, 10), days: 30 })
       }
     } catch {
       toast('Error al cargar tenant', 'error')
@@ -205,6 +222,50 @@ export default function TenantDetailPage() {
     }
   }
 
+  const computedExpiry = (() => {
+    if (!accessForm.startsAt || !accessForm.days) return null
+    const d = new Date(accessForm.startsAt)
+    d.setDate(d.getDate() + Number(accessForm.days))
+    return d
+  })()
+
+  const handleSetAccess = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!accessForm.startsAt || accessForm.days <= 0) {
+      toast('Indica una fecha de activación y los días pagados', 'error')
+      return
+    }
+    setSavingAccess(true)
+    try {
+      const res = await superadminApi.setTenantAccess(tenantId, {
+        startsAt: accessForm.startsAt,
+        days: Number(accessForm.days),
+      })
+      setTenant(res.data)
+      toast('Vigencia de acceso actualizada', 'success')
+      loadAll()
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      toast(ax.response?.data?.message || 'Error al guardar la vigencia', 'error')
+    } finally {
+      setSavingAccess(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await superadminApi.deleteTenant(tenantId)
+      toast('Institución eliminada', 'success')
+      router.push('/superadmin?tab=agencias')
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      toast(ax.response?.data?.message || 'Error al eliminar la institución', 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto space-y-4">
@@ -262,6 +323,11 @@ export default function TenantDetailPage() {
               Suspender
             </button>
           )}
+          <button type="button" onClick={() => { setDeleteConfirmText(''); setShowDelete(true) }}
+            className="px-4 py-2 rounded-xl text-xs font-bold"
+            style={{ backgroundColor: `${DANGER}12`, color: DANGER, border: `1px solid ${DANGER}30` }}>
+            🗑️ Eliminar
+          </button>
         </div>
       </div>
 
@@ -281,6 +347,69 @@ export default function TenantDetailPage() {
           ))}
         </div>
       )}
+
+      <form onSubmit={handleSetAccess} className="rounded-2xl p-4 mb-6"
+        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-white font-semibold">Vigencia de acceso</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Registra desde qué fecha la {tenant.tenantType.toLowerCase()} tiene acceso y por cuántos días pagó.
+              La fecha de expiración se calcula automáticamente.
+            </p>
+          </div>
+          {tenant.accessExpiresAt && (
+            <span className="text-xs px-2 py-1 rounded-full self-start"
+              style={
+                new Date(tenant.accessExpiresAt) < new Date()
+                  ? { backgroundColor: `${DANGER}20`, color: DANGER }
+                  : { backgroundColor: `${NEON}20`, color: NEON }
+              }>
+              {new Date(tenant.accessExpiresAt) < new Date() ? 'EXPIRADO' : 'VIGENTE'}
+            </span>
+          )}
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3 items-end">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Fecha de activación</label>
+            <input type="date" required
+              className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              value={accessForm.startsAt}
+              onChange={(e) => setAccessForm({ ...accessForm, startsAt: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Días pagados</label>
+            <input type="number" min={1} required
+              className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              value={accessForm.days}
+              onChange={(e) => setAccessForm({ ...accessForm, days: Number(e.target.value) })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Expira (automático)</label>
+            <div className="px-3 py-2 rounded-lg text-sm"
+              style={{ background: 'rgba(0,5,2,0.5)', border: '1px solid #ffffff10', color: NEON }}>
+              {computedExpiry ? computedExpiry.toLocaleDateString('es-PE') : '—'}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3 items-center mt-3">
+          <button type="submit" disabled={savingAccess}
+            className="px-4 py-2 rounded-xl text-sm font-bold"
+            style={{ backgroundColor: NEON, color: '#000', opacity: savingAccess ? 0.7 : 1 }}>
+            {savingAccess ? 'Guardando...' : 'Guardar vigencia'}
+          </button>
+          {tenant.accessStartsAt && (
+            <span className="text-xs text-gray-500">
+              Actual: {new Date(tenant.accessStartsAt).toLocaleDateString('es-PE')}
+              {tenant.accessExpiresAt ? ` → ${new Date(tenant.accessExpiresAt).toLocaleDateString('es-PE')}` : ''}
+            </span>
+          )}
+        </div>
+      </form>
 
       <div className="rounded-2xl p-4 mb-6"
         style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
@@ -444,6 +573,51 @@ export default function TenantDetailPage() {
         credentials={resetCredentials}
         onClose={() => setResetCredentials(null)}
       />
+
+      <Modal
+        open={showDelete}
+        onClose={() => !deleting && setShowDelete(false)}
+        title="⚠️ Eliminar institución"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={deleting} onClick={() => setShowDelete(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              loading={deleting}
+              disabled={deleteConfirmText.trim().toLowerCase() !== tenant.name.trim().toLowerCase()}
+              onClick={handleDelete}
+            >
+              Eliminar definitivamente
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p>
+            ¿Seguro que deseas eliminar <strong className="text-white">{tenant.name}</strong>?
+            Se cancelarán las suscripciones activas y sus usuarios quedarán bloqueados.
+          </p>
+          <div className="rounded-lg px-3 py-2 text-xs" style={{ background: `${DANGER}10`, color: DANGER }}>
+            Verificación de seguridad: escribe el nombre exacto de la institución para confirmar.
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">
+              Escribe «{tenant.name}» para habilitar el botón
+            </label>
+            <input
+              className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+              style={{ background: 'rgba(0,5,2,0.8)', border: `1px solid ${DANGER}40` }}
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={tenant.name}
+              autoComplete="off"
+            />
+          </div>
+        </div>
+      </Modal>
 
       <div className="rounded-2xl p-4"
         style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
