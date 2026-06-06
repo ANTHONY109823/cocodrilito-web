@@ -42,3 +42,16 @@ export function getTenantBadge(
   if (isAdminAcademia(role, tenantType)) return 'ACADEMIA'
   return null
 }
+
+/** Ruta de destino tras login o cambio de contraseña según el rol. */
+export function getPostLoginPath(
+  role?: string | null,
+  mustChangePassword?: boolean,
+  nextPath?: string | null
+): string {
+  if (mustChangePassword) return '/cambiar-clave'
+  if (isSuperAdmin(role)) return '/superadmin?tab=inicio'
+  if (isTenantAdmin(role)) return '/admin'
+  if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) return nextPath
+  return '/dashboard'
+}

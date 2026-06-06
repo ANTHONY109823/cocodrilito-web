@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { isTenantAdmin, isAdminAgencia } from '@/lib/auth/roles'
+import { isTenantAdmin, isAdminAgencia, getPostLoginPath } from '@/lib/auth/roles'
 import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
 import { tenantAdminApi, type AdminDashboardData } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
@@ -169,7 +169,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!user) return
     if (!isTenantAdmin(user.role)) {
-      router.push('/dashboard')
+      router.replace(getPostLoginPath(user.role))
       return
     }
     void loadData()

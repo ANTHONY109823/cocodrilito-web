@@ -7,6 +7,8 @@ import { AlertCircle, Loader2 } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
+import { useImpersonationStore } from '@/lib/store/impersonationStore'
+import { getPostLoginPath } from '@/lib/auth/roles'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { BRAND_LOGIN, WHATSAPP_PREFILL } from '@/lib/constants/brand'
@@ -112,6 +114,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { setUser } = useAuthStore()
+  const { stopImpersonation } = useImpersonationStore()
   const { particlesRef, loginBtnRef } = useLoginDecorEffects()
 
   const { config, loading: configLoading } = useTenantConfig()
@@ -120,7 +123,6 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const formDisabled = config !== null && !config.isActive
   const displayName = config?.name ?? BRAND_LOGIN
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,19 +132,11 @@ function LoginForm() {
     try {
       const res = await authApi.login({ email: email.trim(), password })
       const loggedUser = normalizeUser(res.data as unknown as Record<string, unknown>)
+      stopImpersonation()
       setUser(loggedUser)
 
       const nextPath = searchParams.get('next')
-      const safeNext =
-        nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')
-          ? nextPath
-          : null
-
-      if (loggedUser.mustChangePassword) {
-        router.push('/cambiar-clave')
-      } else {
-        router.push(safeNext ?? '/dashboard')
-      }
+      router.push(getPostLoginPath(loggedUser.role, loggedUser.mustChangePassword, nextPath))
     } catch (err: unknown) {
       if (!axios.isAxiosError(err) || !err.response) {
         setError('No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde.')
@@ -303,7 +297,7 @@ function LoginForm() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         autoComplete="email"
-                        disabled={formDisabled || loading}
+                        disabled={loading}
                         required
                       />
                     </div>
@@ -334,7 +328,7 @@ function LoginForm() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         autoComplete="current-password"
-                        disabled={formDisabled || loading}
+                        disabled={loading}
                         required
                       />
                     </div>
@@ -352,7 +346,7 @@ function LoginForm() {
                   ref={loginBtnRef}
                   className="login-btn"
                   type="submit"
-                  disabled={loading || formDisabled}
+                  disabled={loading}
                 >
                   {loading ? (
                     <>

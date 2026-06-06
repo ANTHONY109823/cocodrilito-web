@@ -58,7 +58,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user, logout } = useAuthStore()
-  const { active: impersonating } = useImpersonationStore()
+  const { active: impersonating, stopImpersonation } = useImpersonationStore()
 
   const navContext = getNavContext(user?.role, impersonating)
   const brandName = navContext === 'superadmin'
@@ -90,6 +90,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
+    stopImpersonation()
     logout()
     router.push('/login')
   }

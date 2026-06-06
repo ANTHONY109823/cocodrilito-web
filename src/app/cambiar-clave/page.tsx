@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
-import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
+import { getPostLoginPath } from '@/lib/auth/roles'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
 
@@ -24,12 +24,9 @@ export default function CambiarClavePage() {
 
   useEffect(() => { loadFromStorage() }, [loadFromStorage])
 
-  const targetByRole = (role?: string) =>
-    role && isSuperAdmin(role) ? '/superadmin' : role && isTenantAdmin(role) ? '/admin' : '/dashboard'
-
   useEffect(() => {
     if (user && !user.mustChangePassword) {
-      router.replace(targetByRole(user.role))
+      router.replace(getPostLoginPath(user.role))
     }
   }, [user, router])
 
@@ -54,10 +51,16 @@ export default function CambiarClavePage() {
     setLoading(true)
     try {
       await authApi.changePassword({ currentPassword, newPassword })
-      if (user) {
+      const meRes = await authApi.me()
+      const profile = (meRes.data as { profile?: Record<string, unknown> }).profile
+      if (profile) {
+        const updated = normalizeUser({ ...profile, mustChangePassword: false })
+        setUser(updated)
+        router.replace(getPostLoginPath(updated.role))
+      } else if (user) {
         const updated = normalizeUser({ ...user, mustChangePassword: false })
         setUser(updated)
-        router.replace(targetByRole(updated.role))
+        router.replace(getPostLoginPath(updated.role))
       } else {
         router.replace('/login')
       }
