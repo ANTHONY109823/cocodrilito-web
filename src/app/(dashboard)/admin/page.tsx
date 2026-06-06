@@ -8,9 +8,10 @@ import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin, isAdminAgencia, getPostLoginPath } from '@/lib/auth/roles'
 import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
-import { tenantAdminApi, type AdminDashboardData } from '@/lib/api/tenantAdmin'
+import { tenantAdminApi, type AdminDashboardData, type TenantProfile } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
 import { NEON } from '@/lib/constants/theme'
+import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
@@ -69,17 +70,33 @@ const trackLabel = (track: string) =>
     PostulantesOficiales: 'Postulantes Oficiales',
   } as Record<string, string>)[track] ?? track
 
-type AdminTab = 'dashboard' | 'users' | 'subscriptions' | 'inactive' | 'create' | 'plans'
-type UserFilterKey = 'all' | 'admin' | 'web'
+type AdminTab = 'dashboard' | 'users' | 'ventas' | 'plans'
+type UserSubTab = 'activos' | 'inactivos' | 'crear'
 
 export default function AdminPage() {
   const { user, loadFromStorage } = useAuthStore()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const tabParam = searchParams.get('tab') as AdminTab | null
-  const tab: AdminTab = tabParam && ['users', 'subscriptions', 'inactive', 'create', 'plans'].includes(tabParam)
-    ? tabParam
-    : 'dashboard'
+  const rawTab = searchParams.get('tab')
+  const rawSub = searchParams.get('sub')
+
+  const tab: AdminTab =
+    rawTab === 'users' || rawTab === 'inactive' || rawTab === 'create'
+      ? 'users'
+      : rawTab === 'subscriptions' || rawTab === 'ventas'
+        ? 'ventas'
+        : rawTab === 'plans'
+          ? 'plans'
+          : 'dashboard'
+
+  const userSub: UserSubTab =
+    rawTab === 'inactive' || rawSub === 'inactivos'
+      ? 'inactivos'
+      : rawTab === 'create' || rawSub === 'crear'
+        ? 'crear'
+        : 'activos'
+
+  const [tenantProfile, setTenantProfile] = useState<TenantProfile | null>(null)
 
   const [dashData, setDashData] = useState<AdminDashboardData | null>(null)
   const [users, setUsers] = useState<User[]>([])
@@ -87,10 +104,11 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
-  const [userFilter, setUserFilter] = useState<UserFilterKey>('all')
-  const [inactiveFilter, setInactiveFilter] = useState<UserFilterKey>('all')
   const excelInputRef = useRef<HTMLInputElement>(null)
   const [uploadingExcel, setUploadingExcel] = useState(false)
+
+  const [editTarget, setEditTarget] = useState<User | null>(null)
+  const [editForm, setEditForm] = useState({ fullName: '', email: '', dni: '', rank: '', unit: '' })
 
   const [rejectTarget, setRejectTarget] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -113,21 +131,37 @@ export default function AdminPage() {
 
   const [form, setForm] = useState({
     fullName: '', dni: '', email: '', password: '',
-    rank: '', unit: '', planDays: 180
+    rank: '', unit: '', planDays: 180,
+    activationDate: new Date().toISOString().slice(0, 10),
   })
+
+  useEffect(() => {
+    if (rawTab === 'inactive') router.replace('/admin?tab=users&sub=inactivos')
+    else if (rawTab === 'create') router.replace('/admin?tab=users&sub=crear')
+    else if (rawTab === 'subscriptions') router.replace('/admin?tab=ventas')
+    else if (rawTab === 'plans') router.replace('/admin?tab=ventas')
+  }, [rawTab, router])
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       if (tab === 'dashboard') {
-        const res = await tenantAdminApi.getDashboard()
-        setDashData(res.data)
-      } else if (tab === 'users' || tab === 'inactive') {
+        const [dashRes, profileRes] = await Promise.all([
+          tenantAdminApi.getDashboard(),
+          tenantAdminApi.getProfile(),
+        ])
+        setDashData(dashRes.data)
+        setTenantProfile(profileRes.data)
+      } else if (tab === 'users') {
         const res = await apiClient.get('/admin/users')
         setUsers(res.data)
-      } else if (tab === 'subscriptions') {
-        const res = await apiClient.get('/subscriptions/pending')
-        setSubscriptions(res.data)
+      } else if (tab === 'ventas') {
+        const [subsRes, plansRes] = await Promise.all([
+          apiClient.get('/subscriptions/pending'),
+          tenantPlansApi.list(user?.tenantId ?? undefined),
+        ])
+        setSubscriptions(subsRes.data)
+        setPlans(plansRes.data)
       } else if (tab === 'plans') {
         const res = await tenantPlansApi.list(user?.tenantId ?? undefined)
         setPlans(res.data)
@@ -185,10 +219,16 @@ export default function AdminPage() {
     setSaving(true)
     setMsg(null)
     try {
-      await apiClient.post('/admin/users', form)
+      await apiClient.post('/admin/users', {
+        ...form,
+        startsAt: form.activationDate,
+      })
       setMsg({ text: '✅ Usuario creado exitosamente', ok: true })
-      setForm({ fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180 })
-      setTimeout(() => { router.push('/admin?tab=users'); setMsg(null) }, 2000)
+      setForm({
+        fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180,
+        activationDate: new Date().toISOString().slice(0, 10),
+      })
+      setTimeout(() => { router.push('/admin?tab=users&sub=activos'); setMsg(null) }, 2000)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error al crear usuario'), ok: false })
     } finally { setSaving(false) }
@@ -315,6 +355,33 @@ export default function AdminPage() {
     }
   }
 
+  const openEditUser = (u: User) => {
+    setEditTarget(u)
+    setEditForm({
+      fullName: u.fullName,
+      email: u.email,
+      dni: u.dni,
+      rank: u.rank,
+      unit: u.unit,
+    })
+  }
+
+  const confirmSaveEdit = async () => {
+    if (!editTarget) return
+    setModalLoading(true)
+    try {
+      await apiClient.put(`/admin/users/${editTarget.id}`, editForm)
+      setUsers(prev => prev.map(u => u.id === editTarget.id ? { ...u, ...editForm } : u))
+      setMsg({ text: '✅ Usuario actualizado', ok: true })
+      setTimeout(() => setMsg(null), 2500)
+      setEditTarget(null)
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al actualizar usuario'), ok: false })
+    } finally {
+      setModalLoading(false)
+    }
+  }
+
   const resetPlanForm = () => {
     setPlanForm({ trackType: 3, name: '', price: 0, durationDays: 30, description: '' })
     setEditingPlanId(null)
@@ -373,25 +440,17 @@ export default function AdminPage() {
   const inactiveUsers = users.filter(u => !u.isActive)
   const pendingPayment = users.filter(u => u.isActive && u.planType === 'Free')
 
-  const filteredActiveUsers = activeUsers.filter(u => {
-    if (userFilter === 'admin') return u.createdByAdmin
-    if (userFilter === 'web') return !u.createdByAdmin
-    return true
-  })
+  const createExpiry = (() => {
+    if (!form.activationDate || !form.planDays) return null
+    const d = new Date(form.activationDate)
+    d.setDate(d.getDate() + Number(form.planDays))
+    return d
+  })()
 
-  const filteredInactiveUsers = inactiveUsers.filter(u => {
-    if (inactiveFilter === 'admin') return u.createdByAdmin
-    if (inactiveFilter === 'web') return !u.createdByAdmin
-    return true
-  })
-
-  const tabs: { key: AdminTab; label: string; count: number | null; countColor: string; href: string }[] = [
-    { key: 'dashboard', label: '🏠 Inicio', count: null, countColor: NEON, href: '/admin' },
-    { key: 'users', label: '👥 Usuarios', count: activeUsers.length, countColor: NEON, href: '/admin?tab=users' },
-    { key: 'subscriptions', label: '💳 Ventas', count: subscriptions.length, countColor: GOLD, href: '/admin?tab=subscriptions' },
-    { key: 'inactive', label: '🔴 Inactivos', count: inactiveUsers.length, countColor: RED, href: '/admin?tab=inactive' },
-    { key: 'create', label: '➕ Crear usuario', count: null, countColor: NEON, href: '/admin?tab=create' },
-    { key: 'plans', label: '💎 Planes', count: null, countColor: GOLD, href: '/admin?tab=plans' },
+  const userSubTabs: { key: UserSubTab; label: string; count: number | null; href: string }[] = [
+    { key: 'activos', label: 'Activos', count: activeUsers.length, href: '/admin?tab=users&sub=activos' },
+    { key: 'inactivos', label: 'Inactivos', count: inactiveUsers.length, href: '/admin?tab=users&sub=inactivos' },
+    { key: 'crear', label: 'Crear usuario', count: null, href: '/admin?tab=users&sub=crear' },
   ]
 
   return (
@@ -430,33 +489,18 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {tabs.map(t => (
-          <Link key={t.key} href={t.href}
-            className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
-            style={{
-              backgroundColor: tab === t.key ? (t.key === 'inactive' ? RED : NEON) : 'rgba(0,10,5,0.8)',
-              color: tab === t.key ? '#000' : '#9CA3AF',
-              border: `1px solid ${tab === t.key ? (t.key === 'inactive' ? RED : NEON) : '#ffffff10'}`,
-              boxShadow: tab === t.key ? `0 0 20px ${t.key === 'inactive' ? RED : NEON}40` : 'none'
-            }}>
-            {t.label}
-            {t.count !== null && t.count > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-xs font-bold"
-                style={{ backgroundColor: tab === t.key ? '#000' : t.countColor, color: '#fff' }}>
-                {t.count}
-              </span>
-            )}
-          </Link>
-        ))}
-      </div>
-
       {tab === 'dashboard' && (
         <div className="fade-in space-y-4">
           {loading ? (
             <p className="text-gray-500 text-center py-12">Cargando dashboard...</p>
           ) : dashData ? (
             <>
+              {tenantProfile && (
+                <TenantAccessUrl
+                  slug={tenantProfile.slug}
+                  customDomain={tenantProfile.customDomain}
+                />
+              )}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: 'Total usuarios', value: dashData.totalUsers, color: NEON },
@@ -498,7 +542,7 @@ export default function AdminPage() {
                 </div>
               </div>
               {dashData.pendingSubscriptions > 0 && (
-                <Link href="/admin?tab=subscriptions"
+                <Link href="/admin?tab=ventas"
                   className="block rounded-xl p-4 text-sm"
                   style={{ background: `${GOLD}10`, border: `1px solid ${GOLD}30`, color: GOLD }}>
                   {dashData.pendingSubscriptions} ventas pendientes de aprobación →
@@ -509,41 +553,45 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: USUARIOS ACTIVOS */}
       {tab === 'users' && (
-        <div className="fade-in">
-          <div className="flex items-center gap-3 mb-4 flex-wrap">
-            <div className="flex gap-2">
-              {([
-                { key: 'all' as const, label: 'Todos' },
-                { key: 'admin' as const, label: '🛡️ Por admin' },
-                { key: 'web' as const, label: '🌐 Desde web' },
-              ]).map(f => (
-                <button key={f.key} onClick={() => setUserFilter(f.key)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={{
-                    backgroundColor: userFilter === f.key ? `${NEON2}20` : 'rgba(0,5,2,0.5)',
-                    color: userFilter === f.key ? NEON2 : '#6B7280',
-                    border: `1px solid ${userFilter === f.key ? NEON2 : '#ffffff10'}`
-                  }}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            <span className="ml-auto text-xs text-gray-600">
-              {filteredActiveUsers.length} usuario{filteredActiveUsers.length !== 1 ? 's' : ''} activo{filteredActiveUsers.length !== 1 ? 's' : ''}
-            </span>
+        <div className="fade-in space-y-4">
+          <div className="flex gap-2 flex-wrap border-b border-white/10 pb-3">
+            {userSubTabs.map((st) => (
+              <Link key={st.key} href={st.href}
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                style={{
+                  backgroundColor: userSub === st.key ? (st.key === 'inactivos' ? RED : NEON) : 'rgba(0,10,5,0.8)',
+                  color: userSub === st.key ? '#000' : '#9CA3AF',
+                  border: `1px solid ${userSub === st.key ? (st.key === 'inactivos' ? RED : NEON) : '#ffffff10'}`,
+                }}>
+                {st.label}
+                {st.count !== null && st.count > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full text-xs font-bold"
+                    style={{ backgroundColor: userSub === st.key ? '#000' : st.key === 'inactivos' ? RED : NEON, color: '#fff' }}>
+                    {st.count}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+
+      {userSub === 'activos' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-gray-500">
+              {activeUsers.length} usuario{activeUsers.length !== 1 ? 's' : ''} activo{activeUsers.length !== 1 ? 's' : ''}
+            </p>
           </div>
           <div className="space-y-3">
             {loading ? (
               <div className="text-gray-500 text-center py-12">Cargando usuarios...</div>
-            ) : filteredActiveUsers.length === 0 ? (
+            ) : activeUsers.length === 0 ? (
               <div className="text-center py-12 rounded-2xl"
                 style={{ background: 'rgba(0,10,5,0.8)', border: `1px solid ${NEON}15` }}>
                 <div className="text-4xl mb-3">👥</div>
                 <p className="text-gray-500">No hay usuarios activos en esta categoría</p>
               </div>
-            ) : filteredActiveUsers.map(u => {
+            ) : activeUsers.map(u => {
               const days = daysLeft(u.subscription?.expiresAt)
               const expired = days !== null && days <= 0
               const warning = days !== null && days > 0 && days <= 7
@@ -576,17 +624,24 @@ export default function AdminPage() {
                           style={{ color: expired ? RED : warning ? GOLD : NEON }}>
                           {expired ? '⚠️ Vencido'
                             : warning ? `⚡ Vence en ${days} días`
-                            : `✓ Activo hasta ${new Date(u.subscription.expiresAt).toLocaleDateString('es-PE')} (${days} días)`}
+                            : `✓ Activo desde ${u.subscription.startsAt ? new Date(u.subscription.startsAt).toLocaleDateString('es-PE') : '—'} hasta ${new Date(u.subscription.expiresAt).toLocaleDateString('es-PE')} (${days} días)`}
                         </div>
                       )}
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       {u.role === 'Student' && (
-                        <button onClick={() => { setResetPasswordTarget(u); setResetPasswordValue('') }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                          style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}35` }}>
-                          🔑 Restablecer clave
-                        </button>
+                        <>
+                          <button type="button" onClick={() => openEditUser(u)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                            style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
+                            ✏️ Editar
+                          </button>
+                          <button type="button" onClick={() => { setResetPasswordTarget(u); setResetPasswordValue('') }}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                            style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}35` }}>
+                            🔑 Restablecer clave
+                          </button>
+                        </>
                       )}
                       <button onClick={() => handleExtend(u.id, 30)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
@@ -597,9 +652,16 @@ export default function AdminPage() {
                       <button onClick={() => handleExtend(u.id, 180)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ backgroundColor: `${NEON}15`, color: NEON, border: `1px solid ${NEON}25` }}>+180d</button>
-                      <button onClick={() => handleDeactivate(u.id)}
+                      <button type="button" onClick={() => handleDeactivate(u.id)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}25` }}>Desactivar</button>
+                      {u.role === 'Student' && (
+                        <button type="button" onClick={() => setDeleteTarget({ id: u.id, name: u.fullName })}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                          style={{ backgroundColor: `${RED}12`, color: RED, border: `1px solid ${RED}25` }}>
+                          🗑️ Eliminar
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -609,9 +671,8 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: INACTIVOS */}
-      {tab === 'inactive' && (
-        <div className="fade-in">
+      {userSub === 'inactivos' && (
+        <div>
           <div className="rounded-2xl p-4 mb-5 flex items-center gap-3"
             style={{ background: `rgba(255,82,82,0.06)`, border: `1px solid ${RED}25` }}>
             <span className="text-2xl">🔴</span>
@@ -622,32 +683,20 @@ export default function AdminPage() {
             <span className="ml-auto text-2xl font-bold" style={{ color: RED }}>{inactiveUsers.length}</span>
           </div>
           <div className="flex gap-2 mb-4 flex-wrap">
-            {([
-              { key: 'all' as const, label: 'Todos' },
-              { key: 'admin' as const, label: '🛡️ Por admin' },
-              { key: 'web' as const, label: '🌐 Desde web' },
-            ]).map(f => (
-              <button key={f.key} onClick={() => setInactiveFilter(f.key)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                style={{
-                  backgroundColor: inactiveFilter === f.key ? `${RED}15` : 'rgba(0,5,2,0.5)',
-                  color: inactiveFilter === f.key ? RED : '#6B7280',
-                  border: `1px solid ${inactiveFilter === f.key ? RED : '#ffffff10'}`
-                }}>
-                {f.label}
-              </button>
-            ))}
+            <span className="text-xs text-gray-600 ml-auto">
+              {inactiveUsers.length} inactivo{inactiveUsers.length !== 1 ? 's' : ''}
+            </span>
           </div>
           <div className="space-y-3">
             {loading ? (
               <div className="text-gray-500 text-center py-12">Cargando...</div>
-            ) : filteredInactiveUsers.length === 0 ? (
+            ) : inactiveUsers.length === 0 ? (
               <div className="text-center py-12 rounded-2xl"
                 style={{ background: 'rgba(0,10,5,0.8)', border: `1px solid ${RED}15` }}>
                 <div className="text-4xl mb-3">✅</div>
                 <p className="text-gray-500">No hay usuarios inactivos en esta categoría</p>
               </div>
-            ) : filteredInactiveUsers.map(u => {
+            ) : inactiveUsers.map(u => {
               const days = daysLeft(u.subscription?.expiresAt)
               return (
                 <div key={u.id} className="rounded-2xl p-4"
@@ -683,11 +732,18 @@ export default function AdminPage() {
                     </div>
                     <div className="flex gap-2 flex-wrap items-center">
                       {u.role === 'Student' && (
-                        <button onClick={() => { setResetPasswordTarget(u); setResetPasswordValue('') }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                          style={{ backgroundColor: `${GOLD}12`, color: GOLD, border: `1px solid ${GOLD}30` }}>
-                          🔑 Restablecer clave
-                        </button>
+                        <>
+                          <button type="button" onClick={() => openEditUser(u)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                            style={{ backgroundColor: `${NEON2}10`, color: NEON2, border: `1px solid ${NEON2}20` }}>
+                            ✏️ Editar
+                          </button>
+                          <button type="button" onClick={() => { setResetPasswordTarget(u); setResetPasswordValue('') }}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                            style={{ backgroundColor: `${GOLD}12`, color: GOLD, border: `1px solid ${GOLD}30` }}>
+                            🔑 Restablecer clave
+                          </button>
+                        </>
                       )}
                       <button onClick={() => handleExtend(u.id, 30)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
@@ -717,9 +773,8 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB: CREAR USUARIO */}
-      {tab === 'create' && (
-        <div className="rounded-2xl p-6 fade-in"
+      {userSub === 'crear' && (
+        <div className="rounded-2xl p-6"
           style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}20` }}>
           <h2 className="text-white font-bold text-lg mb-5">Crear usuario con acceso directo</h2>
           <form onSubmit={handleCreate} className="space-y-4">
@@ -764,6 +819,26 @@ export default function AdminPage() {
               </div>
             </div>
 
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Fecha de activación *</label>
+                <input type="date" className="input-admin" required
+                  value={form.activationDate}
+                  onChange={(e) => setForm({ ...form, activationDate: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Expira (automático)</label>
+                <div className="input-admin flex items-center" style={{ color: NEON }}>
+                  {createExpiry
+                    ? createExpiry.toLocaleDateString('es-PE')
+                    : '—'}
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  Se calcula: activación + {form.planDays} días del plan elegido.
+                </p>
+              </div>
+            </div>
+
             {/* IMPORTAR DESDE EXCEL */}
             <div className="rounded-2xl p-5"
               style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${PURPLE}25` }}>
@@ -794,10 +869,14 @@ export default function AdminPage() {
           </form>
         </div>
       )}
+        </div>
+      )}
 
-      {/* TAB: SUSCRIPCIONES */}
-      {tab === 'subscriptions' && (
-        <div className="fade-in space-y-3">
+      {tab === 'ventas' && (
+        <div className="fade-in space-y-6">
+          <div>
+            <h2 className="text-white font-semibold mb-3">💳 Pagos pendientes de aprobación</h2>
+            <div className="space-y-3">
           {loading ? (
             <div className="text-gray-500 text-center py-12">Cargando...</div>
           ) : subscriptions.length === 0 ? (
@@ -839,18 +918,17 @@ export default function AdminPage() {
               </div>
             )
           })}
-        </div>
-      )}
+            </div>
+          </div>
 
-      {/* TAB: PLANES TENANT */}
-      {tab === 'plans' && (
-        <div className="fade-in grid lg:grid-cols-3 gap-5">
-          {/* Formulario crear plan */}
+          <div>
+            <h2 className="text-white font-semibold mb-3">💎 Planes de suscripción</h2>
+            <div className="grid lg:grid-cols-3 gap-5">
           <form onSubmit={handleSavePlan} className="rounded-2xl p-5 space-y-3 h-fit"
             style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
-            <h2 className="text-white font-bold mb-1">
+            <h3 className="text-white font-bold mb-1">
               {editingPlanId ? '✏️ Editar plan' : '💎 Nuevo plan'}
-            </h2>
+            </h3>
             <p className="text-xs text-gray-500 mb-2">
               Define los planes de suscripción que tus alumnos podrán contratar.
             </p>
@@ -929,10 +1007,9 @@ export default function AdminPage() {
             </div>
           </form>
 
-          {/* Lista de planes */}
           <div className="lg:col-span-2 rounded-2xl p-5"
             style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
-            <h2 className="text-white font-bold mb-4">Planes activos ({plans.filter((p) => p.isActive).length})</h2>
+            <h3 className="text-white font-bold mb-4">Planes activos ({plans.filter((p) => p.isActive).length})</h3>
             {plans.length === 0 ? (
               <p className="text-gray-500 text-sm py-8 text-center">
                 Aún no hay planes. Crea el primero con el formulario de la izquierda.
@@ -985,8 +1062,54 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+            </div>
+          </div>
         </div>
       )}
+
+      <Modal
+        open={editTarget != null}
+        onClose={() => { if (!modalLoading) setEditTarget(null) }}
+        title="✏️ Editar usuario"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={modalLoading} onClick={() => setEditTarget(null)}>
+              Cancelar
+            </Button>
+            <Button size="sm" loading={modalLoading} onClick={confirmSaveEdit}>
+              Guardar
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Nombre completo</label>
+            <input className="input-admin" value={editForm.fullName}
+              onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Email</label>
+            <input type="email" className="input-admin" value={editForm.email}
+              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">DNI</label>
+            <input maxLength={8} className="input-admin" value={editForm.dni}
+              onChange={(e) => setEditForm({ ...editForm, dni: e.target.value.replace(/\D/g, '') })} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Grado</label>
+            <input className="input-admin" value={editForm.rank}
+              onChange={(e) => setEditForm({ ...editForm, rank: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Unidad</label>
+            <input className="input-admin" value={editForm.unit}
+              onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })} />
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={deactivateTarget != null}

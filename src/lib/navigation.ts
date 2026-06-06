@@ -39,10 +39,9 @@ export const SUPERADMIN_NAV: NavItem[] = [
 
 export const TENANT_ADMIN_NAV: NavItem[] = [
   { href: '/admin', label: 'Inicio', icon: Home },
-  { href: '/admin?tab=users', label: 'Usuarios', icon: Users },
-  { href: '/exams', label: 'Exámenes', icon: FileText },
-  { href: '/admin/preguntas', label: 'Banco de Preguntas', icon: Library },
-  { href: '/admin?tab=subscriptions', label: 'Ventas', icon: Wallet },
+  { href: '/admin?tab=users&sub=activos', label: 'Usuarios', icon: Users },
+  { href: '/admin/preguntas', label: 'Preguntas de exámenes', icon: Library },
+  { href: '/admin?tab=ventas', label: 'Ventas', icon: Wallet },
   { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ]
 
@@ -59,16 +58,24 @@ export function pageTitleForPath(pathname: string, search?: string): string {
     return map[tab ?? ''] ?? 'Inicio'
   }
   if (pathname.startsWith('/admin/configuracion')) return 'Configuración'
-  if (pathname.startsWith('/admin/preguntas')) return 'Banco de Preguntas'
+  if (pathname.startsWith('/admin/preguntas')) return 'Preguntas de exámenes'
   if (pathname.startsWith('/admin')) {
-    const tab = new URLSearchParams(search ?? '').get('tab')
-    const map: Record<string, string> = {
-      users: 'Usuarios',
-      subscriptions: 'Ventas',
-      inactive: 'Usuarios inactivos',
-      create: 'Crear usuario',
+    const params = new URLSearchParams(search ?? '')
+    const tab = params.get('tab')
+    const sub = params.get('sub')
+    if (tab === 'users') {
+      const subMap: Record<string, string> = {
+        activos: 'Usuarios activos',
+        inactivos: 'Usuarios inactivos',
+        crear: 'Crear usuario',
+      }
+      return subMap[sub ?? 'activos'] ?? 'Usuarios'
     }
-    return map[tab ?? ''] ?? 'Panel Admin'
+    const map: Record<string, string> = {
+      ventas: 'Ventas',
+      subscriptions: 'Ventas',
+    }
+    return map[tab ?? ''] ?? 'Inicio'
   }
   const map: Record<string, string> = {
     '/dashboard': 'Inicio',
@@ -83,15 +90,40 @@ export function pageTitleForPath(pathname: string, search?: string): string {
 
 export function isNavActive(pathname: string, href: string, search?: string): boolean {
   const [path, query] = href.split('?')
+  const currentParams = new URLSearchParams(search ?? '')
+
+  if (pathname.startsWith('/admin/preguntas') && path === '/admin/preguntas') {
+    return true
+  }
+  if (pathname.startsWith('/admin/configuracion') && path === '/admin/configuracion') {
+    return true
+  }
+
   if (query) {
     const params = new URLSearchParams(query)
     const tab = params.get('tab')
-    if (tab && pathname.startsWith('/superadmin') || pathname.startsWith('/admin')) {
-      return pathname.startsWith(path) && new URLSearchParams(search ?? '').get('tab') === tab
+    const sub = params.get('sub')
+    if (tab && pathname.startsWith('/admin')) {
+      const currentTab = currentParams.get('tab')
+      if (tab === 'users') {
+        return currentTab === 'users' ||
+          currentTab === 'inactive' ||
+          currentTab === 'create' ||
+          (currentTab === null && false)
+      }
+      if (tab === 'ventas') {
+        return currentTab === 'ventas' || currentTab === 'subscriptions'
+      }
+      return currentTab === tab && (sub ? currentParams.get('sub') === sub : true)
     }
   }
-  if (path === '/admin' && pathname.startsWith('/admin') && !pathname.includes('/admin/preguntas') && !pathname.includes('/admin/configuracion')) {
-    return !new URLSearchParams(search ?? '').get('tab')
+
+  if (path === '/admin' && pathname.startsWith('/admin') &&
+      !pathname.includes('/admin/preguntas') &&
+      !pathname.includes('/admin/configuracion')) {
+    const currentTab = currentParams.get('tab')
+    return !currentTab || currentTab === 'dashboard'
   }
+
   return pathname === path || pathname.startsWith(`${path}/`)
 }
