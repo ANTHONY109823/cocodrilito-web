@@ -40,10 +40,25 @@ export const TENANT_ADMIN_NAV: NavItem[] = [
   { href: '/admin', label: 'Inicio', icon: Home },
   { href: '/admin?tab=users&sub=activos', label: 'Usuarios', icon: Users },
   { href: '/admin/preguntas', label: 'Preguntas de exámenes', icon: Library },
+  { href: '/exams', label: 'Modo prueba examen', icon: FileText },
   { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ]
 
-export function pageTitleForPath(pathname: string, search?: string): string {
+export function isTenantAdminRole(role?: string | null): boolean {
+  return role === 'AdminAgencia' || role === 'AdminAcademia'
+}
+
+export function pageTitleForPath(pathname: string, search?: string, role?: string | null): string {
+  if (isTenantAdminRole(role)) {
+    if (
+      pathname === '/exams' ||
+      pathname.startsWith('/exam/') ||
+      pathname.startsWith('/result/') ||
+      pathname.startsWith('/review/')
+    ) {
+      return 'Modo prueba examen'
+    }
+  }
   if (pathname.startsWith('/superadmin/preguntas')) return 'Banco de Preguntas de Ascenso'
   if (pathname.startsWith('/superadmin')) {
     const tab = new URLSearchParams(search ?? '').get('tab')
@@ -86,6 +101,15 @@ export function isNavActive(pathname: string, href: string, search?: string): bo
   const [path, query] = href.split('?')
   const currentParams = new URLSearchParams(search ?? '')
 
+  if (pathname === '/exams' && path === '/exams') {
+    return true
+  }
+  if (
+    (pathname.startsWith('/exam/') || pathname.startsWith('/result/') || pathname.startsWith('/review/')) &&
+    path === '/exams'
+  ) {
+    return true
+  }
   if (pathname.startsWith('/admin/preguntas') && path === '/admin/preguntas') {
     return true
   }

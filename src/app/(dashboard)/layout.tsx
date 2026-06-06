@@ -49,8 +49,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return
     }
 
-    if (ctx === 'superadmin' && STUDENT_ONLY_PREFIXES.some((p) => pathname.startsWith(p))) {
-      // Permitido: acceso oculto explícito desde sidebar superadmin
+    if ((ctx === 'superadmin' || ctx === 'tenant-admin') &&
+        STUDENT_ONLY_PREFIXES.some((p) => pathname.startsWith(p))) {
       return
     }
 

@@ -9,6 +9,7 @@ import { tenantAdminApi } from '@/lib/api/tenantAdmin'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { NEON } from '@/lib/constants/theme'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
+import { TenantPlansSection } from '@/components/admin/TenantPlansSection'
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -272,6 +273,8 @@ export default function ConfiguracionPage() {
           {uploadingLogo ? 'Subiendo logo...' : saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
       </form>
+
+      <TenantPlansSection />
     </div>
   )
 }

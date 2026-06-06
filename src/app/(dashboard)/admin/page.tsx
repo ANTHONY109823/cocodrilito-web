@@ -7,7 +7,6 @@ import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin, isAdminAgencia, getPostLoginPath } from '@/lib/auth/roles'
-import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
 import { tenantAdminApi, type AdminDashboardData, type TenantProfile } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
 import { NEON } from '@/lib/constants/theme'
@@ -47,28 +46,6 @@ const NEON2 = '#4FC3F7'
 const GOLD = '#FFD700'
 const RED = '#FF5252'
 const PURPLE = '#A855F7'
-
-const TRACK_OPTIONS: { value: number; label: string }[] = [
-  { value: 1, label: 'Ascenso Suboficiales' },
-  { value: 2, label: 'Ascenso Oficiales' },
-  { value: 3, label: 'Postulantes Suboficiales' },
-  { value: 4, label: 'Postulantes Oficiales' },
-]
-
-const TRACK_TYPE_VALUE: Record<string, number> = {
-  AscensosSuboficiales: 1,
-  AscensosOficiales: 2,
-  PostulantesSuboficiales: 3,
-  PostulantesOficiales: 4,
-}
-
-const trackLabel = (track: string) =>
-  ({
-    AscensosSuboficiales: 'Ascenso Suboficiales',
-    AscensosOficiales: 'Ascenso Oficiales',
-    PostulantesSuboficiales: 'Postulantes Suboficiales',
-    PostulantesOficiales: 'Postulantes Oficiales',
-  } as Record<string, string>)[track] ?? track
 
 type AdminTab = 'dashboard' | 'users'
 type UserSubTab = 'activos' | 'inactivos' | 'crear'
@@ -115,16 +92,6 @@ export default function AdminPage() {
   const [studentCredentials, setStudentCredentials] = useState<AdminCredentials | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
 
-  const [plans, setPlans] = useState<TenantPlan[]>([])
-  const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
-  const [planForm, setPlanForm] = useState({
-    trackType: 3,
-    name: '',
-    price: 0,
-    durationDays: 30,
-    description: '',
-  })
-
   const [form, setForm] = useState({
     fullName: '', dni: '', email: '', password: '',
     rank: '', unit: '', planDays: 180,
@@ -141,16 +108,14 @@ export default function AdminPage() {
     setLoading(true)
     try {
       if (tab === 'dashboard') {
-        const [dashRes, profileRes, subsRes, plansRes] = await Promise.all([
+        const [dashRes, profileRes, subsRes] = await Promise.all([
           tenantAdminApi.getDashboard(),
           tenantAdminApi.getProfile(),
           apiClient.get('/subscriptions/pending'),
-          tenantPlansApi.list(user?.tenantId ?? undefined),
         ])
         setDashData(dashRes.data)
         setTenantProfile(profileRes.data)
         setSubscriptions(subsRes.data)
-        setPlans(plansRes.data)
       } else if (tab === 'users') {
         const res = await apiClient.get('/admin/users')
         setUsers(res.data)
@@ -377,53 +342,6 @@ export default function AdminPage() {
     }
   }
 
-  const resetPlanForm = () => {
-    setPlanForm({ trackType: 3, name: '', price: 0, durationDays: 30, description: '' })
-    setEditingPlanId(null)
-  }
-
-  const startEditPlan = (plan: TenantPlan) => {
-    setEditingPlanId(plan.id)
-    setPlanForm({
-      trackType: TRACK_TYPE_VALUE[plan.trackType] ?? 3,
-      name: plan.name,
-      price: plan.price,
-      durationDays: plan.durationDays,
-      description: plan.description ?? '',
-    })
-  }
-
-  const handleSavePlan = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    try {
-      if (editingPlanId) {
-        await tenantPlansApi.update(editingPlanId, { ...planForm, isActive: true }, user?.tenantId ?? undefined)
-        setMsg({ text: '✅ Plan actualizado', ok: true })
-      } else {
-        await tenantPlansApi.create(planForm, user?.tenantId ?? undefined)
-        setMsg({ text: '✅ Plan creado', ok: true })
-      }
-      resetPlanForm()
-      loadData()
-    } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, editingPlanId ? 'Error al actualizar plan' : 'Error al crear plan'), ok: false })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDeactivatePlan = async (id: string) => {
-    if (!confirm('¿Desactivar este plan?')) return
-    try {
-      await tenantPlansApi.deactivate(id, user?.tenantId ?? undefined)
-      setPlans((prev) => prev.filter((p) => p.id !== id))
-      setMsg({ text: 'Plan desactivado', ok: true })
-    } catch {
-      setMsg({ text: 'Error al desactivar plan', ok: false })
-    }
-  }
-
   const [referenceNow] = useState(() => Date.now())
 
   const daysLeft = (expiresAt?: string | null) => {
@@ -497,12 +415,13 @@ export default function AdminPage() {
                   customDomain={tenantProfile.customDomain}
                 />
               )}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
                   { label: 'Alumnos registrados', value: dashData.totalUsers, color: NEON },
                   { label: 'Exámenes realizados', value: dashData.examsCompleted, color: NEON2 },
                   { label: 'Tasa aprobación', value: `${dashData.passRate}%`, color: GOLD },
                   { label: 'Suscripciones activas', value: dashData.activeSubscriptions, color: NEON },
+                  { label: 'Pagos pendientes', value: dashData.pendingSubscriptions, color: GOLD },
                 ].map((s) => (
                   <div key={s.label} className="rounded-2xl p-4"
                     style={{ background: 'rgba(0,10,5,0.9)', border: '1px solid #ffffff10' }}>
@@ -538,16 +457,9 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}20` }}>
-                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-                  <h3 className="text-white font-semibold">💳 Ventas pendientes</h3>
-                  <span className="text-sm font-bold" style={{ color: GOLD }}>
-                    {dashData.pendingSubscriptions} pendiente{dashData.pendingSubscriptions !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                {subscriptions.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No hay pagos por aprobar</p>
-                ) : (
+              {dashData.pendingSubscriptions > 0 && (
+                <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}20` }}>
+                  <h3 className="text-white font-semibold mb-3">Pagos por aprobar</h3>
                   <div className="space-y-3">
                     {subscriptions.map(sub => {
                       const days = inferDays(sub.amountPaid)
@@ -566,20 +478,17 @@ export default function AdminPage() {
                               <div className="text-gray-400 text-xs">
                                 Ref: <span className="text-white">{sub.paymentReference || 'Sin referencia'}</span>
                               </div>
-                              <div className="text-gray-600 text-xs mt-0.5">
-                                {new Date(sub.createdAt).toLocaleString('es-PE')}
-                              </div>
                             </div>
                             <div className="flex gap-2">
                               <button type="button" onClick={() => handleApprove(sub)}
                                 className="px-4 py-2 rounded-lg text-sm font-bold"
                                 style={{ backgroundColor: NEON, color: '#000' }}>
-                                ✅ Aprobar {days}d
+                                Aprobar {days}d
                               </button>
                               <button type="button" onClick={() => { setRejectReason(''); setRejectTarget(sub.id) }}
                                 className="px-4 py-2 rounded-lg text-sm font-medium"
                                 style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>
-                                ❌ Rechazar
+                                Rechazar
                               </button>
                             </div>
                           </div>
@@ -587,153 +496,8 @@ export default function AdminPage() {
                       )
                     })}
                   </div>
-                )}
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-3">💎 Planes de suscripción</h3>
-                <div className="grid lg:grid-cols-3 gap-5">
-                  <form onSubmit={handleSavePlan} className="rounded-2xl p-5 space-y-3 h-fit"
-                    style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
-                    <h4 className="text-white font-bold mb-1">
-                      {editingPlanId ? '✏️ Editar plan' : '💎 Nuevo plan'}
-                    </h4>
-                    <p className="text-xs text-gray-500 mb-2">
-                      Planes que tus alumnos verán al contratar acceso.
-                    </p>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Tipo de preparación</label>
-                      <select
-                        className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                        style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                        value={planForm.trackType}
-                        onChange={(e) => setPlanForm({ ...planForm, trackType: Number(e.target.value) })}
-                      >
-                        {TRACK_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Nombre del plan</label>
-                      <input
-                        className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                        style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                        value={planForm.name}
-                        onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                        placeholder="Ej. Plan Mensual"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Precio (S/.)</label>
-                        <input
-                          type="number" min={0} step="0.01"
-                          className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                          style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                          value={planForm.price}
-                          onChange={(e) => setPlanForm({ ...planForm, price: Number(e.target.value) })}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Duración (días)</label>
-                        <input
-                          type="number" min={1}
-                          className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                          style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                          value={planForm.durationDays}
-                          onChange={(e) => setPlanForm({ ...planForm, durationDays: Number(e.target.value) })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Descripción (opcional)</label>
-                      <textarea
-                        className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
-                        style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                        rows={2}
-                        value={planForm.description}
-                        onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      {editingPlanId && (
-                        <button type="button" onClick={resetPlanForm}
-                          className="flex-1 py-2 rounded-lg text-sm font-medium"
-                          style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', border: '1px solid #ffffff15' }}>
-                          Cancelar
-                        </button>
-                      )}
-                      <button type="submit" disabled={saving}
-                        className="flex-1 py-2 rounded-lg text-sm font-bold"
-                        style={{ background: GOLD, color: '#000', opacity: saving ? 0.7 : 1 }}>
-                        {saving ? 'Guardando...' : editingPlanId ? 'Guardar cambios' : '➕ Crear plan'}
-                      </button>
-                    </div>
-                  </form>
-
-                  <div className="lg:col-span-2 rounded-2xl p-5"
-                    style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
-                    <h4 className="text-white font-bold mb-4">
-                      Planes activos ({plans.filter((p) => p.isActive).length})
-                    </h4>
-                    {plans.length === 0 ? (
-                      <p className="text-gray-500 text-sm py-8 text-center">
-                        Aún no hay planes. Crea el primero con el formulario.
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {plans.map((p) => (
-                          <div key={p.id}
-                            className="rounded-xl p-4 flex items-center justify-between gap-3"
-                            style={{
-                              background: 'rgba(0,5,2,0.7)',
-                              border: `1px solid ${p.isActive ? NEON + '30' : '#ffffff10'}`,
-                              opacity: p.isActive ? 1 : 0.55,
-                            }}>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-white font-semibold">{p.name}</span>
-                                <span className="text-xs px-2 py-0.5 rounded-full"
-                                  style={{ background: `${NEON2}20`, color: NEON2 }}>
-                                  {trackLabel(p.trackType)}
-                                </span>
-                                {!p.isActive && (
-                                  <span className="text-xs px-2 py-0.5 rounded-full"
-                                    style={{ background: `${RED}20`, color: RED }}>
-                                    Inactivo
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                S/. {p.price.toFixed(2)} · {p.durationDays} días
-                                {p.description ? ` · ${p.description}` : ''}
-                              </div>
-                            </div>
-                            {p.isActive && (
-                              <div className="flex gap-2 shrink-0">
-                                <button type="button" onClick={() => startEditPlan(p)}
-                                  className="text-xs px-3 py-1.5 rounded-lg font-medium"
-                                  style={{ background: `${NEON}18`, color: NEON, border: `1px solid ${NEON}40` }}>
-                                  Editar
-                                </button>
-                                <button type="button" onClick={() => handleDeactivatePlan(p.id)}
-                                  className="text-xs px-3 py-1.5 rounded-lg font-medium"
-                                  style={{ background: `${RED}18`, color: RED, border: `1px solid ${RED}40` }}>
-                                  Desactivar
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
-              </div>
+              )}
             </>
           ) : null}
         </div>

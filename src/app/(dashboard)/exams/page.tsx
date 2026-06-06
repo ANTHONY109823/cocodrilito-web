@@ -11,6 +11,8 @@ import {
   FileText,
   ShieldCheck,
 } from 'lucide-react'
+import { useAuthStore } from '@/lib/store/authStore'
+import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
 import apiClient from '@/lib/api/client'
 import { examsApi } from '@/lib/api/exams'
 import { saveExamSessionMeta } from '@/lib/examSession'
@@ -47,6 +49,9 @@ interface Category {
 
 export default function ExamsPage() {
   const router = useRouter()
+  const { user, loadFromStorage } = useAuthStore()
+  const previewMode = isTenantAdmin(user?.role) || isSuperAdmin(user?.role)
+  const backHref = isSuperAdmin(user?.role) ? '/superadmin?tab=inicio' : '/admin'
   const [exams, setExams] = useState<Exam[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({})
@@ -98,6 +103,10 @@ export default function ExamsPage() {
   }, [])
 
   useEffect(() => {
+    loadFromStorage()
+  }, [loadFromStorage])
+
+  useEffect(() => {
     void loadData()
   }, [loadData])
 
@@ -145,7 +154,7 @@ export default function ExamsPage() {
     }
   }
 
-  if (blocked) {
+  if (blocked && !previewMode) {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
         <div className="mb-4 text-6xl">🔒</div>
@@ -165,13 +174,34 @@ export default function ExamsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
+      {previewMode && (
+        <div
+          className="rounded-xl border border-[#318F48]/40 bg-[#318F48]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+        >
+          <div>
+            <p className="text-sm font-semibold text-[#BDFFDF]">Modo prueba examen</p>
+            <p className="text-xs text-[#6B8A75] mt-0.5">
+              Prueba simulacros y repasos sin afectar métricas de alumnos ni ranking.
+            </p>
+          </div>
+          <Link
+            href={backHref}
+            className="text-xs font-medium text-[#BDFFDF] hover:underline shrink-0"
+          >
+            ← Volver al panel
+          </Link>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-extrabold text-white md:text-2xl">
-            Centro de Exámenes
+            {previewMode ? 'Modo prueba examen' : 'Centro de Exámenes'}
           </h1>
           <p className="mt-1 text-[13px] text-[#6B8A75]">
-            Elige tu modalidad de práctica
+            {previewMode
+              ? 'Simulacro general y repaso por categoría — igual que lo ven tus alumnos'
+              : 'Elige tu modalidad de práctica'}
           </p>
         </div>
         <Badge color="green" className="gap-1.5 px-3.5 py-1.5">

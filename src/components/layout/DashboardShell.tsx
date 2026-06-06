@@ -138,9 +138,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/exams"
                   className="px-2.5 py-1.5 text-[10px] text-[#6B8A75] hover:text-[#A8BFB0] transition-colors"
-                  title="Acceso oculto para pruebas"
+                  title="Probar simulacros sin afectar métricas"
                 >
-                  Modo examen (oculto)
+                  Modo prueba examen
                 </Link>
               </>
             )}
@@ -190,7 +190,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   {navContext === 'superadmin' ? BRAND_PLATFORM : brandName}
                 </p>
                 <h1 className="text-lg font-bold text-white">
-                  {pageTitleForPath(pathname, search)}
+                  {pageTitleForPath(pathname, search, user?.role)}
                 </h1>
               </div>
             </div>
