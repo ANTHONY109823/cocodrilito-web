@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { BRAND_LOGIN, WHATSAPP_PREFILL } from '@/lib/constants/brand'
 import './login-platform.css'
 
 const SOCIAL_LINKS = [
@@ -32,8 +33,7 @@ const SOCIAL_LINKS = [
   },
 ]
 
-const WA_URL =
-  'https://wa.me/51927577686?text=Hola%2C%20quiero%20informes%20sobre%20Cocodrilito%20PNP'
+const WA_URL = `https://wa.me/51927577686?text=${WHATSAPP_PREFILL}`
 
 function TikTokIcon() {
   return (
@@ -121,7 +121,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
 
   const formDisabled = config !== null && !config.isActive
-  const displayName = config?.name ?? 'LYON'
+  const displayName = config?.name ?? BRAND_LOGIN
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

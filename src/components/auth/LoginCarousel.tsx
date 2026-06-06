@@ -41,7 +41,7 @@ type LoginCarouselProps = {
 }
 
 export function LoginCarousel({
-  brandName = 'Cocodrilito',
+  brandName = 'Simulacros.pe',
   brandSub = 'Simulador de exámenes PNP',
   logoUrl,
 }: LoginCarouselProps) {

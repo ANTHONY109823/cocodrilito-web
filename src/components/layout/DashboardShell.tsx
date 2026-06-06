@@ -16,6 +16,7 @@ import {
 } from '@/lib/navigation'
 import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 import { cn } from '@/lib/utils/cn'
+import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
 
 function roleLabel(role?: string, impersonating?: boolean) {
   if (!role) return 'Estudiante'
@@ -61,8 +62,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const navContext = getNavContext(user?.role, impersonating)
   const brandName = navContext === 'superadmin'
-    ? 'Cocodrilito'
-    : (user?.tenantName || 'Cocodrilito')
+    ? BRAND_APP
+    : (user?.tenantName || BRAND_APP)
   const brandLogo = navContext === 'tenant-admin' ? user?.tenantLogoUrl : null
 
   const navItems =
@@ -185,7 +186,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               )}
               <div>
                 <p className="text-xs text-[#6B8A75]">
-                  {navContext === 'superadmin' ? 'Cocodrilito Platform' : brandName}
+                  {navContext === 'superadmin' ? BRAND_PLATFORM : brandName}
                 </p>
                 <h1 className="text-lg font-bold text-white">
                   {pageTitleForPath(pathname, search)}

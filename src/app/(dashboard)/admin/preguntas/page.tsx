@@ -417,7 +417,7 @@ export default function PreguntasPage() {
           </h1>
           <p className="text-gray-600 text-xs mt-0.5">
             {readOnly && isAgencia
-              ? 'Solo lectura — las preguntas de ascenso las gestiona Cocodrilito'
+              ? 'Solo lectura — las preguntas de ascenso las gestiona Simulacros.pe'
               : `${questions.length} preguntas cargadas · ${categories.length} categorías`}
           </p>
         </div>

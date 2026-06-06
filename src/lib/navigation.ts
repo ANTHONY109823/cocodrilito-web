@@ -1,3 +1,4 @@
+import { BRAND_APP } from '@/lib/constants/brand'
 import {
   Building2,
   ClipboardCheck,
@@ -79,7 +80,7 @@ export function pageTitleForPath(pathname: string, search?: string): string {
     '/premium': 'Premium',
     '/profile': 'Mi Perfil',
   }
-  return map[pathname] ?? 'Cocodrilito'
+  return map[pathname] ?? BRAND_APP
 }
 
 export function isNavActive(pathname: string, href: string, search?: string): boolean {

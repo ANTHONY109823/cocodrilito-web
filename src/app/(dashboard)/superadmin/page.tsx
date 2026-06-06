@@ -321,7 +321,7 @@ export default function SuperAdminPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Panel SuperAdmin ⚡</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Gestión global de la plataforma Cocodrilito</p>
+          <p className="text-gray-500 text-sm mt-0.5">Gestión global de la plataforma Simulacros.pe</p>
         </div>
         <button type="button" onClick={() => setShowCreate(!showCreate)}
           className="px-4 py-2 rounded-xl text-sm font-bold"

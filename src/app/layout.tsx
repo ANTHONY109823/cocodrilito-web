@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AppProviders } from '@/components/AppProviders'
+import { BRAND_DESCRIPTION, BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 
 export const metadata: Metadata = {
-  title: 'Cocodrilito — Simulador PNP',
-  description: 'Prepárate para tus ascensos policiales con simulacros reales',
+  title: BRAND_PAGE_TITLE,
+  description: BRAND_DESCRIPTION,
 }
 
 export default function RootLayout({
