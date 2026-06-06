@@ -70,7 +70,7 @@ const trackLabel = (track: string) =>
     PostulantesOficiales: 'Postulantes Oficiales',
   } as Record<string, string>)[track] ?? track
 
-type AdminTab = 'dashboard' | 'users' | 'ventas' | 'plans'
+type AdminTab = 'dashboard' | 'users'
 type UserSubTab = 'activos' | 'inactivos' | 'crear'
 
 export default function AdminPage() {
@@ -83,11 +83,7 @@ export default function AdminPage() {
   const tab: AdminTab =
     rawTab === 'users' || rawTab === 'inactive' || rawTab === 'create'
       ? 'users'
-      : rawTab === 'subscriptions' || rawTab === 'ventas'
-        ? 'ventas'
-        : rawTab === 'plans'
-          ? 'plans'
-          : 'dashboard'
+      : 'dashboard'
 
   const userSub: UserSubTab =
     rawTab === 'inactive' || rawSub === 'inactivos'
@@ -138,33 +134,26 @@ export default function AdminPage() {
   useEffect(() => {
     if (rawTab === 'inactive') router.replace('/admin?tab=users&sub=inactivos')
     else if (rawTab === 'create') router.replace('/admin?tab=users&sub=crear')
-    else if (rawTab === 'subscriptions') router.replace('/admin?tab=ventas')
-    else if (rawTab === 'plans') router.replace('/admin?tab=ventas')
+    else if (rawTab === 'subscriptions' || rawTab === 'ventas' || rawTab === 'plans') router.replace('/admin')
   }, [rawTab, router])
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       if (tab === 'dashboard') {
-        const [dashRes, profileRes] = await Promise.all([
+        const [dashRes, profileRes, subsRes, plansRes] = await Promise.all([
           tenantAdminApi.getDashboard(),
           tenantAdminApi.getProfile(),
-        ])
-        setDashData(dashRes.data)
-        setTenantProfile(profileRes.data)
-      } else if (tab === 'users') {
-        const res = await apiClient.get('/admin/users')
-        setUsers(res.data)
-      } else if (tab === 'ventas') {
-        const [subsRes, plansRes] = await Promise.all([
           apiClient.get('/subscriptions/pending'),
           tenantPlansApi.list(user?.tenantId ?? undefined),
         ])
+        setDashData(dashRes.data)
+        setTenantProfile(profileRes.data)
         setSubscriptions(subsRes.data)
         setPlans(plansRes.data)
-      } else if (tab === 'plans') {
-        const res = await tenantPlansApi.list(user?.tenantId ?? undefined)
-        setPlans(res.data)
+      } else if (tab === 'users') {
+        const res = await apiClient.get('/admin/users')
+        setUsers(res.data)
       }
     } catch { /* ignore */ } finally { setLoading(false) }
   }, [tab, user])
@@ -242,6 +231,9 @@ export default function AdminPage() {
       const days = inferDays(sub.amountPaid)
       await apiClient.put(`/subscriptions/${sub.id}/approve`, { durationDays: days })
       setSubscriptions(prev => prev.filter(s => s.id !== sub.id))
+      setDashData(prev => prev
+        ? { ...prev, pendingSubscriptions: Math.max(0, prev.pendingSubscriptions - 1) }
+        : prev)
       setMsg({ text: `✅ Suscripción aprobada — ${days} días activados`, ok: true })
       setTimeout(() => setMsg(null), 3000)
     } catch { setMsg({ text: 'Error al aprobar', ok: false }) }
@@ -253,6 +245,9 @@ export default function AdminPage() {
     try {
       await apiClient.put(`/subscriptions/${rejectTarget}/reject`, { reason: rejectReason.trim() })
       setSubscriptions(prev => prev.filter(s => s.id !== rejectTarget))
+      setDashData(prev => prev
+        ? { ...prev, pendingSubscriptions: Math.max(0, prev.pendingSubscriptions - 1) }
+        : prev)
       setMsg({ text: 'Pago rechazado', ok: false })
       setTimeout(() => setMsg(null), 2500)
       setRejectTarget(null)
@@ -436,9 +431,10 @@ export default function AdminPage() {
     return Math.ceil((new Date(expiresAt).getTime() - referenceNow) / 86400000)
   }
 
-  const activeUsers = users.filter(u => u.isActive)
-  const inactiveUsers = users.filter(u => !u.isActive)
-  const pendingPayment = users.filter(u => u.isActive && u.planType === 'Free')
+  const students = users.filter(u => u.role === 'Student')
+  const activeUsers = students.filter(u => u.isActive)
+  const inactiveUsers = students.filter(u => !u.isActive)
+  const pendingPayment = students.filter(u => u.isActive && u.planType === 'Free')
 
   const createExpiry = (() => {
     if (!form.activationDate || !form.planDays) return null
@@ -503,7 +499,7 @@ export default function AdminPage() {
               )}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: 'Total usuarios', value: dashData.totalUsers, color: NEON },
+                  { label: 'Alumnos registrados', value: dashData.totalUsers, color: NEON },
                   { label: 'Exámenes realizados', value: dashData.examsCompleted, color: NEON2 },
                   { label: 'Tasa aprobación', value: `${dashData.passRate}%`, color: GOLD },
                   { label: 'Suscripciones activas', value: dashData.activeSubscriptions, color: NEON },
@@ -541,13 +537,203 @@ export default function AdminPage() {
                   ))}
                 </div>
               </div>
-              {dashData.pendingSubscriptions > 0 && (
-                <Link href="/admin?tab=ventas"
-                  className="block rounded-xl p-4 text-sm"
-                  style={{ background: `${GOLD}10`, border: `1px solid ${GOLD}30`, color: GOLD }}>
-                  {dashData.pendingSubscriptions} ventas pendientes de aprobación →
-                </Link>
-              )}
+
+              <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}20` }}>
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <h3 className="text-white font-semibold">💳 Ventas pendientes</h3>
+                  <span className="text-sm font-bold" style={{ color: GOLD }}>
+                    {dashData.pendingSubscriptions} pendiente{dashData.pendingSubscriptions !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                {subscriptions.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No hay pagos por aprobar</p>
+                ) : (
+                  <div className="space-y-3">
+                    {subscriptions.map(sub => {
+                      const days = inferDays(sub.amountPaid)
+                      return (
+                        <div key={sub.id} className="rounded-xl p-4"
+                          style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${GOLD}15` }}>
+                          <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="text-sm font-bold" style={{ color: GOLD }}>S/. {sub.amountPaid}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full"
+                                  style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{sub.paymentMethod}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full"
+                                  style={{ backgroundColor: `${NEON}10`, color: NEON }}>→ {days} días</span>
+                              </div>
+                              <div className="text-gray-400 text-xs">
+                                Ref: <span className="text-white">{sub.paymentReference || 'Sin referencia'}</span>
+                              </div>
+                              <div className="text-gray-600 text-xs mt-0.5">
+                                {new Date(sub.createdAt).toLocaleString('es-PE')}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => handleApprove(sub)}
+                                className="px-4 py-2 rounded-lg text-sm font-bold"
+                                style={{ backgroundColor: NEON, color: '#000' }}>
+                                ✅ Aprobar {days}d
+                              </button>
+                              <button type="button" onClick={() => { setRejectReason(''); setRejectTarget(sub.id) }}
+                                className="px-4 py-2 rounded-lg text-sm font-medium"
+                                style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>
+                                ❌ Rechazar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-3">💎 Planes de suscripción</h3>
+                <div className="grid lg:grid-cols-3 gap-5">
+                  <form onSubmit={handleSavePlan} className="rounded-2xl p-5 space-y-3 h-fit"
+                    style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
+                    <h4 className="text-white font-bold mb-1">
+                      {editingPlanId ? '✏️ Editar plan' : '💎 Nuevo plan'}
+                    </h4>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Planes que tus alumnos verán al contratar acceso.
+                    </p>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Tipo de preparación</label>
+                      <select
+                        className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                        style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                        value={planForm.trackType}
+                        onChange={(e) => setPlanForm({ ...planForm, trackType: Number(e.target.value) })}
+                      >
+                        {TRACK_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Nombre del plan</label>
+                      <input
+                        className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                        style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                        value={planForm.name}
+                        onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                        placeholder="Ej. Plan Mensual"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Precio (S/.)</label>
+                        <input
+                          type="number" min={0} step="0.01"
+                          className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                          style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                          value={planForm.price}
+                          onChange={(e) => setPlanForm({ ...planForm, price: Number(e.target.value) })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Duración (días)</label>
+                        <input
+                          type="number" min={1}
+                          className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                          style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                          value={planForm.durationDays}
+                          onChange={(e) => setPlanForm({ ...planForm, durationDays: Number(e.target.value) })}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Descripción (opcional)</label>
+                      <textarea
+                        className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
+                        style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                        rows={2}
+                        value={planForm.description}
+                        onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      {editingPlanId && (
+                        <button type="button" onClick={resetPlanForm}
+                          className="flex-1 py-2 rounded-lg text-sm font-medium"
+                          style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', border: '1px solid #ffffff15' }}>
+                          Cancelar
+                        </button>
+                      )}
+                      <button type="submit" disabled={saving}
+                        className="flex-1 py-2 rounded-lg text-sm font-bold"
+                        style={{ background: GOLD, color: '#000', opacity: saving ? 0.7 : 1 }}>
+                        {saving ? 'Guardando...' : editingPlanId ? 'Guardar cambios' : '➕ Crear plan'}
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="lg:col-span-2 rounded-2xl p-5"
+                    style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
+                    <h4 className="text-white font-bold mb-4">
+                      Planes activos ({plans.filter((p) => p.isActive).length})
+                    </h4>
+                    {plans.length === 0 ? (
+                      <p className="text-gray-500 text-sm py-8 text-center">
+                        Aún no hay planes. Crea el primero con el formulario.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {plans.map((p) => (
+                          <div key={p.id}
+                            className="rounded-xl p-4 flex items-center justify-between gap-3"
+                            style={{
+                              background: 'rgba(0,5,2,0.7)',
+                              border: `1px solid ${p.isActive ? NEON + '30' : '#ffffff10'}`,
+                              opacity: p.isActive ? 1 : 0.55,
+                            }}>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-white font-semibold">{p.name}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full"
+                                  style={{ background: `${NEON2}20`, color: NEON2 }}>
+                                  {trackLabel(p.trackType)}
+                                </span>
+                                {!p.isActive && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full"
+                                    style={{ background: `${RED}20`, color: RED }}>
+                                    Inactivo
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                S/. {p.price.toFixed(2)} · {p.durationDays} días
+                                {p.description ? ` · ${p.description}` : ''}
+                              </div>
+                            </div>
+                            {p.isActive && (
+                              <div className="flex gap-2 shrink-0">
+                                <button type="button" onClick={() => startEditPlan(p)}
+                                  className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                                  style={{ background: `${NEON}18`, color: NEON, border: `1px solid ${NEON}40` }}>
+                                  Editar
+                                </button>
+                                <button type="button" onClick={() => handleDeactivatePlan(p.id)}
+                                  className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                                  style={{ background: `${RED}18`, color: RED, border: `1px solid ${RED}40` }}>
+                                  Desactivar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </>
           ) : null}
         </div>
@@ -869,201 +1055,6 @@ export default function AdminPage() {
           </form>
         </div>
       )}
-        </div>
-      )}
-
-      {tab === 'ventas' && (
-        <div className="fade-in space-y-6">
-          <div>
-            <h2 className="text-white font-semibold mb-3">💳 Pagos pendientes de aprobación</h2>
-            <div className="space-y-3">
-          {loading ? (
-            <div className="text-gray-500 text-center py-12">Cargando...</div>
-          ) : subscriptions.length === 0 ? (
-            <div className="text-center py-12 rounded-2xl"
-              style={{ background: 'rgba(0,10,5,0.8)', border: `1px solid ${NEON}15` }}>
-              <div className="text-4xl mb-3">✅</div>
-              <p className="text-gray-500">No hay suscripciones pendientes</p>
-            </div>
-          ) : subscriptions.map(sub => {
-            const days = inferDays(sub.amountPaid)
-            return (
-              <div key={sub.id} className="rounded-2xl p-4"
-                style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${GOLD}20` }}>
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-bold" style={{ color: GOLD }}>S/. {sub.amountPaid}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{sub.paymentMethod}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${NEON}10`, color: NEON }}>→ {days} días</span>
-                    </div>
-                    <div className="text-gray-400 text-xs">Ref: <span className="text-white">{sub.paymentReference || 'Sin referencia'}</span></div>
-                    <div className="text-gray-600 text-xs mt-0.5">{new Date(sub.createdAt).toLocaleString('es-PE')}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleApprove(sub)}
-                      className="px-4 py-2 rounded-lg text-sm font-bold"
-                      style={{ backgroundColor: NEON, color: '#000' }}>
-                      ✅ Aprobar {days}d
-                    </button>
-                    <button onClick={() => { setRejectReason(''); setRejectTarget(sub.id) }}
-                      className="px-4 py-2 rounded-lg text-sm font-medium"
-                      style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>
-                      ❌ Rechazar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-white font-semibold mb-3">💎 Planes de suscripción</h2>
-            <div className="grid lg:grid-cols-3 gap-5">
-          <form onSubmit={handleSavePlan} className="rounded-2xl p-5 space-y-3 h-fit"
-            style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}>
-            <h3 className="text-white font-bold mb-1">
-              {editingPlanId ? '✏️ Editar plan' : '💎 Nuevo plan'}
-            </h3>
-            <p className="text-xs text-gray-500 mb-2">
-              Define los planes de suscripción que tus alumnos podrán contratar.
-            </p>
-
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Tipo de preparación</label>
-              <select
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                value={planForm.trackType}
-                onChange={(e) => setPlanForm({ ...planForm, trackType: Number(e.target.value) })}
-              >
-                {TRACK_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Nombre del plan</label>
-              <input
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                value={planForm.name}
-                onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                placeholder="Ej. Plan Mensual"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Precio (S/.)</label>
-                <input
-                  type="number" min={0} step="0.01"
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                  value={planForm.price}
-                  onChange={(e) => setPlanForm({ ...planForm, price: Number(e.target.value) })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Duración (días)</label>
-                <input
-                  type="number" min={1}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                  value={planForm.durationDays}
-                  onChange={(e) => setPlanForm({ ...planForm, durationDays: Number(e.target.value) })}
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Descripción (opcional)</label>
-              <textarea
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                rows={2}
-                value={planForm.description}
-                onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
-              />
-            </div>
-            <div className="flex gap-2">
-              {editingPlanId && (
-                <button type="button" onClick={resetPlanForm}
-                  className="flex-1 py-2 rounded-lg text-sm font-medium"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', border: '1px solid #ffffff15' }}>
-                  Cancelar
-                </button>
-              )}
-              <button type="submit" disabled={saving}
-                className="flex-1 py-2 rounded-lg text-sm font-bold"
-                style={{ background: GOLD, color: '#000', opacity: saving ? 0.7 : 1 }}>
-                {saving ? 'Guardando...' : editingPlanId ? 'Guardar cambios' : '➕ Crear plan'}
-              </button>
-            </div>
-          </form>
-
-          <div className="lg:col-span-2 rounded-2xl p-5"
-            style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
-            <h3 className="text-white font-bold mb-4">Planes activos ({plans.filter((p) => p.isActive).length})</h3>
-            {plans.length === 0 ? (
-              <p className="text-gray-500 text-sm py-8 text-center">
-                Aún no hay planes. Crea el primero con el formulario de la izquierda.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {plans.map((p) => (
-                  <div key={p.id}
-                    className="rounded-xl p-4 flex items-center justify-between gap-3"
-                    style={{
-                      background: 'rgba(0,5,2,0.7)',
-                      border: `1px solid ${p.isActive ? NEON + '30' : '#ffffff10'}`,
-                      opacity: p.isActive ? 1 : 0.55,
-                    }}>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-semibold">{p.name}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: `${NEON2}20`, color: NEON2 }}>
-                          {trackLabel(p.trackType)}
-                        </span>
-                        {!p.isActive && (
-                          <span className="text-xs px-2 py-0.5 rounded-full"
-                            style={{ background: `${RED}20`, color: RED }}>
-                            Inactivo
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        S/. {p.price.toFixed(2)} · {p.durationDays} días
-                        {p.description ? ` · ${p.description}` : ''}
-                      </div>
-                    </div>
-                    {p.isActive && (
-                      <div className="flex gap-2 shrink-0">
-                        <button type="button" onClick={() => startEditPlan(p)}
-                          className="text-xs px-3 py-1.5 rounded-lg font-medium"
-                          style={{ background: `${NEON}18`, color: NEON, border: `1px solid ${NEON}40` }}>
-                          Editar
-                        </button>
-                        <button type="button" onClick={() => handleDeactivatePlan(p.id)}
-                          className="text-xs px-3 py-1.5 rounded-lg font-medium"
-                          style={{ background: `${RED}18`, color: RED, border: `1px solid ${RED}40` }}>
-                          Desactivar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-            </div>
-          </div>
         </div>
       )}
 

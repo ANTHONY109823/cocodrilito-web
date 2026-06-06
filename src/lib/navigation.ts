@@ -12,7 +12,6 @@ import {
   Star,
   Trophy,
   Users,
-  Wallet,
 } from 'lucide-react'
 
 export interface NavItem {
@@ -41,7 +40,6 @@ export const TENANT_ADMIN_NAV: NavItem[] = [
   { href: '/admin', label: 'Inicio', icon: Home },
   { href: '/admin?tab=users&sub=activos', label: 'Usuarios', icon: Users },
   { href: '/admin/preguntas', label: 'Preguntas de exámenes', icon: Library },
-  { href: '/admin?tab=ventas', label: 'Ventas', icon: Wallet },
   { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ]
 
@@ -71,11 +69,7 @@ export function pageTitleForPath(pathname: string, search?: string): string {
       }
       return subMap[sub ?? 'activos'] ?? 'Usuarios'
     }
-    const map: Record<string, string> = {
-      ventas: 'Ventas',
-      subscriptions: 'Ventas',
-    }
-    return map[tab ?? ''] ?? 'Inicio'
+    return 'Inicio'
   }
   const map: Record<string, string> = {
     '/dashboard': 'Inicio',
@@ -111,9 +105,6 @@ export function isNavActive(pathname: string, href: string, search?: string): bo
           currentTab === 'create' ||
           (currentTab === null && false)
       }
-      if (tab === 'ventas') {
-        return currentTab === 'ventas' || currentTab === 'subscriptions'
-      }
       return currentTab === tab && (sub ? currentParams.get('sub') === sub : true)
     }
   }
@@ -122,7 +113,8 @@ export function isNavActive(pathname: string, href: string, search?: string): bo
       !pathname.includes('/admin/preguntas') &&
       !pathname.includes('/admin/configuracion')) {
     const currentTab = currentParams.get('tab')
-    return !currentTab || currentTab === 'dashboard'
+    return !currentTab || currentTab === 'dashboard' ||
+      currentTab === 'ventas' || currentTab === 'subscriptions' || currentTab === 'plans'
   }
 
   return pathname === path || pathname.startsWith(`${path}/`)
