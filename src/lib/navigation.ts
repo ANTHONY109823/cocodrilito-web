@@ -9,7 +9,6 @@ import {
   LucideIcon,
   ScrollText,
   Settings,
-  Star,
   Trophy,
   Users,
 } from 'lucide-react'
@@ -25,7 +24,6 @@ export const STUDENT_NAV: NavItem[] = [
   { href: '/exams', label: 'Exámenes', icon: FileText },
   { href: '/history', label: 'Historial', icon: History },
   { href: '/ranking', label: 'Ranking', icon: Trophy },
-  { href: '/premium', label: 'Premium', icon: Star },
 ]
 
 export const SUPERADMIN_NAV: NavItem[] = [

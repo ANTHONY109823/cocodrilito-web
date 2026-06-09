@@ -18,6 +18,7 @@ import {
 import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 import { cn } from '@/lib/utils/cn'
 import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
+import { useTenantConfig } from '@/hooks/useTenantConfig'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -62,10 +63,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { active: impersonating, stopImpersonation } = useImpersonationStore()
 
   const navContext = getNavContext(user?.role, impersonating)
+  const { config: tenantConfig } = useTenantConfig(user?.tenantSlug)
   const brandName = navContext === 'superadmin'
     ? BRAND_APP
-    : (user?.tenantName || BRAND_APP)
-  const brandLogo = navContext === 'tenant-admin' ? user?.tenantLogoUrl : null
+    : (user?.tenantName || tenantConfig?.name || BRAND_APP)
+  const brandLogo =
+    navContext === 'superadmin'
+      ? null
+      : (user?.tenantLogoUrl ?? tenantConfig?.logoUrl ?? null)
 
   const navItems =
     navContext === 'superadmin'
