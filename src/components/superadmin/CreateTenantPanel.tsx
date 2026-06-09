@@ -191,13 +191,21 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
           </div>
         </section>
 
-        <section className="pt-4" style={{ borderTop: '1px solid #ffffff10' }}>
-          <h3 className="text-white font-semibold text-sm mb-1">2. Panel de inicio de sesión</h3>
-          <TenantLoginBrandingFields
-            value={form.loginConfig}
-            onChange={(loginConfig) => setForm({ ...form, loginConfig })}
-          />
-        </section>
+        <details className="pt-4 group" style={{ borderTop: '1px solid #ffffff10' }}>
+          <summary className="cursor-pointer list-none text-white font-semibold text-sm mb-1 [&::-webkit-details-marker]:hidden">
+            <span className="inline-flex items-center gap-2">
+              <span className="text-gray-500 transition-transform group-open:rotate-90">▶</span>
+              2. Panel de inicio de sesión
+              <span className="font-normal text-gray-500">(opcional — valores por defecto)</span>
+            </span>
+          </summary>
+          <div className="mt-3">
+            <TenantLoginBrandingFields
+              value={form.loginConfig}
+              onChange={(loginConfig) => setForm({ ...form, loginConfig })}
+            />
+          </div>
+        </details>
 
         <section className="pt-4" style={{ borderTop: '1px solid #ffffff10' }}>
           <h3 className="text-white font-semibold text-sm mb-1">3. Administrador de acceso</h3>
