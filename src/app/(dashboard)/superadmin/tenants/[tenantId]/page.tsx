@@ -62,8 +62,8 @@ export default function TenantDetailPage() {
 
   const [accessForm, setAccessForm] = useState({ startsAt: '', days: 30 })
   const [savingAccess, setSavingAccess] = useState(false)
-  const [slugForm, setSlugForm] = useState('')
-  const [savingSlug, setSavingSlug] = useState(false)
+  const [tenantForm, setTenantForm] = useState({ name: '', slug: '' })
+  const [savingTenant, setSavingTenant] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -84,7 +84,7 @@ export default function TenantDetailPage() {
         superadminApi.getTenantAdmin(tenantId),
       ])
       setTenant(tRes.data)
-      setSlugForm(tRes.data.slug)
+      setTenantForm({ name: tRes.data.name, slug: tRes.data.slug })
       setStats(sRes.data as TenantStats)
       setUsers(uRes.data as TenantUser[])
       setHasAdmin(aRes.data.exists)
@@ -234,23 +234,32 @@ export default function TenantDetailPage() {
     return d
   })()
 
-  const handleSaveSlug = async (e: React.FormEvent) => {
+  const tenantFormDirty = tenant
+    ? tenantForm.name.trim() !== tenant.name || tenantForm.slug.trim() !== tenant.slug
+    : false
+
+  const handleSaveTenant = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!slugForm.trim()) {
-      toast('El slug no puede estar vacío', 'error')
+    if (!tenant) return
+    if (!tenantForm.name.trim() || !tenantForm.slug.trim()) {
+      toast('Nombre y slug son obligatorios', 'error')
       return
     }
-    setSavingSlug(true)
+    setSavingTenant(true)
     try {
-      const res = await superadminApi.updateTenant(tenantId, { slug: slugForm.trim() })
-      setTenant(res.data as TenantDetail)
-      setSlugForm((res.data as TenantDetail).slug)
-      toast('URL de acceso actualizada', 'success')
+      const res = await superadminApi.updateTenant(tenantId, {
+        name: tenantForm.name.trim(),
+        slug: tenantForm.slug.trim(),
+      })
+      const updated = res.data as TenantDetail
+      setTenant(updated)
+      setTenantForm({ name: updated.name, slug: updated.slug })
+      toast('Institución actualizada', 'success')
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } }
-      toast(ax.response?.data?.message || 'Error al actualizar el slug', 'error')
+      toast(ax.response?.data?.message || 'Error al actualizar la institución', 'error')
     } finally {
-      setSavingSlug(false)
+      setSavingTenant(false)
     }
   }
 
@@ -373,35 +382,6 @@ export default function TenantDetailPage() {
         </div>
       )}
 
-      <form onSubmit={handleSaveSlug} className="rounded-2xl p-4 mb-6"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
-        <h3 className="text-white font-semibold mb-1">URL de acceso</h3>
-        <p className="text-xs text-gray-500 mb-3">
-          El slug es solo el prefijo del subdominio. Ejemplo: <span style={{ color: NEON }}>jraasecurity</span> → jraasecurity.simulacros.pe
-        </p>
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs text-gray-500 mb-1">Slug</label>
-            <input
-              className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-              value={slugForm}
-              onChange={(e) => setSlugForm(e.target.value)}
-              placeholder="jraasecurity"
-              required
-            />
-          </div>
-          <button type="submit" disabled={savingSlug || slugForm === tenant.slug}
-            className="px-4 py-2 rounded-xl text-sm font-bold"
-            style={{ backgroundColor: NEON, color: '#000', opacity: savingSlug || slugForm === tenant.slug ? 0.6 : 1 }}>
-            {savingSlug ? 'Guardando...' : 'Guardar slug'}
-          </button>
-        </div>
-        <div className="mt-3">
-          <TenantAccessUrl slug={slugForm.trim() || tenant.slug} />
-        </div>
-      </form>
-
       <form onSubmit={handleSetAccess} className="rounded-2xl p-4 mb-6"
         style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
         <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
@@ -519,17 +499,63 @@ export default function TenantDetailPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
-        <div className="rounded-2xl p-4"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
-          <h3 className="text-white font-semibold mb-3">Configuración</h3>
-          <ul className="text-sm text-gray-400 space-y-1">
+        <form onSubmit={handleSaveTenant} className="rounded-2xl p-4 space-y-4"
+          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}35` }}>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-white font-semibold">Configuración de la institución</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Edita el nombre y el slug (URL de acceso de la agencia).
+              </p>
+            </div>
+            <button type="submit" disabled={savingTenant || !tenantFormDirty}
+              className="px-4 py-2 rounded-xl text-xs font-bold shrink-0"
+              style={{
+                backgroundColor: NEON,
+                color: '#000',
+                opacity: savingTenant || !tenantFormDirty ? 0.55 : 1,
+              }}>
+              {savingTenant ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Nombre</label>
+              <input
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                value={tenantForm.name}
+                onChange={(e) => setTenantForm({ ...tenantForm, name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Slug (subdominio)</label>
+              <input
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                value={tenantForm.slug}
+                onChange={(e) => setTenantForm({ ...tenantForm, slug: e.target.value })}
+                placeholder="jraasecurity"
+                required
+              />
+              <p className="text-[10px] text-gray-600 mt-1">
+                Solo el prefijo: {tenantForm.slug.trim() || 'nombre'}.simulacros.pe
+              </p>
+            </div>
+          </div>
+
+          <TenantAccessUrl slug={tenantForm.slug.trim() || tenant.slug} />
+
+          <ul className="text-sm text-gray-400 space-y-1 pt-2 border-t border-white/10">
             <li>Cuota mensual: S/. {tenant.monthlyFee}</li>
             <li>Color primario: {tenant.primaryColor || NEON}</li>
             <li>Gamificación: {tenant.gamificationEnabled ? '✅' : '❌'}</li>
             <li>Ranking público: {tenant.rankingPublic ? '✅' : '❌'}</li>
             <li>Tracks: {(tenant.allowedTrackTypes || []).join(', ') || '—'}</li>
           </ul>
-        </div>
+        </form>
 
         <form onSubmit={handlePayment} className="rounded-2xl p-4 space-y-3"
           style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${WARNING}25` }}>
