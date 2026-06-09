@@ -24,15 +24,10 @@ Abre [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_API_URL` | URL base del API (ej. `http://localhost:5034/api`) |
 | `API_URL` | URL del backend para rewrites del servidor (opcional) |
 
-## Credenciales de prueba
+## Entornos de desarrollo
 
-Tras aplicar la migración multi-tenant del backend:
-
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| SuperAdmin | `superadmin@cocodrilito.pe` | `CocodriloPNP2025!` |
-| Admin Agencia | `agencia.demo@cocodrilito.pe` | `AgenciaDemo2025!` |
-| Admin Academia | `academia.demo@cocodrilito.pe` | `AcademiaDemo2025!` |
+Las credenciales de prueba **no se documentan en este repositorio**. Configúralas en el backend
+(variables de entorno / user secrets) o solicítalas al administrador del proyecto.
 
 ## White label (login)
 

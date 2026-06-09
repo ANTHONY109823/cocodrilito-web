@@ -145,7 +145,7 @@ export default function AdminPage() {
   }
 
   const handleDownloadExcelTemplate = () => {
-    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado,Unidad,Días\nJuan Pérez Torres,12345678,juan@gmail.com,Temp1234!,Suboficial de 3ra,Comisaría Lima Norte,180\n'
+    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado,Unidad,Días\nJuan Pérez Torres,12345678,juan@gmail.com,Ejemplo1234,Suboficial de 3ra,Comisaría Lima Norte,180\n'
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
