@@ -10,6 +10,11 @@ import { isTenantAdmin, isAdminAgencia, getPostLoginPath } from '@/lib/auth/role
 import { tenantAdminApi, type AdminDashboardData, type TenantProfile } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
 import { NEON } from '@/lib/constants/theme'
+import {
+  SUBSCRIPTION_PLANS,
+  formatPlanPrice,
+  inferDaysFromAmount,
+} from '@/lib/constants/subscriptionPlans'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
@@ -189,8 +194,7 @@ export default function AdminPage() {
     } finally { setSaving(false) }
   }
 
-  const inferDays = (amount: number) =>
-    amount <= 13 ? 30 : amount <= 23 ? 60 : 180
+  const inferDays = (amount: number) => inferDaysFromAmount(amount)
 
   const handleApprove = async (sub: Subscription) => {
     try {
@@ -754,18 +758,14 @@ export default function AdminPage() {
             <div>
               <label className="block text-xs text-gray-500 mb-2">Plan de acceso *</label>
               <div className="grid grid-cols-3 gap-3">
-                {[
-                  { days: 30, label: 'Mensual', price: 'S/. 12.90', sub: '30 días' },
-                  { days: 60, label: 'Bimestral', price: 'S/. 22.90', sub: '60 días' },
-                  { days: 180, label: 'Full Proceso', price: 'S/. 42.90', sub: '180 días' },
-                ].map(plan => (
+                {SUBSCRIPTION_PLANS.map(plan => (
                   <button key={plan.days} type="button"
                     onClick={() => setForm({ ...form, planDays: plan.days })}
                     className="p-4 rounded-xl text-left transition-all"
                     style={{ border: `2px solid ${form.planDays === plan.days ? NEON : '#ffffff10'}`, backgroundColor: form.planDays === plan.days ? 'rgba(74,124,89,0.08)' : 'rgba(0,10,5,0.5)' }}>
                     <div className="font-bold text-white text-sm">{plan.label}</div>
                     <div className="text-xs mt-0.5" style={{ color: form.planDays === plan.days ? NEON : '#6B7280' }}>
-                      {plan.price} · {plan.sub}
+                      {formatPlanPrice(plan.price)} · {plan.sub}
                     </div>
                   </button>
                 ))}

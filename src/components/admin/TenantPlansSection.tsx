@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { NEON } from '@/lib/constants/theme'
+import { SUBSCRIPTION_PLANS, formatPlanPrice, getPriceForDays } from '@/lib/constants/subscriptionPlans'
 
 const NEON2 = '#4FC3F7'
 const GOLD = '#FFD700'
@@ -41,7 +42,7 @@ interface TenantPlansSectionProps {
 
 export function TenantPlansSection({
   tenantId: managedTenantId,
-  description = 'Configura los planes de suscripción de esta agencia. Todos los alumnos verán los mismos planes al contratar acceso.',
+  description = 'Precios fijos del proceso de ascenso de suboficiales: mensual S/. 15, bimestral S/. 30, full proceso S/. 45. Todos los alumnos de la agencia ven los mismos planes.',
 }: TenantPlansSectionProps) {
   const { user } = useAuthStore()
   const tenantId = managedTenantId ?? user?.tenantId ?? undefined
@@ -53,7 +54,7 @@ export function TenantPlansSection({
   const [planForm, setPlanForm] = useState({
     trackType: 3,
     name: '',
-    price: 0,
+    price: getPriceForDays(30),
     durationDays: 30,
     description: '',
   })
@@ -79,8 +80,22 @@ export function TenantPlansSection({
   }, [loadPlans])
 
   const resetPlanForm = () => {
-    setPlanForm({ trackType: 3, name: '', price: 0, durationDays: 30, description: '' })
+    setPlanForm({
+      trackType: 3,
+      name: '',
+      price: getPriceForDays(30),
+      durationDays: 30,
+      description: '',
+    })
     setEditingPlanId(null)
+  }
+
+  const setDurationDays = (durationDays: number) => {
+    setPlanForm((prev) => ({
+      ...prev,
+      durationDays,
+      price: getPriceForDays(durationDays),
+    }))
   }
 
   const startEditPlan = (plan: TenantPlan) => {
@@ -88,7 +103,7 @@ export function TenantPlansSection({
     setPlanForm({
       trackType: TRACK_TYPE_VALUE[plan.trackType] ?? 3,
       name: plan.name,
-      price: plan.price,
+      price: getPriceForDays(plan.durationDays),
       durationDays: plan.durationDays,
       description: plan.description ?? '',
     })
@@ -191,27 +206,27 @@ export function TenantPlansSection({
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Precio (S/.)</label>
                 <input
-                  type="number"
-                  min={0}
-                  step="0.01"
+                  type="text"
+                  readOnly
                   className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
                   style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                  value={planForm.price}
-                  onChange={(e) => setPlanForm({ ...planForm, price: Number(e.target.value) })}
-                  required
+                  value={formatPlanPrice(planForm.price)}
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Duración (días)</label>
-                <input
-                  type="number"
-                  min={1}
+                <label className="block text-xs text-gray-500 mb-1">Duración</label>
+                <select
                   className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
                   style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
                   value={planForm.durationDays}
-                  onChange={(e) => setPlanForm({ ...planForm, durationDays: Number(e.target.value) })}
-                  required
-                />
+                  onChange={(e) => setDurationDays(Number(e.target.value))}
+                >
+                  {SUBSCRIPTION_PLANS.map((plan) => (
+                    <option key={plan.days} value={plan.days}>
+                      {plan.label} · {plan.sub}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div>
@@ -288,7 +303,7 @@ export function TenantPlansSection({
                         )}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        S/. {p.price.toFixed(2)} · {p.durationDays} días
+                        {formatPlanPrice(getPriceForDays(p.durationDays))} · {p.durationDays} días
                         {p.description ? ` · ${p.description}` : ''}
                       </div>
                     </div>
