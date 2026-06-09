@@ -1,4 +1,5 @@
 import apiClient from './client'
+import type { TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
 
 export interface TenantConfig {
   name: string
@@ -6,6 +7,7 @@ export interface TenantConfig {
   logoUrl?: string | null
   primaryColor?: string | null
   welcomeMessage?: string | null
+  loginConfig?: Partial<TenantLoginBranding> | null
   tenantType: string
   allowedTrackTypes: string[]
   isActive: boolean

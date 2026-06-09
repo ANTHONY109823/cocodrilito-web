@@ -1,4 +1,5 @@
 import apiClient from './client'
+import type { TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
 
 export interface DashboardStats {
   totalTenants: number
@@ -41,6 +42,7 @@ export interface TenantDetail {
   primaryColor?: string | null
   secondaryColor?: string | null
   welcomeMessage?: string | null
+  loginConfig?: TenantLoginBranding | null
   allowedTrackTypes: string[]
   gamificationEnabled: boolean
   rankingPublic: boolean
@@ -72,6 +74,7 @@ export interface CreateTenantPayload {
   gamificationEnabled?: boolean
   rankingPublic?: boolean
   customDomain?: string
+  loginConfig?: TenantLoginBranding
   adminFullName?: string
   adminEmail?: string
   adminDni?: string

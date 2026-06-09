@@ -12,31 +12,13 @@ import { getPostLoginPath } from '@/lib/auth/roles'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { useTenantSlug } from '@/hooks/useTenantSlug'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import { BRAND_LOGIN, WHATSAPP_PREFILL } from '@/lib/constants/brand'
+import Image from 'next/image'
+import { BRAND_LOGIN } from '@/lib/constants/brand'
+import {
+  DEFAULT_LOGIN_BRANDING,
+  resolveLoginBranding,
+} from '@/lib/constants/defaultLoginBranding'
 import './login-platform.css'
-
-const SOCIAL_LINKS = [
-  {
-    id: 'tiktok',
-    label: 'TikTok',
-    href: 'https://tiktok.com/@cocodrilito',
-    icon: 'tiktok' as const,
-  },
-  {
-    id: 'facebook',
-    label: 'Facebook',
-    href: 'https://facebook.com/cocodrilito',
-    icon: 'facebook' as const,
-  },
-  {
-    id: 'instagram',
-    label: 'Instagram',
-    href: 'https://instagram.com/cocodrilito',
-    icon: 'instagram' as const,
-  },
-]
-
-const WA_URL = `https://wa.me/51927577686?text=${WHATSAPP_PREFILL}`
 
 function TikTokIcon() {
   return (
@@ -126,6 +108,21 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
 
   const displayName = config?.name ?? BRAND_LOGIN
+  const branding = tenantSlug
+    ? resolveLoginBranding(config?.loginConfig)
+    : DEFAULT_LOGIN_BRANDING
+
+  const socialLinks = [
+    branding.tiktokUrl
+      ? { id: 'tiktok', label: 'TikTok', href: branding.tiktokUrl, icon: 'tiktok' as const }
+      : null,
+    branding.facebookUrl
+      ? { id: 'facebook', label: 'Facebook', href: branding.facebookUrl, icon: 'facebook' as const }
+      : null,
+    branding.instagramUrl
+      ? { id: 'instagram', label: 'Instagram', href: branding.instagramUrl, icon: 'instagram' as const }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => item !== null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -178,17 +175,29 @@ function LoginForm() {
           <div className="particles" ref={particlesRef} />
         </div>
 
-        <a className="wa" href={WA_URL} target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" fill="white" aria-hidden>
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-          </svg>
-          Informes aquí
-        </a>
+        {branding.whatsappUrl && (
+          <a className="wa" href={branding.whatsappUrl} target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="white" aria-hidden>
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+            Informes aquí
+          </a>
+        )}
 
         <main className="page">
         <div className="brand">
+          {tenantSlug && config?.logoUrl && (
+            <Image
+              src={config.logoUrl}
+              alt=""
+              width={72}
+              height={72}
+              unoptimized
+              className="brand-logo"
+            />
+          )}
           <h1 className="brand-name">{displayName}</h1>
-          <p className="brand-tagline">Plataforma de examenes</p>
+          <p className="brand-tagline">{branding.brandTagline}</p>
           <div className="brand-ornament">
           <span className="orn-bar" />
           <span className="orn-dot" />
@@ -197,34 +206,23 @@ function LoginForm() {
           <span className="orn-bar" />
         </div>
         <p className="brand-sub" style={{ color: '#000000', fontWeight: '600', textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>
-          Exámenes &nbsp;·&nbsp; Ascensos &nbsp;·&nbsp; Balotarios &nbsp;·&nbsp; PNP & FF.AA.
+          {branding.brandSub}
          </p>
         </div>
 
           <div className="card">
             <div className="left">
               <div className="headline">
-                <span className="hl-normal">PREPÁRATE PARA LOGRAR</span>
-                <span className="hl-accent">TUS METAS</span>
+                <span className="hl-normal">{branding.headlineNormal}</span>
+                <span className="hl-accent">{branding.headlineAccent}</span>
               </div>
 
-              <p className="desc">
-                CON LA PLATAFORMA #1 DE SIMULACROS EN EL PERÚ.
-                <br />
-                Aprueba con confianza — miles ya lo lograron.
+              <p className="desc" style={{ whiteSpace: 'pre-line' }}>
+                {branding.description}
               </p>
 
               <div className="features">
-                {[
-                  'Preguntas actualizadas',
-                  'Simulacros cronometrados',
-                  'Ranking y gamificación',
-                  'Reportes de progreso personalizados',
-                  'especializados en los procesos de ascenso a la PNP',
-                  'Perfiles para usuarios y agencias/academias.',
-                  'Si eres agencias/academia de admición usa nuestra plataforma y genera ingresos con cada suscripción.',
-                  'Si eres postulante o aspirante a la PNP o FF.AA. puedes suscribirte a la plataforma directamente',
-                ].map((text) => (
+                {branding.features.map((text) => (
                   <div key={text} className="feat">
                     <div className="feat-icon">
                       <svg
@@ -244,21 +242,15 @@ function LoginForm() {
                 ))}
               </div>
 
-              <p className="tagline">ESTAS A UN PASO DE LOGRAR TUS SUEÑOS ¡SUSCRIBETE YA!</p>
+              <p className="tagline">{branding.ctaTagline}</p>
 
               <div className="stats">
-                <div className="stat">
-                  <span className="stat-num">100%</span>
-                  <span className="stat-lbl">Amigable</span>
-                </div>
-                <div className="stat">
-                  <span className="stat-num">24/7</span>
-                  <span className="stat-lbl">A tu disposición</span>
-                </div>
-                <div className="stat">
-                  <span className="stat-num">100%</span>
-                  <span className="stat-lbl">Satisfacción</span>
-                </div>
+                {branding.stats.map((stat) => (
+                  <div key={`${stat.value}-${stat.label}`} className="stat">
+                    <span className="stat-num">{stat.value}</span>
+                    <span className="stat-lbl">{stat.label}</span>
+                  </div>
+                ))}
               </div>
 
             </div>
@@ -373,27 +365,31 @@ function LoginForm() {
                 </button>
               </form>
 
-              <div className="divider">
-                <span className="div-line" />
-                <span className="div-text">o síguenos en</span>
-                <span className="div-line" />
-                </div>
-                <div className="social-btns">
-                {SOCIAL_LINKS.map((social) => (
-                  <a
-                    key={social.id}
-                    className="soc-btn"
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {social.icon === 'tiktok' && <TikTokIcon />}
-                    {social.icon === 'facebook' && <FacebookIcon />}
-                    {social.icon === 'instagram' && <InstagramIcon />}
-                    {social.label}
-                  </a>
-                ))}
-              </div>
+              {socialLinks.length > 0 && (
+                <>
+                  <div className="divider">
+                    <span className="div-line" />
+                    <span className="div-text">o síguenos en</span>
+                    <span className="div-line" />
+                  </div>
+                  <div className="social-btns">
+                    {socialLinks.map((social) => (
+                      <a
+                        key={social.id}
+                        className="soc-btn"
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {social.icon === 'tiktok' && <TikTokIcon />}
+                        {social.icon === 'facebook' && <FacebookIcon />}
+                        {social.icon === 'instagram' && <InstagramIcon />}
+                        {social.label}
+                      </a>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </main>

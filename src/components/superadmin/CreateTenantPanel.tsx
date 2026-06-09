@@ -7,8 +7,14 @@ import { validatePassword } from '@/lib/utils/passwordPolicy'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { NEON } from '@/lib/constants/theme'
 import type { CreateTenantPayload } from '@/lib/api/superadmin'
+import {
+  TenantLoginBrandingFields,
+  emptyLoginBranding,
+} from '@/components/superadmin/TenantLoginBrandingFields'
+import type { TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
 
 export interface CreateTenantFormState extends CreateTenantPayload {
+  loginConfig: TenantLoginBranding
   adminFullName: string
   adminEmail: string
   adminDni: string
@@ -23,6 +29,7 @@ export const emptyCreateTenantForm = (): CreateTenantFormState => ({
   contactPhone: '',
   monthlyFee: 0,
   customDomain: '',
+  loginConfig: emptyLoginBranding(),
   adminFullName: '',
   adminEmail: '',
   adminDni: '',
@@ -113,7 +120,7 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
       onClose={handleCloseRequest}
       closeOnBackdrop={false}
       title="➕ Nueva agencia o academia"
-      maxWidth="max-w-3xl"
+      maxWidth="max-w-4xl"
       footer={
         <>
           <Button variant="ghost" size="sm" disabled={loading} onClick={handleCloseRequest}>Cancelar</Button>
@@ -185,7 +192,15 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
         </section>
 
         <section className="pt-4" style={{ borderTop: '1px solid #ffffff10' }}>
-          <h3 className="text-white font-semibold text-sm mb-1">2. Administrador de acceso</h3>
+          <h3 className="text-white font-semibold text-sm mb-1">2. Panel de inicio de sesión</h3>
+          <TenantLoginBrandingFields
+            value={form.loginConfig}
+            onChange={(loginConfig) => setForm({ ...form, loginConfig })}
+          />
+        </section>
+
+        <section className="pt-4" style={{ borderTop: '1px solid #ffffff10' }}>
+          <h3 className="text-white font-semibold text-sm mb-1">3. Administrador de acceso</h3>
           <p className="text-xs text-gray-500 mb-3">
             Cuenta con rol Admin {form.tenantType}. Recibirá credenciales temporales y deberá cambiar la contraseña al ingresar.
           </p>

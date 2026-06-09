@@ -190,6 +190,17 @@
   animation: fadeDown 0.8s 0.15s ease both;
 }
 
+.brand-logo {
+  display: block;
+  margin: 0 auto 12px;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px;
+}
+
 .brand-name {
   font-family: 'Cinzel Decorative', serif;
   font-size: clamp(52px, 9vw, 82px);

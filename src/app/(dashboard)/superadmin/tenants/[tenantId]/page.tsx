@@ -15,6 +15,8 @@ import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
 import { NEON, DANGER, WARNING, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
+import { TenantLoginBrandingFields, emptyLoginBranding } from '@/components/superadmin/TenantLoginBrandingFields'
+import { resolveLoginBranding, type TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
 
 interface TenantStats {
   totalUsers: number
@@ -64,6 +66,8 @@ export default function TenantDetailPage() {
   const [savingAccess, setSavingAccess] = useState(false)
   const [tenantForm, setTenantForm] = useState({ name: '', slug: '' })
   const [savingTenant, setSavingTenant] = useState(false)
+  const [loginBranding, setLoginBranding] = useState<TenantLoginBranding>(emptyLoginBranding())
+  const [savingLoginBranding, setSavingLoginBranding] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -85,6 +89,7 @@ export default function TenantDetailPage() {
       ])
       setTenant(tRes.data)
       setTenantForm({ name: tRes.data.name, slug: tRes.data.slug })
+      setLoginBranding(resolveLoginBranding(tRes.data.loginConfig))
       setStats(sRes.data as TenantStats)
       setUsers(uRes.data as TenantUser[])
       setHasAdmin(aRes.data.exists)
@@ -260,6 +265,23 @@ export default function TenantDetailPage() {
       toast(ax.response?.data?.message || 'Error al actualizar la institución', 'error')
     } finally {
       setSavingTenant(false)
+    }
+  }
+
+  const handleSaveLoginBranding = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingLoginBranding(true)
+    try {
+      const res = await superadminApi.updateTenant(tenantId, { loginConfig: loginBranding })
+      const updated = res.data as TenantDetail
+      setTenant(updated)
+      setLoginBranding(resolveLoginBranding(updated.loginConfig))
+      toast('Panel de login actualizado', 'success')
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      toast(ax.response?.data?.message || 'Error al guardar el panel de login', 'error')
+    } finally {
+      setSavingLoginBranding(false)
     }
   }
 
@@ -497,6 +519,28 @@ export default function TenantDetailPage() {
           </div>
         )}
       </div>
+
+      <form onSubmit={handleSaveLoginBranding} className="rounded-2xl p-4 mb-6 space-y-4"
+        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${WARNING}35` }}>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-white font-semibold">Panel de inicio de sesión</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Textos, beneficios, estadísticas y redes que verán alumnos y admin de esta agencia.
+            </p>
+          </div>
+          <button type="submit" disabled={savingLoginBranding}
+            className="px-4 py-2 rounded-xl text-xs font-bold shrink-0"
+            style={{
+              backgroundColor: WARNING,
+              color: '#000',
+              opacity: savingLoginBranding ? 0.6 : 1,
+            }}>
+            {savingLoginBranding ? 'Guardando...' : 'Guardar panel de login'}
+          </button>
+        </div>
+        <TenantLoginBrandingFields value={loginBranding} onChange={setLoginBranding} />
+      </form>
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <form onSubmit={handleSaveTenant} className="rounded-2xl p-4 space-y-4"
