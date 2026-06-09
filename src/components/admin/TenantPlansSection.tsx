@@ -57,7 +57,7 @@ export function TenantPlansSection() {
     } finally {
       setLoading(false)
     }
-  }, [user?.tenantId])
+  }, [user])
 
   useEffect(() => {
     void loadPlans()

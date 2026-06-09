@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { LogOut, LucideIcon, User } from 'lucide-react'
@@ -18,7 +19,7 @@ import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 import { cn } from '@/lib/utils/cn'
 import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
 
-function roleLabel(role?: string, _impersonating?: boolean) {
+function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
   if (isSuperAdmin(role)) return 'SuperAdmin'
   if (role.includes('Academia') || role === 'AdminAcademia') return 'Admin Academia'
@@ -103,9 +104,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <aside className="hidden lg:flex w-[220px] shrink-0 flex-col border-r border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-3.5 py-5">
           <div className="mb-3 flex items-center gap-2 px-2.5 py-2">
             {brandLogo ? (
-              <img
+              <Image
                 src={brandLogo}
                 alt=""
+                width={32}
+                height={32}
+                unoptimized
                 className="h-8 w-8 shrink-0 rounded-lg object-contain bg-white/5"
               />
             ) : (
@@ -118,7 +122,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 {brandName}
               </div>
               <span className="inline-block rounded-full border border-[rgba(49,143,72,0.3)] bg-[rgba(49,143,72,0.15)] px-1.5 py-0.5 text-[10px] text-[#BDFFDF]">
-                {roleLabel(user?.role, impersonating)}
+                {roleLabel(user?.role)}
               </span>
             </div>
           </div>
@@ -165,7 +169,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="min-w-0">
                 <div className="truncate text-xs font-semibold text-white">{user?.fullName}</div>
-                <div className="text-[10px] text-[#BDFFDF]">{roleLabel(user?.role, impersonating)}</div>
+                <div className="text-[10px] text-[#BDFFDF]">{roleLabel(user?.role)}</div>
               </div>
             </div>
             <button
@@ -183,7 +187,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <header className="hidden lg:flex items-center justify-between border-b border-[rgba(189,255,223,0.12)] bg-[#080E0A] px-8 py-4">
             <div className="flex items-center gap-3">
               {brandLogo && (
-                <img src={brandLogo} alt="" className="h-8 w-8 rounded object-contain" />
+                <Image
+                  src={brandLogo}
+                  alt=""
+                  width={32}
+                  height={32}
+                  unoptimized
+                  className="h-8 w-8 rounded object-contain"
+                />
               )}
               <div>
                 <p className="text-xs text-[#6B8A75]">

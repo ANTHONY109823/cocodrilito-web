@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   superadminApi,
-  type ExamDistributionConfig,
   type ExamCategoryDistribution,
 } from '@/lib/api/superadmin'
 import { toast } from '@/components/Toast'
