@@ -15,6 +15,7 @@ import {
   formatPlanPrice,
   inferDaysFromAmount,
 } from '@/lib/constants/subscriptionPlans'
+import { ASCENSO_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK } from '@/lib/constants/trackTypes'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
@@ -101,6 +102,7 @@ export default function AdminPage() {
   const [form, setForm] = useState({
     fullName: '', dni: '', email: '', password: '',
     rank: '', unit: '', planDays: 180,
+    trackType: DEFAULT_QUESTION_TRACK,
     activationDate: new Date().toISOString().slice(0, 10),
   })
 
@@ -186,6 +188,7 @@ export default function AdminPage() {
       setMsg({ text: '✅ Usuario creado exitosamente', ok: true })
       setForm({
         fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180,
+        trackType: DEFAULT_QUESTION_TRACK,
         activationDate: new Date().toISOString().slice(0, 10),
       })
       setTimeout(() => { router.push('/admin?tab=users&sub=activos'); setMsg(null) }, 2000)
@@ -754,6 +757,25 @@ export default function AdminPage() {
                   {field.key === 'password' && <PasswordPolicyHint password={form.password} />}
                 </div>
               )})}
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-2">Balotario de preguntas *</label>
+              <div className="grid md:grid-cols-2 gap-3">
+                {ASCENSO_TRACK_OPTIONS.map((track) => (
+                  <button key={track.value} type="button"
+                    onClick={() => setForm({ ...form, trackType: track.value })}
+                    className="p-4 rounded-xl text-left transition-all"
+                    style={{
+                      border: `2px solid ${form.trackType === track.value ? NEON : '#ffffff10'}`,
+                      backgroundColor: form.trackType === track.value ? 'rgba(74,124,89,0.08)' : 'rgba(0,10,5,0.5)',
+                    }}>
+                    <div className="font-bold text-white text-sm">{track.label}</div>
+                    <div className="text-xs mt-0.5" style={{ color: form.trackType === track.value ? NEON : '#6B7280' }}>
+                      Acceso solo a preguntas de {track.label.toLowerCase()}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-2">Plan de acceso *</label>

@@ -8,6 +8,11 @@ import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
 import {
+  DEFAULT_QUESTION_TRACK,
+  QUESTION_TRACK_OPTIONS,
+  trackLabel,
+} from '@/lib/constants/trackTypes'
+import {
   isSuperAdmin,
   isTenantAdmin,
   isAdminAgencia,
@@ -22,6 +27,7 @@ interface Question {
   difficulty: number
   status: string
   yearValuation: number
+  trackType?: string | null
   answerOptions?: {
     id: string
     optionText: string
@@ -72,6 +78,8 @@ export default function PreguntasPage() {
   const [newCatName, setNewCatName] = useState('')
   const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0])
   const [questionScope, setQuestionScope] = useState<'base' | 'own'>('base')
+  const [importTrackType, setImportTrackType] = useState(DEFAULT_QUESTION_TRACK)
+  const [viewTrackType, setViewTrackType] = useState<number | 'all'>(DEFAULT_QUESTION_TRACK)
 
   const canEditCurrentScope =
     isSuperAdminMode
@@ -99,8 +107,11 @@ export default function PreguntasPage() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
+      const trackQuery = viewTrackType === 'all'
+        ? ''
+        : `&trackType=${viewTrackType}`
       const [qRes, eRes, cRes] = await Promise.all([
-        apiClient.get(`/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}`),
+        apiClient.get(`/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}${trackQuery}`),
         apiClient.get('/exams/list'),
         apiClient.get('/categories'),
       ])
@@ -115,7 +126,7 @@ export default function PreguntasPage() {
         setQForm((f) => ({ ...f, category: f.category || firstCat }))
       }
     } catch { /* ignore */ } finally { setLoading(false) }
-  }, [])
+  }, [viewTrackType])
 
   useEffect(() => { loadFromStorage() }, [loadFromStorage])
 
@@ -130,7 +141,7 @@ export default function PreguntasPage() {
       return
     }
     void loadAll()
-  }, [user, loadAll, router, isSuperAdminMode, pathname])
+  }, [user, loadAll, router, isSuperAdminMode, pathname, viewTrackType])
 
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const file = e.target.files?.[0]
@@ -141,7 +152,7 @@ export default function PreguntasPage() {
       const formData = new FormData()
       formData.append('file', file)
       const res = await apiClient.post(
-        `/admin/import/questions?categoria=${encodeURIComponent(category)}&forOwnTenant=${questionScope === 'own'}`,
+        `/admin/import/questions?categoria=${encodeURIComponent(category)}&trackType=${importTrackType}&forOwnTenant=${questionScope === 'own'}`,
         formData
       )
       const imported = res.data.imported ?? 0
@@ -228,6 +239,7 @@ export default function PreguntasPage() {
         yearValuation: qForm.yearValuation,
         orderIndex: qForm.orderIndex,
         explanation: qForm.explanation,
+        trackType: importTrackType,
         answerOptions: qForm.options
       })
       setMsg({ text: '✅ Pregunta creada', ok: true })
@@ -418,7 +430,7 @@ export default function PreguntasPage() {
           <p className="text-gray-600 text-xs mt-0.5">
             {readOnly && isAgencia
               ? 'Solo lectura — las preguntas de ascenso las gestiona Simulacros.pe'
-              : `${questions.length} preguntas cargadas · ${categories.length} categorías`}
+              : `${scopedQuestions.length} preguntas en vista · ${categories.length} categorías · balotario: ${viewTrackType === 'all' ? 'todos' : trackLabel(viewTrackType)}`}
           </p>
         </div>
         {!readOnly && (
@@ -470,6 +482,51 @@ export default function PreguntasPage() {
           {scopedQuestions.length} en esta vista
         </span>
       </div>
+
+      {isSuperAdminMode && !readOnly && (
+        <div className="rounded-2xl p-4 mb-5 space-y-3"
+          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
+          <div>
+            <div className="text-white font-semibold text-sm mb-1">Balotario de preguntas</div>
+            <p className="text-xs text-gray-500">
+              Sube CSV por categoría. Hoy el banco de suboficiales tiene ~400 preguntas; capacidad hasta 3000 por balotario.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Importar / crear en</label>
+              <select
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                value={importTrackType}
+                onChange={(e) => setImportTrackType(Number(e.target.value))}
+              >
+                {QUESTION_TRACK_OPTIONS.map((track) => (
+                  <option key={track.value} value={track.value}>{track.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Ver banco de</label>
+              <select
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                value={viewTrackType}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setViewTrackType(value === 'all' ? 'all' : Number(value))
+                  setPage(1)
+                }}
+              >
+                {QUESTION_TRACK_OPTIONS.map((track) => (
+                  <option key={track.value} value={track.value}>{track.label}</option>
+                ))}
+                <option value="all">Todos los balotarios</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {msg && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm fade-in"

@@ -1,8 +1,8 @@
-/** Banco total previsto (~1000) con margen para crecimiento. */
-export const QUESTION_BANK_MAX = 1500
+/** Capacidad del banco (~3000 suboficiales + ~3000 oficiales). */
+export const QUESTION_BANK_MAX = 7000
 
-/** Máximo por categoría (CSV por categoría: 300+). */
-export const CATEGORY_QUESTIONS_MAX = 400
+/** Máximo razonable por categoría dentro de un balotario. */
+export const CATEGORY_QUESTIONS_MAX = 800
 
-/** pageSize al listar todo el banco en admin / exámenes. */
+/** pageSize al listar todo el banco en admin. */
 export const ADMIN_QUESTIONS_PAGE_SIZE = QUESTION_BANK_MAX

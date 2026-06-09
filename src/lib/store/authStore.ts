@@ -17,6 +17,7 @@ export interface AuthUser {
   tenantType?: string | null
   tenantLogoUrl?: string | null
   allowedTrackTypes?: string[]
+  activeTrackType?: string | null
   mustChangePassword?: boolean
 }
 
@@ -50,6 +51,7 @@ export function normalizeUser(data: Record<string, unknown>): AuthUser {
     allowedTrackTypes: Array.isArray(data.allowedTrackTypes)
       ? (data.allowedTrackTypes as string[])
       : [],
+    activeTrackType: data.activeTrackType != null ? String(data.activeTrackType) : null,
     mustChangePassword: Boolean(data.mustChangePassword),
   }
 }
