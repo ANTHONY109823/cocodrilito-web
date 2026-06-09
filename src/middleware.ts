@@ -72,6 +72,31 @@ export async function middleware(request: NextRequest) {
   const host = normalizeHost(hostname)
   const { pathname } = request.nextUrl
 
+  if (isRootDomain(host) && pathname === '/login') {
+    const legacySlug =
+      request.nextUrl.searchParams.get('agencia') ??
+      request.nextUrl.searchParams.get('academia') ??
+      request.nextUrl.searchParams.get('tenant_slug')
+
+    if (legacySlug && legacySlug !== 'www') {
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.searchParams.delete('agencia')
+      loginUrl.searchParams.delete('academia')
+      loginUrl.searchParams.delete('tenant_slug')
+      loginUrl.pathname = '/login'
+
+      if (host === 'localhost') {
+        const port = hostname.includes(':') ? hostname.split(':').pop() : '3000'
+        loginUrl.host = `${legacySlug}.localhost:${port}`
+      } else {
+        loginUrl.hostname = `${legacySlug}.simulacros.pe`
+        loginUrl.protocol = 'https:'
+      }
+
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
   if (isProtectedPath(pathname) && !hasAuthSession(request)) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
