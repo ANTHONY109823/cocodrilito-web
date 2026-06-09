@@ -32,8 +32,19 @@ const trackLabel = (track: string) =>
     PostulantesOficiales: 'Postulantes Oficiales',
   } as Record<string, string>)[track] ?? track
 
-export function TenantPlansSection() {
+interface TenantPlansSectionProps {
+  /** ID del tenant a gestionar (obligatorio en panel SuperAdmin). */
+  tenantId?: string
+  /** Texto de ayuda personalizado. */
+  description?: string
+}
+
+export function TenantPlansSection({
+  tenantId: managedTenantId,
+  description = 'Define los planes que tus alumnos verán al contratar acceso desde la web.',
+}: TenantPlansSectionProps) {
   const { user } = useAuthStore()
+  const tenantId = managedTenantId ?? user?.tenantId ?? undefined
   const [plans, setPlans] = useState<TenantPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -50,14 +61,18 @@ export function TenantPlansSection() {
   const loadPlans = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await tenantPlansApi.list(user?.tenantId ?? undefined)
+      if (!tenantId) {
+        setPlans([])
+        return
+      }
+      const res = await tenantPlansApi.list(tenantId)
       setPlans(res.data)
     } catch {
       setMsg({ text: 'No se pudieron cargar los planes', ok: false })
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [tenantId])
 
   useEffect(() => {
     void loadPlans()
@@ -81,13 +96,14 @@ export function TenantPlansSection() {
 
   const handleSavePlan = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!tenantId) return
     setSaving(true)
     try {
       if (editingPlanId) {
-        await tenantPlansApi.update(editingPlanId, { ...planForm, isActive: true }, user?.tenantId ?? undefined)
+        await tenantPlansApi.update(editingPlanId, { ...planForm, isActive: true }, tenantId)
         setMsg({ text: 'Plan actualizado', ok: true })
       } else {
-        await tenantPlansApi.create(planForm, user?.tenantId ?? undefined)
+        await tenantPlansApi.create(planForm, tenantId)
         setMsg({ text: 'Plan creado', ok: true })
       }
       resetPlanForm()
@@ -105,7 +121,7 @@ export function TenantPlansSection() {
   const handleDeactivatePlan = async (id: string) => {
     if (!confirm('¿Desactivar este plan?')) return
     try {
-      await tenantPlansApi.deactivate(id, user?.tenantId ?? undefined)
+      await tenantPlansApi.deactivate(id, tenantId)
       setPlans((prev) => prev.filter((p) => p.id !== id))
       setMsg({ text: 'Plan desactivado', ok: true })
     } catch {
@@ -116,9 +132,11 @@ export function TenantPlansSection() {
   return (
     <div className="mt-8 space-y-4">
       <h2 className="text-white font-bold text-lg">Planes de suscripción</h2>
-      <p className="text-xs text-gray-500">
-        Define los planes que tus alumnos verán al contratar acceso desde la web.
-      </p>
+      <p className="text-xs text-gray-500">{description}</p>
+
+      {!tenantId && (
+        <p className="text-sm text-gray-500 py-4">No se pudo identificar la institución.</p>
+      )}
 
       {msg && (
         <div
@@ -133,7 +151,7 @@ export function TenantPlansSection() {
         </div>
       )}
 
-      {loading ? (
+      {!tenantId ? null : loading ? (
         <p className="text-gray-500 text-sm py-6">Cargando planes...</p>
       ) : (
         <div className="grid lg:grid-cols-3 gap-5">

@@ -13,9 +13,10 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
-import { NEON, DANGER, WARNING, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON, DANGER, WARNING, GOLD, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { TenantLoginBrandingFields, emptyLoginBranding } from '@/components/superadmin/TenantLoginBrandingFields'
+import { TenantPlansSection } from '@/components/admin/TenantPlansSection'
 import { resolveLoginBranding, type TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
 
 interface TenantStats {
@@ -631,6 +632,14 @@ export default function TenantDetailPage() {
             {saving ? 'Guardando...' : 'Registrar pago'}
           </button>
         </form>
+      </div>
+
+      <div className="rounded-2xl p-4 mb-6"
+        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}30` }}>
+        <TenantPlansSection
+          tenantId={tenantId}
+          description="Planes de suscripción que verán los alumnos de esta agencia al contratar acceso."
+        />
       </div>
 
       <Modal
