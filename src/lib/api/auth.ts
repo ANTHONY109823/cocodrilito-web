@@ -4,6 +4,7 @@ import type { AuthUser } from '@/lib/store/authStore'
 export interface LoginRequest {
   email: string
   password: string
+  tenantSlug?: string | null
 }
 
 export interface RegisterRequest {

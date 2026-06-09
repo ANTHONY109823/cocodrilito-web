@@ -145,7 +145,11 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
             <div>
               <label className="block text-xs text-gray-500 mb-1">Slug (opcional)</label>
               <input className={inputClass} style={inputStyle}
+                placeholder="ej. jraasecurity"
                 value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
+              <p className="text-[10px] text-gray-600 mt-1">
+                Solo el nombre corto. La URL será: {(form.slug || 'nombre').toLowerCase().replace(/[^a-z0-9-]/g, '')}.simulacros.pe
+              </p>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Tipo *</label>

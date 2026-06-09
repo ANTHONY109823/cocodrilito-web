@@ -159,6 +159,7 @@ export default function SuperAdminPage() {
           role: tenant.tenantType === 'Agencia' ? 'AdminAgencia' : 'AdminAcademia',
           tenantId: tenant.id,
           tenantName: tenant.name,
+          tenantSlug: tenant.slug,
           tenantType: tenant.tenantType,
         }))
       }

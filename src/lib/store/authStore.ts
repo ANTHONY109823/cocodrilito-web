@@ -13,6 +13,7 @@ export interface AuthUser {
   role: string
   tenantId?: string | null
   tenantName?: string | null
+  tenantSlug?: string | null
   tenantType?: string | null
   tenantLogoUrl?: string | null
   allowedTrackTypes?: string[]
@@ -43,6 +44,7 @@ export function normalizeUser(data: Record<string, unknown>): AuthUser {
     role: String(data.role ?? 'Student'),
     tenantId: data.tenantId != null ? String(data.tenantId) : null,
     tenantName: data.tenantName != null ? String(data.tenantName) : null,
+    tenantSlug: data.tenantSlug != null ? String(data.tenantSlug) : null,
     tenantType: data.tenantType != null ? String(data.tenantType) : null,
     tenantLogoUrl: data.tenantLogoUrl != null ? String(data.tenantLogoUrl) : null,
     allowedTrackTypes: Array.isArray(data.allowedTrackTypes)

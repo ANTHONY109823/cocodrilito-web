@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { getNavContext } from '@/lib/auth/roles'
 import { DashboardShell } from '@/components/layout/DashboardShell'
+import { enforceTenantHostAccess } from '@/lib/utils/tenantHost'
 
 const STUDENT_ONLY_PREFIXES = ['/exams', '/history', '/ranking', '/premium', '/exam/', '/result/', '/review/']
 
@@ -31,6 +32,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!user) return
+
+    if (enforceTenantHostAccess(user.role, user.tenantSlug, impersonating, pathname)) {
+      return
+    }
 
     const ctx = getNavContext(user.role, impersonating)
 

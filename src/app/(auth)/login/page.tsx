@@ -10,6 +10,7 @@ import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { getPostLoginPath } from '@/lib/auth/roles'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
+import { useTenantSlug } from '@/hooks/useTenantSlug'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { BRAND_LOGIN, WHATSAPP_PREFILL } from '@/lib/constants/brand'
 import './login-platform.css'
@@ -117,6 +118,7 @@ function LoginForm() {
   const { stopImpersonation } = useImpersonationStore()
   const { particlesRef, loginBtnRef } = useLoginDecorEffects()
 
+  const tenantSlug = useTenantSlug()
   const { config, loading: configLoading } = useTenantConfig()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -130,7 +132,11 @@ function LoginForm() {
     setError('')
     setLoading(true)
     try {
-      const res = await authApi.login({ email: email.trim(), password })
+      const res = await authApi.login({
+        email: email.trim(),
+        password,
+        tenantSlug: tenantSlug ?? undefined,
+      })
       const loggedUser = normalizeUser(res.data as unknown as Record<string, unknown>)
       stopImpersonation()
       setUser(loggedUser)
@@ -260,7 +266,11 @@ function LoginForm() {
             <div className="right">
               <h2 className="login-title">Iniciar sesión</h2>
               <p className="login-sub">
-                {configLoading ? 'Cargando...' : 'Bienvenido de vuelta'}
+                {configLoading
+                  ? 'Cargando...'
+                  : tenantSlug
+                    ? `Acceso exclusivo de ${config?.name ?? 'tu institución'}`
+                    : 'Bienvenido de vuelta'}
               </p>
 
               {config && !config.isActive && (

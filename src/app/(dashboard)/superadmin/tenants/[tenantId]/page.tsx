@@ -14,6 +14,7 @@ import { CredentialsModal, type AdminCredentials } from '@/components/admin/Cred
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
 import { NEON, DANGER, WARNING, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
+import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 
 interface TenantStats {
   totalUsers: number
@@ -61,6 +62,8 @@ export default function TenantDetailPage() {
 
   const [accessForm, setAccessForm] = useState({ startsAt: '', days: 30 })
   const [savingAccess, setSavingAccess] = useState(false)
+  const [slugForm, setSlugForm] = useState('')
+  const [savingSlug, setSavingSlug] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -81,6 +84,7 @@ export default function TenantDetailPage() {
         superadminApi.getTenantAdmin(tenantId),
       ])
       setTenant(tRes.data)
+      setSlugForm(tRes.data.slug)
       setStats(sRes.data as TenantStats)
       setUsers(uRes.data as TenantUser[])
       setHasAdmin(aRes.data.exists)
@@ -155,6 +159,7 @@ export default function TenantDetailPage() {
           role: tenant.tenantType === 'Agencia' ? 'AdminAgencia' : 'AdminAcademia',
           tenantId: tenant.id,
           tenantName: tenant.name,
+          tenantSlug: tenant.slug,
           tenantType: tenant.tenantType,
         }))
       }
@@ -228,6 +233,26 @@ export default function TenantDetailPage() {
     d.setDate(d.getDate() + Number(accessForm.days))
     return d
   })()
+
+  const handleSaveSlug = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!slugForm.trim()) {
+      toast('El slug no puede estar vacío', 'error')
+      return
+    }
+    setSavingSlug(true)
+    try {
+      const res = await superadminApi.updateTenant(tenantId, { slug: slugForm.trim() })
+      setTenant(res.data as TenantDetail)
+      setSlugForm((res.data as TenantDetail).slug)
+      toast('URL de acceso actualizada', 'success')
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      toast(ax.response?.data?.message || 'Error al actualizar el slug', 'error')
+    } finally {
+      setSavingSlug(false)
+    }
+  }
 
   const handleSetAccess = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -347,6 +372,35 @@ export default function TenantDetailPage() {
           ))}
         </div>
       )}
+
+      <form onSubmit={handleSaveSlug} className="rounded-2xl p-4 mb-6"
+        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
+        <h3 className="text-white font-semibold mb-1">URL de acceso</h3>
+        <p className="text-xs text-gray-500 mb-3">
+          El slug es solo el prefijo del subdominio. Ejemplo: <span style={{ color: NEON }}>jraasecurity</span> → jraasecurity.simulacros.pe
+        </p>
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs text-gray-500 mb-1">Slug</label>
+            <input
+              className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              value={slugForm}
+              onChange={(e) => setSlugForm(e.target.value)}
+              placeholder="jraasecurity"
+              required
+            />
+          </div>
+          <button type="submit" disabled={savingSlug || slugForm === tenant.slug}
+            className="px-4 py-2 rounded-xl text-sm font-bold"
+            style={{ backgroundColor: NEON, color: '#000', opacity: savingSlug || slugForm === tenant.slug ? 0.6 : 1 }}>
+            {savingSlug ? 'Guardando...' : 'Guardar slug'}
+          </button>
+        </div>
+        <div className="mt-3">
+          <TenantAccessUrl slug={slugForm.trim() || tenant.slug} />
+        </div>
+      </form>
 
       <form onSubmit={handleSetAccess} className="rounded-2xl p-4 mb-6"
         style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
