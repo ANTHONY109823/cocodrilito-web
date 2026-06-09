@@ -41,7 +41,7 @@ interface TenantPlansSectionProps {
 
 export function TenantPlansSection({
   tenantId: managedTenantId,
-  description = 'Define los planes que tus alumnos verán al contratar acceso desde la web.',
+  description = 'Configura los planes de suscripción de esta agencia. Todos los alumnos verán los mismos planes al contratar acceso.',
 }: TenantPlansSectionProps) {
   const { user } = useAuthStore()
   const tenantId = managedTenantId ?? user?.tenantId ?? undefined

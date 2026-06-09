@@ -35,6 +35,7 @@ interface Subscription {
   id: string
   userId: string
   planType: string
+  planDurationDays?: number | null
   paymentMethod: string
   amountPaid: number
   paymentReference: string
@@ -193,7 +194,9 @@ export default function AdminPage() {
 
   const handleApprove = async (sub: Subscription) => {
     try {
-      const days = inferDays(sub.amountPaid)
+      const days = sub.planDurationDays && sub.planDurationDays > 0
+        ? sub.planDurationDays
+        : inferDays(sub.amountPaid)
       await apiClient.put(`/subscriptions/${sub.id}/approve`, { durationDays: days })
       setSubscriptions(prev => prev.filter(s => s.id !== sub.id))
       setDashData(prev => prev
