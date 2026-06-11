@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import apiClient from '@/lib/api/client'
+import { getApiErrorMessage } from '@/lib/api/errors'
+import { toast } from '@/components/Toast'
+import { ErrorState } from '@/components/ui'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useAuthStore } from '@/lib/store/authStore'
 import Link from 'next/link'
 
@@ -49,8 +53,11 @@ export default function RankingPage() {
   const [ranking, setRanking] = useState<RankingEntry[]>([])
   const [myRanking, setMyRanking] = useState<MyRanking | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const loadRanking = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
       const [globalRes, myRes] = await Promise.all([
         apiClient.get('/rankings/global'),
@@ -61,7 +68,14 @@ export default function RankingPage() {
         : globalRes.data?.items || globalRes.data?.data || []
       setRanking(globalData)
       setMyRanking(myRes.data)
-    } catch { /* ignore */ } finally { setLoading(false) }
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Error al cargar el ranking')
+      console.error('[ranking] loadRanking failed:', err)
+      setError(msg)
+      toast(msg, 'error')
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -157,17 +171,15 @@ export default function RankingPage() {
               style={{ backgroundColor: 'rgba(0,8,4,0.6)' }} />
           ))}
         </div>
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => void loadRanking()} />
       ) : ranking.length === 0 ? (
-        <div className="text-center py-12 rounded-2xl"
-          style={{ background: 'rgba(0,8,4,0.8)', border: `1px solid ${NEON}15` }}>
-          <div className="text-4xl mb-3">🏆</div>
-          <p className="text-gray-500 text-sm">Sé el primero en el ranking</p>
-          <Link href="/exams"
-            className="inline-block mt-4 px-5 py-2 rounded-xl text-sm font-bold"
-            style={{ backgroundColor: NEON, color: '#000' }}>
-            Hacer simulacro →
-          </Link>
-        </div>
+        <EmptyState
+          icon="🏆"
+          title="Ranking vacío"
+          description="Sé el primero en completar un simulacro."
+          action={{ label: 'Hacer simulacro →', href: '/exams' }}
+        />
       ) : (
         <div className="space-y-2 fade-in">
           {ranking.map((entry) => {

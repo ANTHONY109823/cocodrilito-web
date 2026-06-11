@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { LogOut, LucideIcon, User } from 'lucide-react'
+import { LogOut, LucideIcon } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
@@ -153,18 +153,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </>
             )}
-
-            {navContext === 'student' && (
-              <>
-                <div className="my-2 h-px bg-[rgba(189,255,223,0.12)]" />
-                <SidebarNavItem
-                  href="/profile"
-                  label="Mi Perfil"
-                  icon={User}
-                  active={pathname === '/profile'}
-                />
-              </>
-            )}
           </nav>
 
           <div className="mt-auto space-y-2 pt-4">
@@ -234,7 +222,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-2 py-2 safe-area-pb">
-        {mobileNav.map(({ href, label, icon: Icon }) => {
+        {mobileNav.map(({ href, label, mobileLabel, icon: Icon }) => {
           const active = isNavActive(pathname, href, search)
           return (
             <Link
@@ -246,7 +234,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               )}
             >
               <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
-              {label.split(' ')[0]}
+              {mobileLabel ?? label}
             </Link>
           )
         })}

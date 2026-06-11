@@ -10,12 +10,15 @@ import {
   ScrollText,
   Settings,
   Trophy,
+  User,
   Users,
 } from 'lucide-react'
 
 export interface NavItem {
   href: string
   label: string
+  /** Etiqueta corta para bottom nav móvil (380px). Si no se define, se usa `label`. */
+  mobileLabel?: string
   icon: LucideIcon
 }
 
@@ -24,6 +27,7 @@ export const STUDENT_NAV: NavItem[] = [
   { href: '/exams', label: 'Exámenes', icon: FileText },
   { href: '/history', label: 'Historial', icon: History },
   { href: '/ranking', label: 'Ranking', icon: Trophy },
+  { href: '/profile', label: 'Mi Perfil', mobileLabel: 'Perfil', icon: User },
 ]
 
 export const SUPERADMIN_NAV: NavItem[] = [
@@ -37,9 +41,24 @@ export const SUPERADMIN_NAV: NavItem[] = [
 export const TENANT_ADMIN_NAV: NavItem[] = [
   { href: '/admin', label: 'Inicio', icon: Home },
   { href: '/admin?tab=users&sub=activos', label: 'Usuarios', icon: Users },
-  { href: '/admin/preguntas', label: 'Preguntas de exámenes', icon: Library },
-  { href: '/exams', label: 'Modo prueba examen', icon: FileText },
-  { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
+  {
+    href: '/admin/preguntas',
+    label: 'Preguntas de exámenes',
+    mobileLabel: 'Preguntas',
+    icon: Library,
+  },
+  {
+    href: '/exams',
+    label: 'Modo prueba examen',
+    mobileLabel: 'Prueba',
+    icon: FileText,
+  },
+  {
+    href: '/admin/configuracion',
+    label: 'Configuración',
+    mobileLabel: 'Config',
+    icon: Settings,
+  },
 ]
 
 export function isTenantAdminRole(role?: string | null): boolean {

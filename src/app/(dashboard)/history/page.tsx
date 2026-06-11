@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import apiClient from '@/lib/api/client'
+import { getApiErrorMessage } from '@/lib/api/errors'
+import { toast } from '@/components/Toast'
+import { ErrorState } from '@/components/ui'
+import { EmptyState } from '@/components/ui/EmptyState'
 import Link from 'next/link'
 
 import { NEON } from '@/lib/constants/theme'
@@ -23,12 +27,22 @@ interface SessionHistory {
 export default function HistoryPage() {
   const [sessions, setSessions] = useState<SessionHistory[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const loadHistory = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
       const res = await apiClient.get('/exams/sessions/history')
       setSessions(Array.isArray(res.data) ? res.data : res.data?.items || [])
-    } catch { /* ignore */ } finally { setLoading(false) }
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Error al cargar el historial')
+      console.error('[history] loadHistory failed:', err)
+      setError(msg)
+      toast(msg, 'error')
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { void loadHistory() }, [loadHistory])
@@ -62,18 +76,15 @@ export default function HistoryPage() {
               style={{ backgroundColor: 'rgba(0,8,4,0.6)' }} />
           ))}
         </div>
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => void loadHistory()} />
       ) : sessions.length === 0 ? (
-        <div className="text-center py-16 rounded-2xl"
-          style={{ background: 'rgba(0,8,4,0.8)', border: `1px solid ${NEON}15` }}>
-          <div className="text-5xl mb-4">📋</div>
-          <h3 className="text-white font-bold mb-2">Sin historial aún</h3>
-          <p className="text-gray-500 text-sm mb-4">Completa tu primer simulacro para ver tu historial.</p>
-          <Link href="/exams"
-            className="inline-flex px-5 py-2.5 rounded-xl font-bold text-sm"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
-            Ir a exámenes →
-          </Link>
-        </div>
+        <EmptyState
+          icon="📋"
+          title="Sin historial aún"
+          description="Completa tu primer simulacro para ver tu historial."
+          action={{ label: 'Ir a exámenes →', href: '/exams' }}
+        />
       ) : (
         <div className="space-y-3 fade-in">
           {sessions.map((s) => (
