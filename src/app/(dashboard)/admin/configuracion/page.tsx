@@ -8,8 +8,7 @@ import { isTenantAdmin } from '@/lib/auth/roles'
 import { tenantAdminApi } from '@/lib/api/tenantAdmin'
 import { authApi } from '@/lib/api/auth'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
-import { validatePassword } from '@/lib/utils/passwordPolicy'
+import { AdminPasswordForm } from '@/components/admin/AdminPasswordForm'
 import { NEON } from '@/lib/constants/theme'
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024
@@ -26,11 +25,6 @@ export default function ConfiguracionPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoUrl, setLogoUrl] = useState('')
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  })
 
   const loadProfile = useCallback(async () => {
     setLoading(true)
@@ -122,31 +116,17 @@ export default function ConfiguracionPage() {
     }
   }
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleChangePassword = async (values: {
+    currentPassword: string
+    newPassword: string
+  }) => {
     setMsg(null)
-
-    const pwdError = validatePassword(passwordForm.newPassword)
-    if (pwdError) {
-      setMsg({ text: pwdError, ok: false })
-      return
-    }
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setMsg({ text: 'Las contraseñas no coinciden', ok: false })
-      return
-    }
-    if (passwordForm.newPassword === passwordForm.currentPassword) {
-      setMsg({ text: 'La nueva contraseña debe ser distinta a la actual', ok: false })
-      return
-    }
-
     setChangingPassword(true)
     try {
       await authApi.changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
       })
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setMsg({ text: 'Contraseña actualizada correctamente', ok: true })
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error al cambiar la contraseña'), ok: false })
@@ -261,62 +241,15 @@ export default function ConfiguracionPage() {
         )}
       </section>
 
-      <form onSubmit={handleChangePassword} className="rounded-2xl p-5 space-y-4" style={cardStyle}>
+      <section className="rounded-2xl p-5 space-y-4" style={cardStyle}>
         <div>
           <h2 className="text-white font-semibold text-sm">Cambiar contraseña</h2>
           <p className="text-xs text-gray-500 mt-1">
             Actualiza la contraseña de tu cuenta de administrador.
           </p>
         </div>
-
-        <div>
-          <label className="block text-xs text-gray-500 mb-1.5">Contraseña actual</label>
-          <input
-            style={inputStyle}
-            type="password"
-            value={passwordForm.currentPassword}
-            onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-            autoComplete="current-password"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1.5">Nueva contraseña</label>
-          <input
-            style={inputStyle}
-            type="password"
-            value={passwordForm.newPassword}
-            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-            autoComplete="new-password"
-            required
-          />
-          <PasswordPolicyHint password={passwordForm.newPassword} />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1.5">Confirmar nueva contraseña</label>
-          <input
-            style={inputStyle}
-            type="password"
-            value={passwordForm.confirmPassword}
-            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-            autoComplete="new-password"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={changingPassword}
-          className="w-full py-2.5 rounded-xl font-bold text-sm"
-          style={{
-            background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
-            color: '#000',
-            opacity: changingPassword ? 0.7 : 1,
-          }}
-        >
-          {changingPassword ? 'Guardando...' : 'Cambiar contraseña'}
-        </button>
-      </form>
+        <AdminPasswordForm loading={changingPassword} onSubmit={handleChangePassword} />
+      </section>
     </div>
   )
 }

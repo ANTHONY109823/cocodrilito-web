@@ -18,6 +18,7 @@ import {
   isAdminAgencia,
   isAdminAcademia,
 } from '@/lib/auth/roles'
+import { QuestionEditModal, type EditableQuestion } from '@/components/admin/preguntas/QuestionEditModal'
 import { NEON } from '@/lib/constants/theme'
 
 interface Question {
@@ -69,7 +70,7 @@ export default function PreguntasPage() {
   const [saving, setSaving] = useState(false)
   const [uploadingCat, setUploadingCat] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null)
+  const [editingQuestion, setEditingQuestion] = useState<EditableQuestion | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -330,87 +331,15 @@ export default function PreguntasPage() {
         select.input-q option { background:#111; }
       `}</style>
 
-      {/* MODAL EDITAR */}
       {editingQuestion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
-          <div className="w-full max-w-2xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto fade-in"
-            style={{ background: '#111614', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-white font-semibold text-base">Editar pregunta</h3>
-              <button onClick={() => setEditingQuestion(null)}
-                className="text-gray-500 hover:text-gray-300 text-lg leading-none transition-colors">✕</button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1.5">Texto de la pregunta</label>
-                <textarea className="input-q" rows={4}
-                  value={editingQuestion.questionText}
-                  onChange={e => setEditingQuestion({ ...editingQuestion, questionText: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">Categoría</label>
-                  <select className="input-q" value={editingQuestion.category}
-                    onChange={e => setEditingQuestion({ ...editingQuestion, category: e.target.value })}>
-                    {categories.map(c => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">Año</label>
-                  <input className="input-q" type="number" value={editingQuestion.yearValuation}
-                    onChange={e => setEditingQuestion({ ...editingQuestion, yearValuation: Number(e.target.value) })} />
-                </div>
-              </div>
-              {editingQuestion.answerOptions && (
-                <div>
-                  <label className="block text-xs text-gray-500 mb-2">
-                    Opciones — <span style={{ color: NEON }}>toca la letra para marcar correcta</span>
-                  </label>
-                  {editingQuestion.answerOptions
-                    .sort((a, b) => a.optionIndex - b.optionIndex)
-                    .map((opt, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-2">
-                        <button type="button"
-                          onClick={() => setEditingQuestion({
-                            ...editingQuestion,
-                            answerOptions: editingQuestion.answerOptions!.map((o, j) => ({ ...o, isCorrect: j === i }))
-                          })}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-all"
-                          style={{
-                            backgroundColor: opt.isCorrect ? NEON : 'rgba(255,255,255,0.06)',
-                            color: opt.isCorrect ? '#000' : '#6B7280',
-                            border: `1px solid ${opt.isCorrect ? NEON : 'rgba(255,255,255,0.1)'}`
-                          }}>
-                          {letters[i]}
-                        </button>
-                        <input className="input-q flex-1" value={opt.optionText}
-                          onChange={e => setEditingQuestion({
-                            ...editingQuestion,
-                            answerOptions: editingQuestion.answerOptions!.map((o, j) =>
-                              j === i ? { ...o, optionText: e.target.value } : o)
-                          })} />
-                      </div>
-                    ))}
-                </div>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setEditingQuestion(null)}
-                  className="flex-1 py-2.5 rounded-xl text-sm transition-colors"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#6B7280', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  Cancelar
-                </button>
-                <button onClick={handleSaveEdit} disabled={saving}
-                  className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-opacity"
-                  style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
-                  {saving ? 'Guardando...' : 'Guardar cambios'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <QuestionEditModal
+          question={editingQuestion}
+          categories={categories}
+          saving={saving}
+          onClose={() => setEditingQuestion(null)}
+          onChange={setEditingQuestion}
+          onSave={() => void handleSaveEdit()}
+        />
       )}
 
       {/* HEADER */}

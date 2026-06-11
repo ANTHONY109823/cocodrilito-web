@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
@@ -13,13 +13,16 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store/authStore'
 import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
-import apiClient from '@/lib/api/client'
 import { examsApi } from '@/lib/api/exams'
 import { saveExamSessionMeta } from '@/lib/examSession'
+import { useExamList } from '@/hooks/useExamList'
+import { useCategories } from '@/hooks/useCategories'
+import { useQuestionCounts } from '@/hooks/useQuestionCounts'
 import Link from 'next/link'
 import { Button } from '@/components/ui'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Badge } from '@/components/ui'
+import { cn } from '@/lib/utils/cn'
 
 const CATEGORY_EMOJI: Record<string, string> = {
   'Ley PNP': '⚖️',
@@ -41,74 +44,39 @@ interface Exam {
   passingScore: number
 }
 
-interface Category {
-  id: string
-  name: string
-  color: string
-}
-
 export default function ExamsPage() {
   const router = useRouter()
   const { user, loadFromStorage } = useAuthStore()
   const previewMode = isTenantAdmin(user?.role) || isSuperAdmin(user?.role)
   const backHref = isSuperAdmin(user?.role) ? '/superadmin?tab=inicio' : '/admin'
-  const [exams, setExams] = useState<Exam[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({})
-  const [totalQuestions, setTotalQuestions] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const { exams, isLoading: examsLoading, error: examsError } = useExamList()
+  const { categories, isLoading: catsLoading, error: catsError } = useCategories()
+  const {
+    total: totalQuestions,
+    byCategory: questionCounts,
+    isLoading: countsLoading,
+    error: countsError,
+  } = useQuestionCounts()
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedCount, setSelectedCount] = useState<25 | 50 | 100>(100)
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [examsRes, catsRes, countsRes] = await Promise.all([
-        apiClient.get('/exams/list'),
-        apiClient.get('/categories'),
-        examsApi.getQuestionCounts(),
-      ])
-
-      const examsData = (Array.isArray(examsRes.data) ? examsRes.data : []).map(
-        (e: Exam & { Id?: string }) => ({
-          ...e,
-          id: e.id || (e as { Id?: string }).Id || '',
-        })
-      )
-      const catsData = Array.isArray(catsRes.data) ? catsRes.data : []
-      const byCategory = countsRes.data?.byCategory || []
-      const total = countsRes.data?.total ?? 0
-
-      const counts: Record<string, number> = {}
-      byCategory.forEach((row: { category: string; count: number }) => {
-        counts[row.category] = row.count
-      })
-
-      setExams(examsData)
-      setCategories(catsData)
-      setTotalQuestions(total)
-      setQuestionCounts(counts)
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.status === 403) {
-        setBlocked(true)
-      } else {
-        setError(getApiErrorMessage(err, 'Error al cargar simulacros'))
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const loading = examsLoading || catsLoading || countsLoading
 
   useEffect(() => {
     loadFromStorage()
   }, [loadFromStorage])
 
   useEffect(() => {
-    void loadData()
-  }, [loadData])
+    const err = examsError || catsError || countsError
+    if (!err) return
+    if (axios.isAxiosError(err) && err.response?.status === 403) {
+      setBlocked(true)
+    } else {
+      setError(getApiErrorMessage(err, 'Error al cargar simulacros'))
+    }
+  }, [examsError, catsError, countsError])
 
   const DURATIONS: Record<25 | 50 | 100, string> = {
     25: '~15 minutos',
@@ -169,7 +137,7 @@ export default function ExamsPage() {
     )
   }
 
-  const mainExam = exams[0]
+  const mainExam = exams[0] as Exam | undefined
   const simulacroCount = Math.min(selectedCount, totalQuestions)
 
   return (

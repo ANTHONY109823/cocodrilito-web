@@ -7,6 +7,7 @@ import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { getNavContext } from '@/lib/auth/roles'
 import { DashboardShell } from '@/components/layout/DashboardShell'
 import { enforceTenantHostAccess } from '@/lib/utils/tenantHost'
+import { useSessionSync } from '@/hooks/useSessionSync'
 
 const STUDENT_ONLY_PREFIXES = ['/exams', '/history', '/ranking', '/premium', '/exam/', '/result/', '/review/']
 
@@ -15,6 +16,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const { isAuthenticated, user, loadFromStorage } = useAuthStore()
   const { loadFromStorage: loadImpersonation, active: impersonating } = useImpersonationStore()
+
+  useSessionSync()
 
   useEffect(() => {
     loadFromStorage()

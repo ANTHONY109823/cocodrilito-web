@@ -90,6 +90,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const search = searchParams.toString() ? `?${searchParams.toString()}` : ''
 
+  const hideMobileNav =
+    pathname.startsWith('/exam/') ||
+    pathname.startsWith('/result/') ||
+    pathname.startsWith('/review/')
+
   const handleLogout = async () => {
     try {
       await authApi.logout()
@@ -221,7 +226,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-2 py-2 safe-area-pb">
+      <nav className={cn(
+        'lg:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-2 py-2 safe-area-pb',
+        hideMobileNav && 'hidden'
+      )}>
         {mobileNav.map(({ href, label, mobileLabel, icon: Icon }) => {
           const active = isNavActive(pathname, href, search)
           return (
