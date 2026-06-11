@@ -177,12 +177,14 @@ export default function PreguntasPage() {
     }
   }
 
-  const handleDownloadTemplate = async () => {
+  const handleDownloadTemplate = async (category?: string) => {
     try {
-      const res = await apiClient.get('/admin/import/template', { responseType: 'blob' })
+      const params = category ? { categoria: category } : undefined
+      const res = await apiClient.get('/admin/import/template', { responseType: 'blob', params })
       const url = window.URL.createObjectURL(new Blob([res.data]))
       const a = document.createElement('a'); a.href = url
-      a.download = 'plantilla_preguntas.csv'; a.click()
+      const safeCat = category?.toLowerCase().replace(/\s+/g, '_') ?? 'general'
+      a.download = `plantilla_preguntas_${safeCat}.csv`; a.click()
     } catch { }
   }
 
@@ -432,7 +434,7 @@ export default function PreguntasPage() {
         </div>
         {!readOnly && (
         <div className="flex gap-2 flex-wrap">
-          <button onClick={handleDownloadTemplate}
+          <button onClick={() => handleDownloadTemplate(selectedCategory || undefined)}
             className="px-3 py-2 rounded-lg text-xs font-medium transition-colors"
             style={{ backgroundColor: 'rgba(79,195,247,0.1)', color: NEON2, border: '1px solid rgba(79,195,247,0.2)' }}>
             ⬇️ Plantilla CSV
@@ -483,6 +485,12 @@ export default function PreguntasPage() {
       {isSuperAdminMode && !readOnly && (
         <div className="rounded-2xl p-4 mb-5 space-y-3"
           style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
+          <div className="rounded-xl px-3 py-2 text-xs text-gray-400"
+            style={{ background: 'rgba(79,195,247,0.06)', border: '1px solid rgba(79,195,247,0.15)' }}>
+            <strong className="text-gray-300">Importación solo CSV</strong> — un archivo por categoría (botón ↑ CSV).
+            Balotarios: <span className="text-gray-300">Suboficiales</span> y <span className="text-gray-300">Oficiales</span> por separado.
+            No uses Excel (.xlsx). Si editas en Excel, guarda como <span className="text-gray-300">CSV UTF-8</span>.
+          </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="text-white font-semibold text-sm mb-1">Balotario de preguntas</div>
