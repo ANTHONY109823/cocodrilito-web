@@ -144,8 +144,14 @@ export const superadminApi = {
     markAsPaid: boolean
     notes?: string
   }) => apiClient.post(`/superadmin/tenants/${id}/payments`, data),
-  getUsers: (page = 1, pageSize = 50) =>
-    apiClient.get('/superadmin/users', { params: { page, pageSize } }),
+  getUsers: (
+    page = 1,
+    pageSize = 50,
+    filters?: { tenantId?: string; role?: string; search?: string }
+  ) =>
+    apiClient.get('/superadmin/users', {
+      params: { page, pageSize, ...filters },
+    }),
   getAuditLog: (page = 1, pageSize = 50) =>
     apiClient.get('/superadmin/audit-log', { params: { page, pageSize } }),
   getPendingSubscriptions: () =>

@@ -19,6 +19,7 @@ import { CredentialsModal, type AdminCredentials } from '@/components/admin/Cred
 import { CreateTenantPanel, type CreateTenantFormState } from '@/components/superadmin/CreateTenantPanel'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { SystemHealthPanel } from '@/components/superadmin/SystemHealthPanel'
+import { SuperAdminUsersPanel } from '@/components/superadmin/SuperAdminUsersPanel'
 import {
   NEON,
   INFO,
@@ -32,6 +33,7 @@ type TabKey =
   | 'inicio'
   | 'agencias'
   | 'academias'
+  | 'usuarios'
   | 'audit'
 
 interface AuditLogEntry {
@@ -52,7 +54,7 @@ export default function SuperAdminPage() {
   const { startImpersonation } = useImpersonationStore()
 
   const tabParam = searchParams.get('tab') as TabKey | null
-  const tab: TabKey = tabParam && ['inicio', 'agencias', 'academias', 'audit'].includes(tabParam)
+  const tab: TabKey = tabParam && ['inicio', 'agencias', 'academias', 'usuarios', 'audit'].includes(tabParam)
     ? tabParam
     : 'inicio'
 
@@ -225,6 +227,7 @@ export default function SuperAdminPage() {
     { key: 'inicio', label: '🏠 Inicio' },
     { key: 'agencias', label: '🏢 Agencias' },
     { key: 'academias', label: '🎓 Academias' },
+    { key: 'usuarios', label: '👥 Usuarios' },
     { key: 'audit', label: '📋 Audit Log' },
   ]
 
@@ -434,6 +437,10 @@ export default function SuperAdminPage() {
           </div>
           {tenantList(academias)}
         </div>
+      )}
+
+      {tab === 'usuarios' && (
+        <SuperAdminUsersPanel />
       )}
 
       {tab === 'audit' && (

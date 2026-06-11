@@ -18,6 +18,7 @@ import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { TenantLoginBrandingFields, emptyLoginBranding } from '@/components/superadmin/TenantLoginBrandingFields'
 import { TenantPlansSection } from '@/components/admin/TenantPlansSection'
 import { resolveLoginBranding, type TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
+import { SuperAdminUsersPanel } from '@/components/superadmin/SuperAdminUsersPanel'
 
 interface TenantStats {
   totalStudents: number
@@ -30,14 +31,6 @@ interface TenantStats {
   activePlans: number
 }
 
-interface TenantUser {
-  id: string
-  fullName: string
-  email: string
-  role: string
-  isActive: boolean
-}
-
 export default function TenantDetailPage() {
   const params = useParams()
   const tenantId = params.tenantId as string
@@ -47,7 +40,6 @@ export default function TenantDetailPage() {
 
   const [tenant, setTenant] = useState<TenantDetail | null>(null)
   const [stats, setStats] = useState<TenantStats | null>(null)
-  const [users, setUsers] = useState<TenantUser[]>([])
   const [tenantAdmin, setTenantAdmin] = useState<TenantAdminInfo | null>(null)
   const [hasAdmin, setHasAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -85,17 +77,15 @@ export default function TenantDetailPage() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [tRes, sRes, uRes, aRes] = await Promise.all([
+      const [tRes, sRes, aRes] = await Promise.all([
         superadminApi.getTenant(tenantId),
         superadminApi.getTenantStats(tenantId),
-        superadminApi.getTenantUsers(tenantId),
         superadminApi.getTenantAdmin(tenantId),
       ])
       setTenant(tRes.data)
       setTenantForm({ name: tRes.data.name, slug: tRes.data.slug })
       setLoginBranding(resolveLoginBranding(tRes.data.loginConfig))
       setStats(sRes.data as TenantStats)
-      setUsers(uRes.data as TenantUser[])
       setHasAdmin(aRes.data.exists)
       setTenantAdmin(aRes.data.admin)
       if (aRes.data.admin) {
@@ -756,19 +746,11 @@ export default function TenantDetailPage() {
         </div>
       </Modal>
 
-      <div className="rounded-2xl p-4"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
-        <h3 className="text-white font-semibold mb-3">Usuarios del tenant ({users.length})</h3>
-        <div className="space-y-2 max-h-80 overflow-y-auto">
-          {users.map((u) => (
-            <div key={u.id} className="flex justify-between text-sm py-2"
-              style={{ borderBottom: `1px solid ${policeGreenRgba(0.1)}` }}>
-              <span className="text-gray-300">{u.fullName} · {u.email}</span>
-              <span style={{ color: u.isActive ? NEON : DANGER }}>{u.role}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <SuperAdminUsersPanel
+        tenantId={tenantId}
+        tenantName={tenant.name}
+        compact
+      />
     </div>
   )
 }
