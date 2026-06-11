@@ -1,18 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
+import { toast } from '@/components/Toast'
+import { Badge, Card, ErrorState } from '@/components/ui'
+import { EmptyState } from '@/components/ui/EmptyState'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { toast } from '@/components/Toast'
-import { ErrorState } from '@/components/ui'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { useAuthStore } from '@/lib/store/authStore'
-import Link from 'next/link'
-
-import { NEON } from '@/lib/constants/theme'
-const GOLD = '#FFD700'
-const SILVER = '#C0C0C0'
-const BRONZE = '#CD7F32'
+import { cn } from '@/lib/utils/cn'
 
 interface RankingEntry {
   position: number
@@ -36,16 +32,42 @@ interface MyRanking {
 const leagueEmoji: Record<string, string> = {
   'Cola Cortada': '🏆',
   'Creo que nos cortan la cola': '✂️',
-  'Lagartito': '🦎',
-  'Cocodrilito': '🐊',
-  'Dinosaurio': '🦕',
+  Lagartito: '🦎',
+  Cocodrilito: '🐊',
+  Dinosaurio: '🦕',
 }
 
-const medalColor = (pos: number) => {
-  if (pos === 1) return GOLD
-  if (pos === 2) return SILVER
-  if (pos === 3) return BRONZE
-  return '#4B5563'
+const podiumStyles: Record<number, string> = {
+  1: 'border-[#C9943A]/30 bg-[#C9943A]/10',
+  2: 'border-[rgba(189,255,223,0.2)] bg-[rgba(189,255,223,0.06)]',
+  3: 'border-[#BA7517]/30 bg-[#BA7517]/10',
+}
+
+const podiumScoreColor: Record<number, string> = {
+  1: 'text-[#C9943A]',
+  2: 'text-[#A8BFB0]',
+  3: 'text-[#BA7517]',
+}
+
+function PositionBadge({ position }: { position: number }) {
+  if (position <= 3) {
+    const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : '🥉'
+    return (
+      <div
+        className={cn(
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold',
+          podiumStyles[position]
+        )}
+      >
+        {medal}
+      </div>
+    )
+  }
+  return (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(189,255,223,0.08)] text-sm font-bold text-[#6B8A75]">
+      #{position}
+    </div>
+  )
 }
 
 export default function RankingPage() {
@@ -81,94 +103,92 @@ export default function RankingPage() {
   useEffect(() => {
     void loadRanking()
   }, [loadRanking])
-  
-  return (
-    <div className="max-w-2xl mx-auto">
-      <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        .fade-in { animation: fadeIn 0.3s ease forwards; }
-        .rank-row { transition: all 0.2s; }
-        .rank-row:hover { transform: translateX(4px); }
-      `}</style>
 
-      {/* HEADER */}
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard"
-          className="text-gray-500 hover:text-white text-sm transition-colors">
+  return (
+    <div className="mx-auto max-w-2xl">
+      <div className="mb-6 flex flex-wrap items-start gap-3 sm:gap-4">
+        <Link
+          href="/dashboard"
+          className="text-sm text-[#6B8A75] transition-colors hover:text-white"
+        >
           ← Inicio
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">Ranking PNP 🏆</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Los mejores efectivos del simulacro</p>
+          <h1 className="text-xl font-bold text-white sm:text-2xl">Ranking PNP 🏆</h1>
+          <p className="mt-0.5 text-sm text-[#6B8A75]">
+            Los mejores efectivos del simulacro
+          </p>
         </div>
       </div>
 
-      {/* MI POSICIÓN */}
       {myRanking && (
-        <div className="rounded-2xl p-4 mb-4 fade-in"
-          style={{
-            background: 'rgba(74,124,89,0.06)',
-            border: `1px solid ${NEON}25`,
-            boxShadow: `0 0 20px ${NEON}10`
-          }}>
-          <div className="flex items-center justify-between">
+        <Card
+          variant="highlighted"
+          padding="sm"
+          className="mb-4 rounded-xl border-[rgba(49,143,72,0.35)] bg-[rgba(49,143,72,0.08)]"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold"
-                style={{ backgroundColor: `${NEON}20`, color: NEON }}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(49,143,72,0.2)] text-lg font-bold text-[#318F48]">
                 #{myRanking.position}
               </div>
               <div>
-                <div className="text-white font-semibold text-sm">Tu posición</div>
-                <div className="text-gray-500 text-xs">{user?.fullName}</div>
+                <div className="text-sm font-semibold text-white">Tu posición</div>
+                <div className="text-xs text-[#6B8A75]">{user?.fullName}</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-lg font-bold" style={{ color: NEON }}>
+              <div className="text-lg font-bold text-[#318F48]">
                 {leagueEmoji[myRanking.currentLeague]} {myRanking.currentLeague}
               </div>
-              <div className="text-gray-500 text-xs">{myRanking.correctAnswers} correctas</div>
+              <div className="text-xs text-[#6B8A75]">
+                {myRanking.correctAnswers} correctas
+              </div>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* TOP 3 */}
       {!loading && ranking.length >= 3 && (
-        <div className="grid grid-cols-3 gap-3 mb-4 fade-in">
+        <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
           {[ranking[1], ranking[0], ranking[2]].map((entry, i) => {
             if (!entry) return null
             const actualPos = i === 0 ? 2 : i === 1 ? 1 : 3
-            const color = medalColor(actualPos)
-            const size = actualPos === 1 ? 'py-6' : 'py-4'
             return (
-              <div key={entry.userId}
-                className={`rounded-2xl p-3 ${size} text-center`}
-                style={{
-                  background: `rgba(${actualPos === 1 ? '255,215,0' : actualPos === 2 ? '192,192,192' : '205,127,50'},0.06)`,
-                  border: `1px solid ${color}25`
-                }}>
-                <div className="text-2xl mb-1">
+              <Card
+                key={entry.userId}
+                padding="sm"
+                className={cn(
+                  'rounded-xl text-center',
+                  podiumStyles[actualPos],
+                  actualPos === 1 ? 'py-5 sm:py-6' : 'py-3 sm:py-4'
+                )}
+              >
+                <div className="mb-1 text-2xl">
                   {actualPos === 1 ? '🥇' : actualPos === 2 ? '🥈' : '🥉'}
                 </div>
-                <div className="text-white font-bold text-xs truncate">
+                <div className="truncate text-xs font-bold text-white">
                   {entry.fullName.split(' ')[0]}
                 </div>
-                <div className="text-xs mt-0.5" style={{ color }}>{entry.correctAnswers} ✓</div>
-                <div className="text-xs text-gray-600 mt-0.5">
+                <div className={cn('mt-0.5 text-xs', podiumScoreColor[actualPos])}>
+                  {entry.correctAnswers} ✓
+                </div>
+                <div className="mt-0.5 text-xs text-[#6B8A75]">
                   {leagueEmoji[entry.currentLeague]}
                 </div>
-              </div>
+              </Card>
             )
           })}
         </div>
       )}
 
-      {/* LISTA COMPLETA */}
       {loading ? (
         <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-16 rounded-2xl animate-pulse"
-              style={{ backgroundColor: 'rgba(0,8,4,0.6)' }} />
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="h-16 animate-pulse rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10]"
+            />
           ))}
         </div>
       ) : error ? (
@@ -181,51 +201,43 @@ export default function RankingPage() {
           action={{ label: 'Hacer simulacro →', href: '/exams' }}
         />
       ) : (
-        <div className="space-y-2 fade-in">
+        <div className="space-y-2">
           {ranking.map((entry) => {
             const isMe = entry.userId === user?.id
-            const color = medalColor(entry.position)
             return (
-              <div key={entry.userId}
-                className="rank-row rounded-2xl p-4 flex items-center gap-3"
-                style={{
-                  background: isMe ? 'rgba(74,124,89,0.06)' : 'rgba(0,5,2,0.8)',
-                  border: `1px solid ${isMe ? NEON : '#ffffff08'}${isMe ? '30' : ''}`,
-                }}>
-                {/* POSICIÓN */}
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0"
-                  style={{
-                    backgroundColor: entry.position <= 3 ? `${color}20` : '#ffffff08',
-                    color: entry.position <= 3 ? color : '#6B7280'
-                  }}>
-                  {entry.position <= 3
-                    ? (entry.position === 1 ? '🥇' : entry.position === 2 ? '🥈' : '🥉')
-                    : `#${entry.position}`}
-                </div>
+              <Card
+                key={entry.userId}
+                padding="sm"
+                className={cn(
+                  'rounded-xl transition-transform hover:translate-x-1',
+                  isMe && 'border-[rgba(49,143,72,0.35)] bg-[rgba(49,143,72,0.06)]'
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <PositionBadge position={entry.position} />
 
-                {/* INFO */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-semibold text-sm truncate">
-                      {entry.fullName}
-                      {isMe && <span className="text-xs ml-1" style={{ color: NEON }}>(tú)</span>}
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-semibold text-white">
+                        {entry.fullName}
+                      </span>
+                      {isMe && <Badge color="green">tú</Badge>}
+                    </div>
+                    <div className="truncate text-xs text-[#6B8A75]">
+                      {entry.rank} · {entry.unit}
+                    </div>
                   </div>
-                  <div className="text-gray-600 text-xs truncate">
-                    {entry.rank} · {entry.unit}
-                  </div>
-                </div>
 
-                {/* STATS */}
-                <div className="text-right shrink-0">
-                  <div className="text-sm font-bold" style={{ color: NEON }}>
-                    {entry.correctAnswers} ✓
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {leagueEmoji[entry.currentLeague]} {entry.currentLeague}
+                  <div className="shrink-0 text-right">
+                    <div className="text-sm font-bold text-[#318F48]">
+                      {entry.correctAnswers} ✓
+                    </div>
+                    <div className="text-xs text-[#6B8A75]">
+                      {leagueEmoji[entry.currentLeague]} {entry.currentLeague}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             )
           })}
         </div>
