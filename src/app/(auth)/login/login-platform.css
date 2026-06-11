@@ -689,6 +689,36 @@
 }
 
 /* ═══ RESPONSIVE ═══ */
+.login-error-banner {
+  grid-column: 1 / -1;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 152, 0, 0.4);
+  background: rgba(255, 152, 0, 0.12);
+  color: #ffc98a;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+
+.login-error-banner strong {
+  display: block;
+  color: #ffb74d;
+  margin-bottom: 6px;
+}
+
+.login-error-banner p {
+  margin: 0;
+  color: #e8d5b5;
+}
+
+.login-error-banner code {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
 .login-error {
   display: flex;
   align-items: flex-start;

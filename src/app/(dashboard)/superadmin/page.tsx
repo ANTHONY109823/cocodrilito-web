@@ -18,6 +18,7 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { CreateTenantPanel, type CreateTenantFormState } from '@/components/superadmin/CreateTenantPanel'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
+import { SystemHealthPanel } from '@/components/superadmin/SystemHealthPanel'
 import {
   NEON,
   INFO,
@@ -366,6 +367,7 @@ export default function SuperAdminPage() {
       {tab === 'inicio' && (
         loading ? <SkeletonTable rows={4} /> : dashboard ? (
           <div className="space-y-4">
+            <SystemHealthPanel />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {statCard('Instituciones', dashboard.totalTenants)}
               {statCard('Activas', dashboard.activeTenants, INFO)}

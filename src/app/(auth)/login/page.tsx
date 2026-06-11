@@ -103,7 +103,7 @@ function LoginForm() {
 
   const tenantSlug = useTenantSlug()
   const [isRootLogin, setIsRootLogin] = useState(false)
-  const { config, loading: configLoading } = useTenantConfig()
+  const { config, loading: configLoading, error: tenantConfigError } = useTenantConfig()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -197,6 +197,15 @@ function LoginForm() {
         )}
 
         <main className="page">
+        {tenantSlug && tenantConfigError && !configLoading && (
+          <div className="login-error-banner" role="alert">
+            <strong>Agencia no encontrada.</strong>
+            <p>
+              La URL <code>{tenantSlug}.simulacros.pe</code> no corresponde a ninguna institución activa.
+              Verifica el enlace con tu agencia o contacta a Simulacros.pe.
+            </p>
+          </div>
+        )}
         <div className="brand">
           {tenantSlug && config?.logoUrl && (
             <Image

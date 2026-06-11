@@ -155,6 +155,10 @@ export const superadminApi = {
     apiClient.get<ExamDistributionConfig>(`/superadmin/exam-config/${total}`),
   updateExamConfig: (total: number, payload: UpdateExamDistributionPayload) =>
     apiClient.put<ExamDistributionConfig>(`/superadmin/exam-config/${total}`, payload),
+  getSystemHealth: () =>
+    apiClient.get<{ status: 'ready' | 'degraded'; checks: { name: string; ok: boolean; message: string; action?: string }[] }>(
+      '/health/readiness'
+    ),
 }
 
 export interface ExamCategoryDistribution {
