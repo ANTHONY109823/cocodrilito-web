@@ -21,6 +21,7 @@ export interface TenantSummary {
   tenantType: string
   allowedTrackTypes: string[]
   students: number
+  admins?: number
   examsCompleted: number
   isActive: boolean
   suspended: boolean

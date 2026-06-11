@@ -279,7 +279,8 @@ export default function SuperAdminPage() {
                 ) : null}
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                {t.slug} · {t.students} usuarios · {t.examsCompleted} exámenes
+                {t.slug} · {t.students} alumno{t.students !== 1 ? 's' : ''}
+                {(t.admins ?? 0) > 0 ? ` · ${t.admins} admin` : ''} · {t.examsCompleted} exámenes
                 {t.contactPhone ? ` · ${t.contactPhone}` : ''}
                 {t.monthlyFee > 0 ? ` · S/. ${t.monthlyFee}/mes` : ''}
               </div>

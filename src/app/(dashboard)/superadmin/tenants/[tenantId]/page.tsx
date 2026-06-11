@@ -20,6 +20,9 @@ import { TenantPlansSection } from '@/components/admin/TenantPlansSection'
 import { resolveLoginBranding, type TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
 
 interface TenantStats {
+  totalStudents: number
+  activeStudents: number
+  totalAdmins: number
   totalUsers: number
   activeUsers: number
   examsThisMonth: number
@@ -391,8 +394,9 @@ export default function TenantDetailPage() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
-            { label: 'Usuarios', value: stats.totalUsers },
-            { label: 'Activos', value: stats.activeUsers },
+            { label: 'Alumnos', value: stats.totalStudents ?? stats.totalUsers },
+            { label: 'Alumnos activos', value: stats.activeStudents ?? stats.activeUsers },
+            { label: 'Admins', value: stats.totalAdmins ?? 0 },
             { label: 'Exámenes mes', value: stats.examsThisMonth },
             { label: 'Planes activos', value: stats.activePlans },
           ].map((s) => (
