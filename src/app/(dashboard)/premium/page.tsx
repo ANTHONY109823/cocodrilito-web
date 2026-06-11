@@ -7,7 +7,7 @@ export default function PremiumPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="text-4xl mb-4 animate-bounce">🐊</div>
-          <p className="text-gray-400">Cargando planes...</p>
+          <p className="text-[#6B8A75]">Cargando planes...</p>
         </div>
       </div>
     }>

@@ -1,13 +1,17 @@
 ﻿'use client'
 
 export const dynamic = 'force-dynamic'
-import { useEffect, useState } from 'react'
-import apiClient from '@/lib/api/client'
-import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 
-import { NEON } from '@/lib/constants/theme'
-const GOLD = '#FFD700'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { toast } from '@/components/Toast'
+import { Badge, Button, Card, Input } from '@/components/ui'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import apiClient from '@/lib/api/client'
+import { getApiErrorMessage } from '@/lib/api/errors'
+import { cn } from '@/lib/utils/cn'
 
 interface Plan {
   id: string
@@ -50,24 +54,32 @@ export default function PremiumPage() {
       setPlansLoading(true)
       setPlansError(null)
       try {
-        const res = await apiClient.get<{ plans: Plan[]; paymentInfo: PaymentInfo }>('/subscriptions/plans')
+        const res = await apiClient.get<{ plans: Plan[]; paymentInfo: PaymentInfo }>(
+          '/subscriptions/plans'
+        )
         if (cancelled) return
         setPlans(res.data.plans ?? [])
         setPaymentInfo(res.data.paymentInfo ?? null)
-      } catch {
-        if (!cancelled) setPlansError('No se pudieron cargar los planes. Intenta recargar la página.')
+      } catch (err) {
+        if (cancelled) return
+        const msg = getApiErrorMessage(err, 'No se pudieron cargar los planes')
+        console.error('[premium] loadPlans failed:', err)
+        setPlansError(msg)
+        toast(msg, 'error')
       } finally {
         if (!cancelled) setPlansLoading(false)
       }
     }
     void loadPlans()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const handleRequestPremium = async () => {
     if (!selectedPlan) return
     if (!reference.trim()) {
-      alert('Ingresa el número de operación')
+      toast('Ingresa el número de operación', 'error')
       return
     }
     setLoading(true)
@@ -80,274 +92,286 @@ export default function PremiumPage() {
         notes: `Plan ${selectedPlan.name} - ${paymentMethod.toUpperCase()}`,
       })
       setSuccess(true)
-    } catch {
-      alert('Error al enviar solicitud. Intenta de nuevo.')
+      toast('Solicitud enviada correctamente', 'success')
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Error al enviar solicitud')
+      console.error('[premium] handleRequestPremium failed:', err)
+      toast(msg, 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  const paymentNumber = paymentMethod === 'yape'
-    ? paymentInfo?.yapeNumber ?? '—'
-    : paymentInfo?.plinNumber ?? '—'
+  const paymentNumber =
+    paymentMethod === 'yape'
+      ? paymentInfo?.yapeNumber ?? '—'
+      : paymentInfo?.plinNumber ?? '—'
 
   if (success && selectedPlan) {
     return (
-      <div className="max-w-md mx-auto text-center py-12">
-        <style>{`
-          @keyframes pop { 0%{transform:scale(0.5);opacity:0} 80%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
-          .pop { animation: pop 0.5s ease forwards; }
-        `}</style>
-        <div className="text-7xl mb-6 pop">🐊</div>
-        <h1 className="text-2xl font-bold text-white mb-3">¡Solicitud enviada!</h1>
-        <p className="text-gray-400 mb-6 text-sm">
+      <div className="mx-auto max-w-md py-12 text-center">
+        <div className="mb-6 text-7xl">🐊</div>
+        <h1 className="mb-3 text-2xl font-bold text-white">¡Solicitud enviada!</h1>
+        <p className="mb-6 text-sm text-[#6B8A75]">
           Verificaremos tu pago y activaremos tu cuenta en menos de 24 horas.
         </p>
-        <div className="rounded-2xl p-5 mb-6 text-left space-y-3"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}20` }}>
+        <Card padding="sm" className="mb-6 space-y-3 rounded-xl text-left">
           {[
             { label: 'Plan', value: selectedPlan.name },
             { label: 'Monto', value: `S/. ${selectedPlan.price.toFixed(2)}` },
             { label: 'Método', value: paymentMethod.toUpperCase() },
             { label: 'Referencia', value: reference },
-          ].map((item, i) => (
-            <div key={i} className="flex justify-between text-sm">
-              <span className="text-gray-500">{item.label}</span>
-              <span className="text-white font-medium">{item.value}</span>
+          ].map((item) => (
+            <div key={item.label} className="flex justify-between text-sm">
+              <span className="text-[#6B8A75]">{item.label}</span>
+              <span className="font-medium text-white">{item.value}</span>
             </div>
           ))}
-        </div>
-        <Link href="/dashboard"
-          className="block w-full py-3 rounded-xl font-bold text-sm text-center"
-          style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
-          Volver al inicio
+        </Card>
+        <Link href="/dashboard" className="block">
+          <Button variant="primary" size="md" fullWidth>
+            Volver al inicio
+          </Button>
         </Link>
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        .fade-in { animation: fadeIn 0.3s ease forwards; }
-      `}</style>
-
-      <Link href="/dashboard"
-        className="inline-flex items-center gap-2 text-gray-500 hover:text-white text-sm mb-6 transition-colors">
+    <div className="mx-auto max-w-2xl">
+      <Link
+        href="/dashboard"
+        className="mb-6 inline-flex items-center gap-2 text-sm text-[#6B8A75] transition-colors hover:text-white"
+      >
         ← Volver al inicio
       </Link>
 
       {(isNew || isBlocked) && (
-        <div className="rounded-2xl p-5 mb-6 text-center fade-in"
-          style={{ background: 'rgba(74,124,89,0.08)', border: `1px solid ${NEON}30` }}>
-          <div className="text-4xl mb-2">🐊</div>
-          <h2 className="text-white font-bold text-lg mb-1">
+        <Card
+          padding="sm"
+          className="mb-6 rounded-xl border-[rgba(49,143,72,0.35)] bg-[rgba(49,143,72,0.08)] text-center"
+        >
+          <div className="mb-2 text-4xl">🐊</div>
+          <h2 className="mb-1 text-lg font-bold text-white">
             {isNew ? '¡Cuenta creada! Elige tu plan para comenzar' : '¡Un paso más para practicar!'}
           </h2>
-          <p className="text-gray-400 text-sm">
+          <p className="text-sm text-[#6B8A75]">
             {isNew
               ? 'Tu cuenta está lista. Selecciona un plan y paga por Yape/Plin para activar tu acceso.'
               : 'Necesitas un plan activo para acceder a los simulacros PNP.'}
           </p>
-        </div>
+        </Card>
       )}
 
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Elige tu plan</h1>
-        <p className="text-gray-400 text-sm">Acceso ilimitado a todos los simulacros PNP · Paga con Yape o Plin</p>
+      <div className="mb-8 text-center">
+        <h1 className="mb-2 text-2xl font-bold text-white sm:text-3xl">Elige tu plan</h1>
+        <p className="text-sm text-[#6B8A75]">
+          Acceso ilimitado a todos los simulacros PNP · Paga con Yape o Plin
+        </p>
       </div>
 
       {plansLoading && (
-        <div className="text-center py-12">
-          <div className="text-4xl mb-4 animate-bounce">🐊</div>
-          <p className="text-gray-400">Cargando planes...</p>
+        <div className="py-12 text-center">
+          <div className="mb-4 animate-bounce text-4xl">🐊</div>
+          <p className="text-[#6B8A75]">Cargando planes...</p>
         </div>
       )}
 
       {plansError && (
-        <div className="rounded-xl p-4 mb-6 text-sm text-center"
-          style={{ background: 'rgba(255,82,82,0.1)', border: '1px solid rgba(255,82,82,0.3)', color: '#FF5252' }}>
-          {plansError}
-        </div>
+        <ErrorState
+          message={plansError}
+          onRetry={() => window.location.reload()}
+          className="mb-6"
+        />
       )}
 
       {!plansLoading && !plansError && plans.length === 0 && (
-        <div className="rounded-xl p-8 mb-6 text-center"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}20` }}>
-          <p className="text-gray-400 text-sm">
-            Tu institución aún no ha configurado planes de suscripción. Contacta al administrador.
-          </p>
-        </div>
+        <EmptyState
+          icon="📋"
+          title="Sin planes configurados"
+          description="Tu institución aún no ha configurado planes de suscripción. Contacta al administrador."
+        />
       )}
 
       {step === 'plans' && !plansLoading && plans.length > 0 && (
-        <div className="fade-in">
-          <div className={`grid gap-4 mb-6 ${plans.length >= 3 ? 'md:grid-cols-3' : plans.length === 2 ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+        <div>
+          <div
+            className={cn(
+              'mb-6 grid gap-4',
+              plans.length >= 3
+                ? 'md:grid-cols-3'
+                : plans.length === 2
+                  ? 'md:grid-cols-2'
+                  : 'grid-cols-1'
+            )}
+          >
             {plans.map((plan) => {
               const isSelected = selectedPlanId === plan.id
               return (
-                <div key={plan.id}
+                <Card
+                  key={plan.id}
+                  padding="sm"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedPlanId(plan.id)}
-                  className="relative rounded-2xl p-5 cursor-pointer transition-all hover:scale-[1.02]"
-                  style={{
-                    background: isSelected ? 'rgba(74,124,89,0.08)' : 'rgba(0,8,4,0.9)',
-                    border: `2px solid ${isSelected ? NEON : plan.isPopular ? `${GOLD}40` : '#ffffff10'}`,
-                    boxShadow: isSelected ? `0 0 25px ${NEON}30` : 'none'
-                  }}>
-
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') setSelectedPlanId(plan.id)
+                  }}
+                  className={cn(
+                    'relative cursor-pointer rounded-xl transition-transform hover:scale-[1.02]',
+                    isSelected
+                      ? 'border-2 border-[#318F48] bg-[rgba(49,143,72,0.08)] shadow-[0_0_25px_rgba(49,143,72,0.2)]'
+                      : plan.isPopular
+                        ? 'border-2 border-[#C9943A]/40'
+                        : 'border border-[rgba(189,255,223,0.12)]'
+                  )}
+                >
                   {plan.isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold"
-                      style={{ backgroundColor: GOLD, color: '#000' }}>
+                    <Badge color="gold" className="absolute -top-3 left-1/2 -translate-x-1/2">
                       ⭐ MÁS POPULAR
-                    </div>
+                    </Badge>
                   )}
 
-                  <div className="text-white font-bold text-base mb-0.5">{plan.name}</div>
-                  <div className="text-gray-500 text-xs mb-3">{plan.description}</div>
+                  <div className="mb-0.5 text-base font-bold text-white">{plan.name}</div>
+                  <div className="mb-3 text-xs text-[#6B8A75]">{plan.description}</div>
 
-                  <div className="text-3xl font-bold mb-0.5"
-                    style={{ color: isSelected ? NEON : plan.isPopular ? GOLD : '#fff' }}>
+                  <div
+                    className={cn(
+                      'mb-0.5 text-3xl font-bold',
+                      isSelected ? 'text-[#318F48]' : plan.isPopular ? 'text-[#C9943A]' : 'text-white'
+                    )}
+                  >
                     S/. {plan.price.toFixed(2)}
                   </div>
-                  <div className="text-gray-600 text-xs mb-4">{plan.durationDays} días de acceso</div>
+                  <div className="mb-4 text-xs text-[#6B8A75]">
+                    {plan.durationDays} días de acceso
+                  </div>
 
                   <ul className="space-y-1.5">
-                    {plan.features.map((f, i) => (
-                      <li key={i} className="text-xs flex items-start gap-1.5"
-                        style={{ color: isSelected ? '#9CA3AF' : '#6B7280' }}>
-                        <span style={{ color: isSelected ? NEON : '#374151' }}>✓</span> {f}
+                    {plan.features.map((f) => (
+                      <li
+                        key={f}
+                        className="flex items-start gap-1.5 text-xs text-[#6B8A75]"
+                      >
+                        <span className="text-[#318F48]">✓</span> {f}
                       </li>
                     ))}
                   </ul>
 
                   {isSelected && (
-                    <div className="mt-4 text-center text-xs font-bold py-1.5 rounded-lg"
-                      style={{ backgroundColor: `${NEON}20`, color: NEON }}>
+                    <div className="mt-4 rounded-lg bg-[rgba(49,143,72,0.2)] py-1.5 text-center text-xs font-bold text-[#318F48]">
                       ✓ Seleccionado
                     </div>
                   )}
-                </div>
+                </Card>
               )
             })}
           </div>
 
-          <button
-            onClick={() => selectedPlan && setStep('payment')}
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
             disabled={!selectedPlan}
-            className="w-full py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
-            style={{
-              background: selectedPlan ? `linear-gradient(135deg, ${NEON}, #1A5C2E)` : '#1A2A20',
-              color: selectedPlan ? '#000' : '#4B5563',
-              boxShadow: selectedPlan ? `0 0 20px ${NEON}40` : 'none',
-              cursor: selectedPlan ? 'pointer' : 'not-allowed'
-            }}>
+            onClick={() => selectedPlan && setStep('payment')}
+          >
             {selectedPlan
               ? `Continuar con ${selectedPlan.name} — S/. ${selectedPlan.price.toFixed(2)} →`
               : 'Selecciona un plan para continuar'}
-          </button>
+          </Button>
         </div>
       )}
 
       {step === 'payment' && selectedPlan && (
-        <div className="fade-in">
-          <div className="rounded-2xl p-6"
-            style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}20` }}>
-
-            <div className="flex items-center justify-between mb-6 pb-4"
-              style={{ borderBottom: '1px solid #ffffff08' }}>
-              <div>
-                <div className="text-white font-bold">{selectedPlan.name}</div>
-                <div className="text-gray-500 text-xs">{selectedPlan.durationDays} días de acceso</div>
-              </div>
-              <div className="text-2xl font-bold" style={{ color: NEON }}>
-                S/. {selectedPlan.price.toFixed(2)}
+        <Card padding="sm" className="rounded-xl">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(189,255,223,0.12)] pb-4">
+            <div>
+              <div className="font-bold text-white">{selectedPlan.name}</div>
+              <div className="text-xs text-[#6B8A75]">
+                {selectedPlan.durationDays} días de acceso
               </div>
             </div>
-
-            <h3 className="text-white font-semibold text-sm mb-3">Método de pago</h3>
-            <div className="grid grid-cols-2 gap-3 mb-5">
-              {(['yape', 'plin'] as const).map(method => (
-                <button key={method}
-                  onClick={() => setPaymentMethod(method)}
-                  className="p-3 rounded-xl text-center font-bold transition-all"
-                  style={{
-                    border: `2px solid ${paymentMethod === method ? NEON : '#ffffff10'}`,
-                    backgroundColor: paymentMethod === method ? 'rgba(74,124,89,0.08)' : 'rgba(0,5,2,0.5)',
-                    color: paymentMethod === method ? NEON : '#6B7280'
-                  }}>
-                  {method === 'yape' ? '💜 Yape' : '💙 Plin'}
-                </button>
-              ))}
-            </div>
-
-            <div className="rounded-xl p-4 mb-5 text-center"
-              style={{ backgroundColor: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff08' }}>
-              <div className="text-gray-500 text-xs mb-1">Envía exactamente</div>
-              <div className="text-3xl font-bold mb-2" style={{ color: GOLD }}>
-                S/. {selectedPlan.price.toFixed(2)}
-              </div>
-              <div className="text-gray-400 text-xs mb-1">al número</div>
-              <div className="text-white text-2xl font-bold mb-1">{paymentNumber}</div>
-              <div className="text-gray-600 text-xs">
-                A nombre de: {paymentInfo?.accountName ?? 'Institución'}
-              </div>
-            </div>
-
-            <div className="rounded-xl p-4 mb-5 space-y-2"
-              style={{ backgroundColor: 'rgba(74,124,89,0.05)', border: `1px solid ${NEON}15` }}>
-              {(paymentInfo?.instructions
-                ? paymentInfo.instructions.split(/\.\s+/).filter(Boolean)
-                : [
-                    'Realiza el pago al número de arriba',
-                    'Toma captura del comprobante',
-                    'Ingresa el número de operación abajo',
-                    'Activación en máximo 24 horas'
-                  ]
-              ).map((stepText, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs text-gray-400">
-                  <span className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
-                    style={{ backgroundColor: `${NEON}20`, color: NEON }}>
-                    {i + 1}
-                  </span>
-                  {stepText.endsWith('.') ? stepText : `${stepText}.`}
-                </div>
-              ))}
-            </div>
-
-            <label className="block text-xs text-gray-500 mb-2">Número de operación *</label>
-            <input
-              type="text"
-              className="w-full px-4 py-3 rounded-xl text-sm text-white mb-5"
-              style={{
-                backgroundColor: 'rgba(0,5,2,0.8)',
-                border: `1px solid ${reference ? NEON : '#ffffff15'}`,
-                outline: 'none'
-              }}
-              placeholder="Ej: 123456789"
-              value={reference}
-              onChange={e => setReference(e.target.value)}
-            />
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep('plans')}
-                className="px-5 py-3 rounded-xl text-sm font-medium transition-all"
-                style={{ backgroundColor: 'rgba(0,5,2,0.5)', color: '#6B7280', border: '1px solid #ffffff10' }}>
-                ← Atrás
-              </button>
-              <button onClick={handleRequestPremium} disabled={loading}
-                className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
-                style={{
-                  background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
-                  color: '#000',
-                  opacity: loading ? 0.7 : 1,
-                  boxShadow: `0 0 20px ${NEON}40`
-                }}>
-                {loading ? 'Enviando...' : '✅ Confirmar pago'}
-              </button>
+            <div className="text-2xl font-bold text-[#318F48]">
+              S/. {selectedPlan.price.toFixed(2)}
             </div>
           </div>
-        </div>
+
+          <h3 className="mb-3 text-sm font-semibold text-white">Método de pago</h3>
+          <div className="mb-5 grid grid-cols-2 gap-3">
+            {(['yape', 'plin'] as const).map((method) => (
+              <Button
+                key={method}
+                type="button"
+                variant={paymentMethod === method ? 'primary' : 'ghost'}
+                size="md"
+                fullWidth
+                onClick={() => setPaymentMethod(method)}
+              >
+                {method === 'yape' ? '💜 Yape' : '💙 Plin'}
+              </Button>
+            ))}
+          </div>
+
+          <Card
+            padding="sm"
+            className="mb-5 rounded-xl border-[rgba(189,255,223,0.12)] bg-[#080E0A] text-center"
+          >
+            <div className="mb-1 text-xs text-[#6B8A75]">Envía exactamente</div>
+            <div className="mb-2 text-3xl font-bold text-[#C9943A]">
+              S/. {selectedPlan.price.toFixed(2)}
+            </div>
+            <div className="mb-1 text-xs text-[#6B8A75]">al número</div>
+            <div className="mb-1 text-2xl font-bold text-white">{paymentNumber}</div>
+            <div className="text-xs text-[#6B8A75]">
+              A nombre de: {paymentInfo?.accountName ?? 'Institución'}
+            </div>
+          </Card>
+
+          <Card
+            padding="sm"
+            className="mb-5 space-y-2 rounded-xl border-[rgba(49,143,72,0.2)] bg-[rgba(49,143,72,0.05)]"
+          >
+            {(paymentInfo?.instructions
+              ? paymentInfo.instructions.split(/\.\s+/).filter(Boolean)
+              : [
+                  'Realiza el pago al número de arriba',
+                  'Toma captura del comprobante',
+                  'Ingresa el número de operación abajo',
+                  'Activación en máximo 24 horas',
+                ]
+            ).map((stepText, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-[#6B8A75]">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgba(49,143,72,0.2)] text-xs font-bold text-[#318F48]">
+                  {i + 1}
+                </span>
+                {stepText.endsWith('.') ? stepText : `${stepText}.`}
+              </div>
+            ))}
+          </Card>
+
+          <Input
+            label="Número de operación *"
+            placeholder="Ej: 123456789"
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            containerClassName="mb-5"
+          />
+
+          <div className="flex gap-3">
+            <Button variant="ghost" size="md" onClick={() => setStep('plans')}>
+              ← Atrás
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              loading={loading}
+              onClick={() => void handleRequestPremium()}
+            >
+              Confirmar pago
+            </Button>
+          </div>
+        </Card>
       )}
     </div>
   )
