@@ -1,17 +1,14 @@
 ﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Clock } from 'lucide-react'
+import { toast } from '@/components/Toast'
+import { Badge, Button, Card, ErrorState } from '@/components/ui'
+import { EmptyState } from '@/components/ui/EmptyState'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { toast } from '@/components/Toast'
-import { ErrorState } from '@/components/ui'
-import { EmptyState } from '@/components/ui/EmptyState'
-import Link from 'next/link'
-
-import { NEON } from '@/lib/constants/theme'
-const RED = '#FF5252'
-const GOLD = '#FFD700'
-const BLUE = '#4FC3F7'
+import { cn } from '@/lib/utils/cn'
 
 interface SessionHistory {
   sessionId: string
@@ -45,35 +42,44 @@ export default function HistoryPage() {
     }
   }, [])
 
-  useEffect(() => { void loadHistory() }, [loadHistory])
+  useEffect(() => {
+    void loadHistory()
+  }, [loadHistory])
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('es-PE', {
-    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  })
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('es-PE', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        .fade-in { animation: fadeIn 0.3s ease forwards; }
-      `}</style>
-
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard" className="text-gray-500 hover:text-white text-sm transition-colors">
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-6 flex flex-wrap items-start gap-3 sm:gap-4">
+        <Link
+          href="/dashboard"
+          className="text-sm text-[#6B8A75] transition-colors hover:text-white"
+        >
           ← Inicio
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">Historial de simulacros</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Todos tus exámenes anteriores</p>
+          <h1 className="text-xl font-bold text-white sm:text-2xl">
+            Historial de simulacros
+          </h1>
+          <p className="mt-0.5 text-sm text-[#6B8A75]">Todos tus exámenes anteriores</p>
         </div>
       </div>
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-20 rounded-2xl animate-pulse"
-              style={{ backgroundColor: 'rgba(0,8,4,0.6)' }} />
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-24 animate-pulse rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10]"
+            />
           ))}
         </div>
       ) : error ? (
@@ -86,61 +92,63 @@ export default function HistoryPage() {
           action={{ label: 'Ir a exámenes →', href: '/exams' }}
         />
       ) : (
-        <div className="space-y-3 fade-in">
-          {sessions.map((s) => (
-            <div key={s.sessionId} className="rounded-2xl p-4"
-              style={{
-                background: 'rgba(0,8,4,0.9)',
-                border: `1px solid ${s.passed ? NEON : RED}15`
-              }}>
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-white font-semibold text-sm">{s.examTitle}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                      style={{
-                        backgroundColor: s.passed ? `${NEON}15` : `${RED}15`,
-                        color: s.passed ? NEON : RED
-                      }}>
-                      {s.passed ? '✓ Aprobado' : '✗ No aprobado'}
-                    </span>
-                  </div>
-                  <div className="text-gray-600 text-xs">{formatDate(s.finishedAt)}</div>
-                  <div className="flex gap-4 mt-2 text-xs">
-                    <span style={{ color: NEON }}>✓ {s.correctAnswers} correctas</span>
-                    <span style={{ color: RED }}>✗ {s.totalQuestions - s.correctAnswers} incorrectas</span>
-                    <span style={{ color: BLUE }}>⏱ {formatTime(s.timeSpentSeconds)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right">
-                    <div className="text-2xl font-bold"
-                      style={{ color: s.passed ? NEON : RED }}>
-                      {s.score}%
+        <div className="space-y-3">
+          {sessions.map((s) => {
+            const incorrect = s.totalQuestions - s.correctAnswers
+            return (
+              <Card
+                key={s.sessionId}
+                padding="sm"
+                className={cn(
+                  'rounded-xl',
+                  s.passed
+                    ? 'border-[rgba(49,143,72,0.25)]'
+                    : 'border-[rgba(192,57,43,0.25)]'
+                )}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-white">{s.examTitle}</span>
+                      <Badge color={s.passed ? 'green' : 'red'}>
+                        {s.passed ? '✓ Aprobado' : '✗ No aprobado'}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-[#6B8A75]">{formatDate(s.finishedAt)}</div>
+                    <div className="mt-2 flex flex-wrap gap-3 text-xs">
+                      <span className="text-[#318F48]">✓ {s.correctAnswers} correctas</span>
+                      <span className="text-[#e74c3c]">✗ {incorrect} incorrectas</span>
+                      <span className="inline-flex items-center gap-1 text-[#5ba8cc]">
+                        <Clock className="h-3 w-3" />
+                        {formatTime(s.timeSpentSeconds)}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                   <div className="text-right">
-                    <div className="text-2xl font-bold"
-                      style={{ color: s.passed ? NEON : RED }}>
+
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 sm:gap-3">
+                    <div
+                      className={cn(
+                        'text-2xl font-bold',
+                        s.passed ? 'text-[#318F48]' : 'text-[#e74c3c]'
+                      )}
+                    >
                       {s.score}%
                     </div>
-                  </div>
-                  <Link href={`/result/${s.sessionId}`}
-                  className="px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
-                  style={{ backgroundColor: `${BLUE}15`, color: BLUE, border: `1px solid ${BLUE}20` }}>
-                   Ver →
-                 </Link>
-                  <Link href={`/review/${s.sessionId}`}
-                  className="px-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
-                  style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}20` }}>
-                  📚 Repasar
-                 </Link>
+                    <Link href={`/result/${s.sessionId}`}>
+                      <Button variant="outline" size="sm">
+                        Ver →
+                      </Button>
+                    </Link>
+                    <Link href={`/review/${s.sessionId}`}>
+                      <Button variant="secondary" size="sm">
+                        📚 Repasar
+                      </Button>
+                    </Link>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>
