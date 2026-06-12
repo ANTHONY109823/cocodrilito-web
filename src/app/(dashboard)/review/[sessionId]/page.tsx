@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
+import { ExplanationBlock } from '@/components/exam/ExplanationBlock'
 
 import { NEON } from '@/lib/constants/theme'
-const BLUE = '#4FC3F7'
 
 interface ReviewQuestion {
   id: string
@@ -171,12 +171,8 @@ export default function ReviewPage() {
         </div>
 
         {/* EXPLICACIÓN */}
-        {revealed && currentQ.explanation && (
-          <div className="mt-4 rounded-xl p-3 fade-in"
-            style={{ backgroundColor: `${BLUE}08`, border: `1px solid ${BLUE}20` }}>
-            <div className="text-xs font-semibold mb-1" style={{ color: BLUE }}>💡 Explicación</div>
-            <p className="text-gray-300 text-sm leading-relaxed">{currentQ.explanation}</p>
-          </div>
+        {revealed && (
+          <ExplanationBlock explanation={currentQ.explanation} className="mt-4 fade-in" />
         )}
       </div>
 

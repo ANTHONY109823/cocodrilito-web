@@ -7,6 +7,7 @@ export interface Question {
   yearValuation: number
   trackType?: string | null
   tenantId?: string | null
+  explanation?: string | null
   answerOptions?: {
     id: string
     optionText: string

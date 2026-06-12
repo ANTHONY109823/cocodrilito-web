@@ -5,6 +5,12 @@ import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
 import apiClient from '@/lib/api/client'
 import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
 import { DEFAULT_QUESTION_TRACK } from '@/lib/constants/trackTypes'
+import {
+  hasUsableExplanation,
+  matchesExplanationFilter,
+  needsExplanationReview,
+  type ExplanationFilter,
+} from '@/lib/utils/explanation'
 import type { EditableQuestion } from '@/components/admin/preguntas/QuestionEditModal'
 import {
   EMPTY_QUESTION_FORM,
@@ -37,6 +43,7 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
   const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0])
   const [questionScope, setQuestionScope] = useState<'base' | 'own'>('base')
   const [activeTrackType, setActiveTrackType] = useState(DEFAULT_QUESTION_TRACK)
+  const [explanationFilter, setExplanationFilter] = useState<ExplanationFilter>('all')
   const [qForm, setQForm] = useState<QuestionFormState>(EMPTY_QUESTION_FORM)
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -85,6 +92,9 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
       )
       const imported = res.data.imported ?? 0
       const totalErrors = res.data.totalErrors ?? 0
+      const withExplanation = res.data.withExplanation ?? 0
+      const withoutExplanation = res.data.withoutExplanation ?? 0
+      const needsReview = res.data.needsReview ?? 0
       const firstErrors = (res.data.errors as string[] | undefined)?.slice(0, 3).join(' · ') ?? ''
 
       if (imported === 0) {
@@ -93,8 +103,12 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
           ok: false,
         })
       } else {
+        const explSummary =
+          withoutExplanation > 0 || needsReview > 0
+            ? ` · ${withExplanation} con explicación, ${withoutExplanation} sin explicación${needsReview > 0 ? `, ${needsReview} pendientes de revisión` : ''}`
+            : ` · ${withExplanation} con explicación`
         setMsg({
-          text: `✅ ${imported} preguntas importadas en ${category}${totalErrors > 0 ? ` (${totalErrors} filas con error)` : ''}`,
+          text: `✅ ${imported} preguntas importadas en ${category}${explSummary}${totalErrors > 0 ? ` (${totalErrors} filas con error)` : ''}`,
           ok: true,
         })
       }
@@ -204,9 +218,7 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
     try {
       await apiClient.put(`/admin/Questions/${editingQuestion.id}`, {
         questionText: editingQuestion.questionText,
-        category: editingQuestion.category,
-        difficulty: 1,
-        yearValuation: editingQuestion.yearValuation,
+        explanation: editingQuestion.explanation ?? '',
         answerOptions: editingQuestion.answerOptions,
       })
       setMsg({ text: '✅ Pregunta actualizada', ok: true })
@@ -250,19 +262,47 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
     questionScope === 'base' ? !q.tenantId : Boolean(q.tenantId)
   )
 
+  const explanationCoverage = {
+    total: scopedQuestions.length,
+    withExplanation: scopedQuestions.filter((q) => hasUsableExplanation(q.explanation)).length,
+    withoutExplanation: scopedQuestions.filter(
+      (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
+    ).length,
+    needsReview: scopedQuestions.filter((q) => needsExplanationReview(q.explanation)).length,
+  }
+
   const filtered = scopedQuestions.filter((q) => {
     const matchCat = q.category === selectedCategory
     const matchSearch = search === '' || q.questionText.toLowerCase().includes(search.toLowerCase())
-    return matchCat && matchSearch
+    const matchExplanation = matchesExplanationFilter(q.explanation, explanationFilter)
+    return matchCat && matchSearch && matchExplanation
   })
 
   const counts = categories.reduce(
     (acc, cat) => {
-      acc[cat.name] = scopedQuestions.filter((q) => q.category === cat.name).length
+      const catQuestions = scopedQuestions.filter((q) => q.category === cat.name)
+      acc[cat.name] = catQuestions.length
       return acc
     },
     {} as Record<string, number>
   )
+
+  const missingExplanationByCategory = categories.reduce(
+    (acc, cat) => {
+      const catQuestions = scopedQuestions.filter((q) => q.category === cat.name)
+      acc[cat.name] = catQuestions.filter((q) => !hasUsableExplanation(q.explanation)).length
+      return acc
+    },
+    {} as Record<string, number>
+  )
+
+  const selectedCategoryQuestions = scopedQuestions.filter((q) => q.category === selectedCategory)
+  const categoryExplanationCoverage = {
+    withoutExplanation: selectedCategoryQuestions.filter(
+      (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
+    ).length,
+    needsReview: selectedCategoryQuestions.filter((q) => needsExplanationReview(q.explanation)).length,
+  }
 
   return {
     questions,
@@ -292,6 +332,11 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
     setQuestionScope,
     activeTrackType,
     setActiveTrackType,
+    explanationFilter,
+    setExplanationFilter,
+    explanationCoverage,
+    categoryExplanationCoverage,
+    missingExplanationByCategory,
     qForm,
     setQForm,
     fileRefs,

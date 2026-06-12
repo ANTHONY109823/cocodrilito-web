@@ -1,11 +1,15 @@
 'use client'
 
 import { NEON } from '@/lib/constants/theme'
+import { hasUsableExplanation, needsExplanationReview } from '@/lib/utils/explanation'
+import type { ExplanationFilter } from '@/lib/utils/explanation'
+import { ExplanationFilterBar } from '@/components/admin/preguntas/ExplanationCoverage'
 import { PRESET_COLORS, type Category, type Question } from '@/components/admin/preguntas/types'
 
 interface CategoryPanelProps {
   categories: Category[]
   counts: Record<string, number>
+  missingExplanationByCategory: Record<string, number>
   loading: boolean
   readOnly: boolean
   isSuperAdminMode: boolean
@@ -28,6 +32,7 @@ interface CategoryPanelProps {
 export function CategoryPanel({
   categories,
   counts,
+  missingExplanationByCategory,
   loading,
   readOnly,
   isSuperAdminMode,
@@ -120,6 +125,7 @@ export function CategoryPanel({
           {categories.map((cat, idx) => {
             const isSelected = selectedCategory === cat.name
             const count = counts[cat.name] || 0
+            const missingExpl = missingExplanationByCategory[cat.name] || 0
             const isUploading = uploadingCat === cat.name
             return (
               <div
@@ -138,6 +144,11 @@ export function CategoryPanel({
                 </span>
                 <span className="text-xs tabular-nums" style={{ color: count > 0 ? '#6B7280' : '#374151' }}>
                   {count} {count === 1 ? 'pregunta' : 'preguntas'}
+                  {missingExpl > 0 && (
+                    <span className="ml-1.5" style={{ color: '#C9943A' }}>
+                      · {missingExpl} sin explicación
+                    </span>
+                  )}
                 </span>
                 {!readOnly && (
                   <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -191,6 +202,12 @@ interface QuestionsListProps {
   page: number
   pageSize: number
   fileRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>
+  explanationFilter: ExplanationFilter
+  onExplanationFilterChange: (filter: ExplanationFilter) => void
+  explanationCoverage: {
+    withoutExplanation: number
+    needsReview: number
+  }
   onPageChange: (page: number) => void
   onEdit: (q: Question) => void
   onDelete: (id: string) => void
@@ -207,6 +224,9 @@ export function QuestionsList({
   page,
   pageSize,
   fileRefs,
+  explanationFilter,
+  onExplanationFilterChange,
+  explanationCoverage,
   onPageChange,
   onEdit,
   onDelete,
@@ -218,6 +238,13 @@ export function QuestionsList({
 
   return (
     <>
+      <ExplanationFilterBar
+        filter={explanationFilter}
+        onChange={onExplanationFilterChange}
+        withoutExplanation={explanationCoverage.withoutExplanation}
+        needsReview={explanationCoverage.needsReview}
+      />
+
       <div className="mb-3">
         <input
           className="input-q"
@@ -278,7 +305,11 @@ export function QuestionsList({
         ) : paginated.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-gray-600 text-sm mb-4">
-              {search ? `Sin resultados para "${search}"` : `No hay preguntas en ${currentCat.name}`}
+              {search
+                ? `Sin resultados para "${search}"`
+                : explanationFilter !== 'all'
+                  ? 'No hay preguntas con este filtro de explicación'
+                  : `No hay preguntas en ${currentCat.name}`}
             </p>
             {!search && !readOnly && (
               <button
@@ -310,7 +341,22 @@ export function QuestionsList({
                     {globalIdx}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-gray-200 text-sm leading-relaxed mb-2">{q.questionText}</p>
+                    <div className="flex items-start gap-2 mb-2 flex-wrap">
+                      <p className="text-gray-200 text-sm leading-relaxed flex-1">{q.questionText}</p>
+                      {!hasUsableExplanation(q.explanation) && (
+                        <span
+                          className="shrink-0 text-[10px] px-1.5 py-0.5 rounded font-medium"
+                          style={{
+                            backgroundColor: needsExplanationReview(q.explanation)
+                              ? 'rgba(201,148,58,0.12)'
+                              : 'rgba(255,255,255,0.06)',
+                            color: needsExplanationReview(q.explanation) ? '#C9943A' : '#6B7280',
+                          }}
+                        >
+                          {needsExplanationReview(q.explanation) ? 'Pendiente revisión' : 'Sin explicación'}
+                        </span>
+                      )}
+                    </div>
                     {q.answerOptions && (
                       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
                         {q.answerOptions

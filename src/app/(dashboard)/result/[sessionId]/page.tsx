@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
+import { ExplanationBlock } from '@/components/exam/ExplanationBlock'
 
 import { NEON } from '@/lib/constants/theme'
 const RED = '#FF5252'
@@ -29,6 +30,7 @@ interface ResultData {
 interface QuestionAnswer {
   questionId: string
   questionText: string
+  explanation?: string | null
   selectedOptionId: string | null
   correctOptionId: string
   isCorrect: boolean
@@ -224,6 +226,9 @@ export default function ResultPage() {
                       )
                     })}
                 </div>
+                {!ans.isCorrect && (
+                  <ExplanationBlock explanation={ans.explanation} className="mt-3" />
+                )}
               </div>
             )
           })}

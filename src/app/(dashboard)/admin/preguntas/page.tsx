@@ -16,6 +16,7 @@ import { useAdminQuestions } from '@/hooks/useAdminQuestions'
 import { QuestionEditModal } from '@/components/admin/preguntas/QuestionEditModal'
 import { QuestionAddForm, TrackSelector, NEON2 } from '@/components/admin/preguntas/QuestionAddForm'
 import { CategoryPanel, QuestionsList } from '@/components/admin/preguntas/CategoryPanel'
+import { ExplanationCoverageBanner } from '@/components/admin/preguntas/ExplanationCoverage'
 import { PAGE_SIZE } from '@/components/admin/preguntas/types'
 
 export default function PreguntasPage() {
@@ -191,6 +192,13 @@ export default function PreguntasPage() {
         </div>
       )}
 
+      <ExplanationCoverageBanner
+        total={q.explanationCoverage.total}
+        withExplanation={q.explanationCoverage.withExplanation}
+        withoutExplanation={q.explanationCoverage.withoutExplanation}
+        needsReview={q.explanationCoverage.needsReview}
+      />
+
       {q.showAddForm && !readOnly && (
         <QuestionAddForm
           exams={q.exams}
@@ -205,6 +213,7 @@ export default function PreguntasPage() {
       <CategoryPanel
         categories={q.categories}
         counts={q.counts}
+        missingExplanationByCategory={q.missingExplanationByCategory}
         loading={q.loading}
         readOnly={readOnly}
         isSuperAdminMode={isSuperAdminMode}
@@ -239,6 +248,12 @@ export default function PreguntasPage() {
         page={q.page}
         pageSize={PAGE_SIZE}
         fileRefs={q.fileRefs}
+        explanationFilter={q.explanationFilter}
+        onExplanationFilterChange={(filter) => {
+          q.setExplanationFilter(filter)
+          q.setPage(1)
+        }}
+        explanationCoverage={q.categoryExplanationCoverage}
         onPageChange={q.setPage}
         onEdit={(question) => void q.handleEditQuestion(question)}
         onDelete={(id) => void q.handleDeleteQuestion(id)}

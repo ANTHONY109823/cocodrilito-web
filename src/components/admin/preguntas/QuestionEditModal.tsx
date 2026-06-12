@@ -8,6 +8,7 @@ export interface EditableQuestion {
   questionText: string
   category: string
   yearValuation: number
+  explanation?: string | null
   answerOptions?: {
     id: string
     optionText: string
@@ -73,6 +74,22 @@ export function QuestionEditModal({
               }
             />
           </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs text-[#6B8A75]">
+            Explicación oficial (normativa, doctrina o criterio PNP)
+          </label>
+          <textarea
+            className="w-full rounded-lg border border-[rgba(189,255,223,0.18)] bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#318F48]"
+            rows={4}
+            placeholder="Ej: Art. 166 Constitución — La PNP garantiza el orden interno..."
+            value={question.explanation ?? ''}
+            onChange={(e) => onChange({ ...question, explanation: e.target.value })}
+          />
+          <p className="mt-1 text-[11px] text-[#6B8A75]">
+            Usa texto curado y verificable. Para marcar revisión pendiente escribe [REVISAR] al inicio.
+          </p>
         </div>
 
         {question.answerOptions && (
