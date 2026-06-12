@@ -156,7 +156,7 @@ export function TenantBrandingUploadFields({
       />
       <BrandingImageField
         label={required ? 'Imagen de fondo del login *' : 'Imagen de fondo del login'}
-        hint="Banner o foto institucional. Reemplaza el fondo por defecto."
+        hint="1920×1080 recomendado · JPG preferido · máx. 500 KB ideal (hasta 2 MB). Reemplaza el fondo del login."
         previewUrl={backgroundPreview}
         selectedFileName={value.backgroundFile?.name}
         onSelect={selectBackground}
