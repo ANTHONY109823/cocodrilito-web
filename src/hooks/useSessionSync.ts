@@ -1,20 +1,26 @@
 'use client'
 
 import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import apiClient from '@/lib/api/client'
+import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 
-const RETRY_DELAY_MS = 400
+const RETRY_DELAY_MS = 600
+
+function isAuthPage(pathname: string) {
+  return pathname === '/login' || pathname === '/register'
+}
 
 /**
- * Sincroniza Zustand (localStorage) con las cookies HttpOnly del backend.
- * Si las cookies expiraron o fueron revocadas, limpia el estado local y redirige a login.
+ * Sincroniza Zustand con cookies HttpOnly. No corre en /login para evitar bucles.
  */
 export function useSessionSync() {
+  const pathname = usePathname()
   const { isAuthenticated, setUser, clearUser } = useAuthStore()
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated || isAuthPage(pathname)) return
 
     let cancelled = false
 
@@ -34,9 +40,8 @@ export function useSessionSync() {
             window.setTimeout(() => syncSession(false), RETRY_DELAY_MS)
             return
           }
-          console.error('[auth] session sync failed — cookies invalid or expired')
           clearUser()
-          if (typeof window !== 'undefined') window.location.href = '/login'
+          redirectToLogin()
         })
     }
 
@@ -45,5 +50,5 @@ export function useSessionSync() {
     return () => {
       cancelled = true
     }
-  }, [isAuthenticated, setUser, clearUser])
+  }, [isAuthenticated, pathname, setUser, clearUser])
 }

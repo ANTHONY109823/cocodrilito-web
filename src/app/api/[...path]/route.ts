@@ -22,8 +22,17 @@ function sanitizeUpstreamCookie(cookie: string): string {
   return cookie.replace(/;\s*Domain=[^;]*/gi, '')
 }
 
+function isCacheablePublicGet(pathSegments: string[]): boolean {
+  const path = pathSegments.join('/')
+  return (
+    /^tenants\/[^/]+\/config$/i.test(path) ||
+    path.startsWith('tenants/resolve-host/')
+  )
+}
+
 async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
   const targetUrl = `${getApiBase()}/${pathSegments.join('/')}${request.nextUrl.search}`
+  const cacheableGet = request.method === 'GET' && isCacheablePublicGet(pathSegments)
 
   const headers = new Headers()
   request.headers.forEach((value, key) => {
@@ -41,7 +50,8 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
     headers,
     body,
     redirect: 'manual',
-    cache: 'no-store',
+    cache: cacheableGet ? 'force-cache' : 'no-store',
+    ...(cacheableGet ? { next: { revalidate: 600 } } : {}),
   })
 
   const responseHeaders = new Headers()
@@ -67,6 +77,10 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
 
   for (const cookie of setCookies) {
     response.headers.append('set-cookie', sanitizeUpstreamCookie(cookie))
+  }
+
+  if (cacheableGet && upstream.ok) {
+    response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=86400')
   }
 
   return response

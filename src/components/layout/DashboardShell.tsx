@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { LogOut, LucideIcon } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/lib/store/authStore'
@@ -18,6 +18,7 @@ import {
 import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 import { cn } from '@/lib/utils/cn'
 import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
+import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { useTenantFavicon } from '@/hooks/useTenantFavicon'
 
@@ -59,7 +60,6 @@ function SidebarNavItem({
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { user, logout } = useAuthStore()
   const { active: impersonating, stopImpersonation } = useImpersonationStore()
 
@@ -101,15 +101,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith('/result/') ||
     pathname.startsWith('/review/')
 
-  const handleLogout = async () => {
-    try {
-      await authApi.logout()
-    } catch {
-      /* ignore */
-    }
+  const handleLogout = () => {
     stopImpersonation()
     logout()
-    router.push('/login')
+    void authApi.logout().catch(() => {})
+    redirectToLogin()
   }
 
   return (

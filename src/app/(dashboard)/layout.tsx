@@ -1,18 +1,18 @@
 ﻿'use client'
 
 import { Suspense, useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { getNavContext } from '@/lib/auth/roles'
+import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { DashboardShell } from '@/components/layout/DashboardShell'
 import { enforceTenantHostAccess } from '@/lib/utils/tenantHost'
 import { useSessionSync } from '@/hooks/useSessionSync'
 
 const STUDENT_ONLY_PREFIXES = ['/exams', '/history', '/ranking', '/premium', '/exam/', '/result/', '/review/']
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { isAuthenticated, user, loadFromStorage } = useAuthStore()
   const { loadFromStorage: loadImpersonation, active: impersonating } = useImpersonationStore()
@@ -28,13 +28,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!authReady) return
-    if (!isAuthenticated) router.push('/login')
-  }, [authReady, isAuthenticated, router])
+    if (!isAuthenticated) redirectToLogin()
+  }, [authReady, isAuthenticated])
 
   useEffect(() => {
     if (!user?.mustChangePassword) return
-    if (pathname !== '/cambiar-clave') router.replace('/cambiar-clave')
-  }, [user, pathname, router])
+    if (pathname !== '/cambiar-clave') {
+      window.location.replace('/cambiar-clave')
+    }
+  }, [user, pathname])
 
   useEffect(() => {
     if (!user) return
@@ -46,50 +48,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const ctx = getNavContext(user.role, impersonating)
 
     if (pathname.startsWith('/superadmin') && ctx !== 'superadmin') {
-      if (pathname.startsWith('/superadmin/preguntas')) {
-        router.push('/admin/preguntas')
-      } else {
-        router.push('/admin')
-      }
+      window.location.replace(
+        pathname.startsWith('/superadmin/preguntas') ? '/admin/preguntas' : '/admin'
+      )
       return
     }
 
     if (pathname.startsWith('/admin') && ctx !== 'tenant-admin') {
-      if (ctx === 'superadmin') router.push('/superadmin')
-      else router.push('/dashboard')
+      window.location.replace(ctx === 'superadmin' ? '/superadmin' : '/dashboard')
       return
     }
 
-    if ((ctx === 'superadmin' || ctx === 'tenant-admin') &&
-        STUDENT_ONLY_PREFIXES.some((p) => pathname.startsWith(p))) {
+    if (
+      (ctx === 'superadmin' || ctx === 'tenant-admin') &&
+      STUDENT_ONLY_PREFIXES.some((p) => pathname.startsWith(p))
+    ) {
       return
     }
 
     if (ctx === 'superadmin' && pathname === '/dashboard') {
-      router.replace('/superadmin?tab=inicio')
+      window.location.replace('/superadmin?tab=inicio')
       return
     }
 
     if (ctx === 'tenant-admin' && pathname === '/dashboard') {
-      router.replace('/admin')
+      window.location.replace('/admin')
     }
-  }, [user, pathname, router, impersonating])
+  }, [user, pathname, impersonating])
 
   if (!authReady || !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#080E0A]">
-        <p className="text-[#A8BFB0] text-sm">Cargando...</p>
-      </div>
-    )
+    return null
   }
 
+  return <DashboardShell>{children}</DashboardShell>
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#080E0A]">
-        <p className="text-[#A8BFB0] text-sm">Cargando...</p>
-      </div>
-    }>
-      <DashboardShell>{children}</DashboardShell>
+    <Suspense fallback={null}>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
     </Suspense>
   )
 }

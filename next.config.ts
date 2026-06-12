@@ -36,10 +36,27 @@ const nextConfig: NextConfig = {
         source: '/:path*',
         headers: securityHeaders,
       },
+      {
+        source: '/uploads/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=604800, immutable' },
+        ],
+      },
     ]
   },
   async rewrites() {
-    return [{ source: '/favicon.ico', destination: '/favicon.svg' }]
+    const apiOrigin = (
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:5034/api'
+    )
+      .replace(/\/api\/?$/i, '')
+      .replace(/\/$/, '')
+
+    return [
+      { source: '/favicon.ico', destination: '/favicon.svg' },
+      { source: '/uploads/:path*', destination: `${apiOrigin}/uploads/:path*` },
+    ]
   },
 }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { authApi } from '@/lib/api/auth'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
@@ -62,7 +63,7 @@ export default function CambiarClavePage() {
         setUser(updated)
         router.replace(getPostLoginPath(updated.role))
       } else {
-        router.replace('/login')
+        redirectToLogin()
       }
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'No se pudo cambiar la contraseña.'))
@@ -152,7 +153,7 @@ export default function CambiarClavePage() {
 
         <button
           type="button"
-          onClick={() => { logout(); router.replace('/login') }}
+          onClick={() => { logout(); redirectToLogin() }}
           className="w-full mt-4 text-xs text-gray-500 hover:text-gray-300"
         >
           Cerrar sesión

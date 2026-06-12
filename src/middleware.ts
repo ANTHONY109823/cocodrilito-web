@@ -72,6 +72,10 @@ export async function middleware(request: NextRequest) {
   const host = normalizeHost(hostname)
   const { pathname } = request.nextUrl
 
+  if (pathname.startsWith('/api') || pathname.startsWith('/uploads')) {
+    return NextResponse.next()
+  }
+
   if (isRootDomain(host) && pathname === '/login') {
     const legacySlug =
       request.nextUrl.searchParams.get('agencia') ??

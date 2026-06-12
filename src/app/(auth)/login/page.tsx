@@ -1,14 +1,14 @@
 'use client'
 
 import { Suspense, useEffect, useRef, useState, type CSSProperties } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
-import { getPostLoginPath } from '@/lib/auth/roles'
+import { navigateAfterLogin } from '@/lib/auth/navigateAfterLogin'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { useTenantSlug } from '@/hooks/useTenantSlug'
 import { ThemeProvider } from '@/components/ThemeProvider'
@@ -17,9 +17,8 @@ import { buildLoginThemeStyle } from '@/lib/utils/loginTheme'
 import { useTenantFavicon } from '@/hooks/useTenantFavicon'
 import Image from 'next/image'
 import { BRAND_LOGIN, BRAND_PLATFORM } from '@/lib/constants/brand'
-import {
-  resolveLoginBranding,
-} from '@/lib/constants/defaultLoginBranding'
+import { resolveLoginBranding } from '@/lib/constants/defaultLoginBranding'
+import { resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
 import { SUPERADMIN_LOGIN_BRANDING } from '@/lib/constants/superadminLoginBranding'
 import { isRootHost } from '@/lib/utils/tenantHost'
 import './login-platform.css'
@@ -103,14 +102,13 @@ function useLoginDecorEffects(enabled = true) {
 }
 
 function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { setUser } = useAuthStore()
   const { stopImpersonation } = useImpersonationStore()
 
   const tenantSlug = useTenantSlug()
   const [isRootLogin, setIsRootLogin] = useState(false)
-  const { config, loading: configLoading, error: tenantConfigError, brandingReady } = useTenantConfig()
+  const { config, loading: configLoading, error: tenantConfigError } = useTenantConfig()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -129,24 +127,23 @@ function LoginForm() {
     ? resolveLoginBranding(config?.loginConfig)
     : SUPERADMIN_LOGIN_BRANDING
 
-  const loginBackgroundStyle: CSSProperties | undefined = tenantSlug && config?.loginBackgroundUrl
-    ? { backgroundImage: `url('${config.loginBackgroundUrl}')` }
+  const logoSrc = resolveTenantAssetUrl(config?.logoUrl)
+  const backgroundSrc = resolveTenantAssetUrl(config?.loginBackgroundUrl)
+
+  const loginBackgroundStyle: CSSProperties | undefined = tenantSlug && backgroundSrc
+    ? { backgroundImage: `url('${backgroundSrc}')` }
     : tenantSlug && config?.primaryColor
       ? {
           background: `linear-gradient(160deg, ${config.primaryColor} 0%, #060e07 55%, #0b1f0d 100%)`,
         }
       : undefined
 
-  const bgLionClassName = tenantSlug
-    ? `bg-lion bg-lion--tenant${
-        brandingReady || !config?.loginBackgroundUrl ? ' bg-lion--ready' : ''
-      }`
-    : 'bg-lion'
+  const bgLionClassName = tenantSlug ? 'bg-lion bg-lion--tenant bg-lion--ready' : 'bg-lion'
 
   const showLoginContent =
     isPlatformLogin || !tenantSlug || Boolean(config) || Boolean(tenantConfigError)
   const showSkeleton = Boolean(tenantSlug && configLoading && !config && !tenantConfigError)
-  const hasTenantBackground = Boolean(tenantSlug && config?.loginBackgroundUrl)
+  const hasTenantBackground = Boolean(tenantSlug && backgroundSrc)
   const loginRootClass = isPlatformLogin || !tenantSlug
     ? 'loginRoot loginRoot--platform'
     : 'loginRoot loginRoot--tenant'
@@ -172,6 +169,7 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return
     setError('')
     setLoading(true)
     try {
@@ -185,7 +183,7 @@ function LoginForm() {
       setUser(loggedUser)
 
       const nextPath = searchParams.get('next')
-      router.push(getPostLoginPath(loggedUser.role, loggedUser.mustChangePassword, nextPath))
+      navigateAfterLogin(loggedUser.role, loggedUser.mustChangePassword, nextPath)
     } catch (err: unknown) {
       if (!axios.isAxiosError(err) || !err.response) {
         setError('No se pudo conectar con el servidor. Revisa tu conexión o intenta más tarde.')
@@ -237,7 +235,7 @@ function LoginForm() {
           </a>
         )}
 
-        <main className={`page${showLoginContent ? ' page--ready' : ' page--hidden'}`}>
+        <main className="page page--ready">
         {tenantSlug && tenantConfigError && !configLoading && (
           <div className="login-error-banner" role="alert">
             <strong>Agencia no encontrada.</strong>
@@ -248,13 +246,12 @@ function LoginForm() {
           </div>
         )}
         <div className="brand">
-          {tenantSlug && config?.logoUrl && (
+          {tenantSlug && logoSrc && (
             <Image
-              src={config.logoUrl}
+              src={logoSrc}
               alt=""
               width={112}
               height={112}
-              unoptimized
               className="brand-logo"
               priority
             />
@@ -277,20 +274,9 @@ function LoginForm() {
             <div className="left">
               {tenantSlug && !isPlatformLogin && (
                 <div className="logo-pill">
-                  {config?.logoUrl ? (
-                    <Image
-                      src={config.logoUrl}
-                      alt=""
-                      width={34}
-                      height={34}
-                      unoptimized
-                      className="logo-icon-img"
-                    />
-                  ) : (
-                    <div className="logo-icon" aria-hidden>
-                      {displayName.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
+                  <div className="logo-icon" aria-hidden>
+                    {displayName.slice(0, 2).toUpperCase()}
+                  </div>
                   <div className="logo-text">
                     <div className="logo-name">{config?.name ?? displayName}</div>
                     <div className="logo-role">{branding.brandTagline}</div>

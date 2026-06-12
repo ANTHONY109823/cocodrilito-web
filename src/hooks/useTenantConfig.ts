@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { fetchTenantConfig, type TenantConfig } from '@/lib/api/tenants'
 import { useTenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
-import { preloadBrandingImages } from '@/lib/utils/preloadBrandingImages'
 import { useTenantSlug } from './useTenantSlug'
 
 const CACHE_PREFIX = 'tenant:config:'
@@ -44,6 +43,14 @@ function resolveSeedConfig(
   return readCachedConfig(slug)
 }
 
+function hasSsrBootstrap(
+  slug: string,
+  bootstrapSlug: string | null,
+  initialConfig: TenantConfig | null
+): boolean {
+  return bootstrapSlug === slug && Boolean(initialConfig)
+}
+
 export function useTenantConfig(overrideSlug?: string | null) {
   const autoSlug = useTenantSlug()
   const slug = overrideSlug ?? autoSlug
@@ -57,54 +64,42 @@ export function useTenantConfig(overrideSlug?: string | null) {
   const [config, setConfig] = useState<TenantConfig | null>(seedConfig)
   const [loading, setLoading] = useState(Boolean(slug && !seedConfig))
   const [error, setError] = useState<string | null>(null)
-  const [brandingReady, setBrandingReady] = useState(
-    () => !seedConfig?.loginBackgroundUrl
-  )
+
+  const seedConfigRef = useRef(seedConfig)
+  seedConfigRef.current = seedConfig
 
   useEffect(() => {
     if (!slug) {
       setConfig(null)
       setLoading(false)
       setError(null)
-      setBrandingReady(true)
       return
     }
 
-    if (seedConfig) {
-      setConfig(seedConfig)
+    const seed = seedConfigRef.current
+    const fromSsr = hasSsrBootstrap(slug, bootstrapSlug, initialConfig)
+
+    if (seed) {
+      setConfig(seed)
       setLoading(false)
-      setBrandingReady(!seedConfig.loginBackgroundUrl)
+      writeCachedConfig(slug, seed)
     }
 
     let cancelled = false
 
-    const loadBranding = async (data: TenantConfig) => {
-      if (!data.loginBackgroundUrl && !data.logoUrl) {
-        if (!cancelled) setBrandingReady(true)
-        return
-      }
-
-      try {
-        await preloadBrandingImages([data.loginBackgroundUrl, data.logoUrl])
-      } finally {
-        if (!cancelled) setBrandingReady(true)
-      }
-    }
-
-    const load = async () => {
-      if (!seedConfig) setLoading(true)
+    const refreshConfig = async (showLoading: boolean) => {
+      if (showLoading) setLoading(true)
 
       try {
         const data = await fetchTenantConfig(slug)
         if (cancelled) return
 
         if (!data) {
-          if (!seedConfig) {
+          if (!seed) {
             setError('Tenant no encontrado')
             setConfig(null)
           }
           setLoading(false)
-          setBrandingReady(true)
           return
         }
 
@@ -112,34 +107,28 @@ export function useTenantConfig(overrideSlug?: string | null) {
         setError(null)
         setLoading(false)
         writeCachedConfig(slug, data)
-
-        if (data.loginBackgroundUrl) {
-          void loadBranding(data)
-        } else {
-          setBrandingReady(true)
-        }
       } catch {
         if (cancelled) return
-        if (!seedConfig) setError('Error al cargar configuración')
+        if (!seed) setError('Error al cargar configuración')
         setLoading(false)
-        setBrandingReady(true)
       }
     }
 
-    if (seedConfig?.loginBackgroundUrl) {
-      void loadBranding(seedConfig)
+    if (!seed) {
+      void refreshConfig(true)
+    } else if (!fromSsr && !readCachedConfig(slug)) {
+      void refreshConfig(false)
     }
 
-    void load()
     return () => {
       cancelled = true
     }
-  }, [slug, seedConfig])
+  }, [slug, bootstrapSlug, initialConfig])
 
   return {
     config: slug ? config : null,
     loading: slug ? loading : false,
     error: slug ? error : null,
-    brandingReady: slug ? brandingReady : true,
+    brandingReady: true,
   }
 }

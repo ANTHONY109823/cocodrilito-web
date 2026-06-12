@@ -23,13 +23,14 @@ export default async function LoginLayout({ children }: { children: React.ReactN
   const slug = requestHeaders.get('x-tenant-slug')
   const initialConfig = slug ? await fetchTenantConfigServer(slug) : null
   const logoUrl = resolveTenantAssetUrl(initialConfig?.logoUrl)
+  const backgroundUrl = resolveTenantAssetUrl(initialConfig?.loginBackgroundUrl)
 
   return (
     <>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      {initialConfig?.loginBackgroundUrl ? (
-        <link rel="preload" as="image" href={initialConfig.loginBackgroundUrl} fetchPriority="high" />
+      {backgroundUrl ? (
+        <link rel="preload" as="image" href={backgroundUrl} fetchPriority="high" />
       ) : null}
       {logoUrl ? (
         <link rel="preload" as="image" href={logoUrl} fetchPriority="high" />

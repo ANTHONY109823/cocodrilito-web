@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import type { TenantConfig } from '@/lib/api/tenants'
 
 function getServerApiBase(): string | null {
@@ -6,7 +7,7 @@ function getServerApiBase(): string | null {
   return base.replace(/\/$/, '')
 }
 
-export async function fetchTenantConfigServer(slug: string): Promise<TenantConfig | null> {
+async function fetchTenantConfigUncached(slug: string): Promise<TenantConfig | null> {
   const apiBase = getServerApiBase()
   if (!apiBase) return null
 
@@ -21,3 +22,6 @@ export async function fetchTenantConfigServer(slug: string): Promise<TenantConfi
     return null
   }
 }
+
+/** Una sola petición SSR por slug y request (metadata + layout). */
+export const fetchTenantConfigServer = cache(fetchTenantConfigUncached)
