@@ -3,14 +3,7 @@ import { headers } from 'next/headers'
 import { BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { TenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-
-function buildLoginIcons(logoUrl?: string | null): Metadata['icons'] | undefined {
-  if (!logoUrl) return undefined
-  return {
-    icon: [{ url: logoUrl }],
-    apple: [{ url: logoUrl }],
-  }
-}
+import { buildFaviconMetadata, resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
 
 export async function generateMetadata(): Promise<Metadata> {
   const slug = (await headers()).get('x-tenant-slug')
@@ -21,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: `${config.name} — Iniciar sesión`,
-    icons: buildLoginIcons(config.logoUrl),
+    icons: buildFaviconMetadata(config.logoUrl),
   }
 }
 
@@ -29,6 +22,7 @@ export default async function LoginLayout({ children }: { children: React.ReactN
   const requestHeaders = await headers()
   const slug = requestHeaders.get('x-tenant-slug')
   const initialConfig = slug ? await fetchTenantConfigServer(slug) : null
+  const logoUrl = resolveTenantAssetUrl(initialConfig?.logoUrl)
 
   return (
     <>
@@ -37,8 +31,8 @@ export default async function LoginLayout({ children }: { children: React.ReactN
       {initialConfig?.loginBackgroundUrl ? (
         <link rel="preload" as="image" href={initialConfig.loginBackgroundUrl} fetchPriority="high" />
       ) : null}
-      {initialConfig?.logoUrl ? (
-        <link rel="preload" as="image" href={initialConfig.logoUrl} fetchPriority="high" />
+      {logoUrl ? (
+        <link rel="preload" as="image" href={logoUrl} fetchPriority="high" />
       ) : null}
       <TenantLoginBootstrap slug={slug} initialConfig={initialConfig}>
         {children}
