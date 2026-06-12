@@ -1,41 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { toast } from '@/components/Toast'
 import { Badge, Card, ErrorState } from '@/components/ui'
 import { EmptyState } from '@/components/ui/EmptyState'
-import apiClient from '@/lib/api/client'
-import { getApiErrorMessage } from '@/lib/api/errors'
 import { useAuthStore } from '@/lib/store/authStore'
+import { useRanking } from '@/hooks/useRanking'
+import { leagueEmoji } from '@/lib/utils/league'
+import { getApiErrorMessage } from '@/lib/api/errors'
 import { cn } from '@/lib/utils/cn'
-
-interface RankingEntry {
-  position: number
-  userId: string
-  fullName: string
-  rank: string
-  unit: string
-  totalXp: number
-  examsCompleted: number
-  currentLeague: string
-  correctAnswers: number
-}
-
-interface MyRanking {
-  position: number
-  totalXp: number
-  currentLeague: string
-  correctAnswers: number
-}
-
-const leagueEmoji: Record<string, string> = {
-  'Cola Cortada': '🏆',
-  'Creo que nos cortan la cola': '✂️',
-  Lagartito: '🦎',
-  Cocodrilito: '🐊',
-  Dinosaurio: '🦕',
-}
 
 const podiumStyles: Record<number, string> = {
   1: 'border-[#C9943A]/30 bg-[#C9943A]/10',
@@ -72,52 +44,19 @@ function PositionBadge({ position }: { position: number }) {
 
 export default function RankingPage() {
   const { user } = useAuthStore()
-  const [ranking, setRanking] = useState<RankingEntry[]>([])
-  const [myRanking, setMyRanking] = useState<MyRanking | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { ranking, myRanking, isLoading, error, refresh } = useRanking()
 
-  const loadRanking = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [globalRes, myRes] = await Promise.all([
-        apiClient.get('/rankings/global'),
-        apiClient.get('/rankings/me'),
-      ])
-      const globalData = Array.isArray(globalRes.data)
-        ? globalRes.data
-        : globalRes.data?.items || globalRes.data?.data || []
-      setRanking(globalData)
-      setMyRanking(myRes.data)
-    } catch (err) {
-      const msg = getApiErrorMessage(err, 'Error al cargar el ranking')
-      console.error('[ranking] loadRanking failed:', err)
-      setError(msg)
-      toast(msg, 'error')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void loadRanking()
-  }, [loadRanking])
+  const errorMessage = error ? getApiErrorMessage(error, 'Error al cargar el ranking') : null
 
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 flex flex-wrap items-start gap-3 sm:gap-4">
-        <Link
-          href="/dashboard"
-          className="text-sm text-[#6B8A75] transition-colors hover:text-white"
-        >
+        <Link href="/dashboard" className="text-sm text-[#6B8A75] transition-colors hover:text-white">
           ← Inicio
         </Link>
         <div>
           <h1 className="text-xl font-bold text-white sm:text-2xl">Ranking PNP 🏆</h1>
-          <p className="mt-0.5 text-sm text-[#6B8A75]">
-            Los mejores efectivos del simulacro
-          </p>
+          <p className="mt-0.5 text-sm text-[#6B8A75]">Los mejores efectivos del simulacro</p>
         </div>
       </div>
 
@@ -142,14 +81,14 @@ export default function RankingPage() {
                 {leagueEmoji[myRanking.currentLeague]} {myRanking.currentLeague}
               </div>
               <div className="text-xs text-[#6B8A75]">
-                {myRanking.correctAnswers} correctas
+                Promedio {myRanking.averageScore}% · {myRanking.examsCompleted} exámenes
               </div>
             </div>
           </div>
         </Card>
       )}
 
-      {!loading && ranking.length >= 3 && (
+      {!isLoading && ranking.length >= 3 && (
         <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
           {[ranking[1], ranking[0], ranking[2]].map((entry, i) => {
             if (!entry) return null
@@ -167,22 +106,18 @@ export default function RankingPage() {
                 <div className="mb-1 text-2xl">
                   {actualPos === 1 ? '🥇' : actualPos === 2 ? '🥈' : '🥉'}
                 </div>
-                <div className="truncate text-xs font-bold text-white">
-                  {entry.fullName.split(' ')[0]}
-                </div>
+                <div className="truncate text-xs font-bold text-white">{entry.fullName.split(' ')[0]}</div>
                 <div className={cn('mt-0.5 text-xs', podiumScoreColor[actualPos])}>
-                  {entry.correctAnswers} ✓
+                  {entry.averageScore}% prom.
                 </div>
-                <div className="mt-0.5 text-xs text-[#6B8A75]">
-                  {leagueEmoji[entry.currentLeague]}
-                </div>
+                <div className="mt-0.5 text-xs text-[#6B8A75]">{leagueEmoji[entry.currentLeague]}</div>
               </Card>
             )
           })}
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
             <div
@@ -191,8 +126,8 @@ export default function RankingPage() {
             />
           ))}
         </div>
-      ) : error ? (
-        <ErrorState message={error} onRetry={() => void loadRanking()} />
+      ) : errorMessage ? (
+        <ErrorState message={errorMessage} onRetry={() => refresh()} />
       ) : ranking.length === 0 ? (
         <EmptyState
           icon="🏆"
@@ -218,9 +153,7 @@ export default function RankingPage() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-white">
-                        {entry.fullName}
-                      </span>
+                      <span className="truncate text-sm font-semibold text-white">{entry.fullName}</span>
                       {isMe && <Badge color="green">tú</Badge>}
                     </div>
                     <div className="truncate text-xs text-[#6B8A75]">
@@ -229,9 +162,7 @@ export default function RankingPage() {
                   </div>
 
                   <div className="shrink-0 text-right">
-                    <div className="text-sm font-bold text-[#318F48]">
-                      {entry.correctAnswers} ✓
-                    </div>
+                    <div className="text-sm font-bold text-[#318F48]">{entry.averageScore}%</div>
                     <div className="text-xs text-[#6B8A75]">
                       {leagueEmoji[entry.currentLeague]} {entry.currentLeague}
                     </div>

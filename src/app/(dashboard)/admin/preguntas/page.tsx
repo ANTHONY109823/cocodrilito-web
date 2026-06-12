@@ -1,57 +1,22 @@
 ﻿'use client'
 
-import { useCallback, useEffect, useState, useRef } from 'react'
-import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
-import { useAuthStore } from '@/lib/store/authStore'
-import { useRouter, usePathname } from 'next/navigation'
+import { useEffect } from 'react'
 import Link from 'next/link'
-import apiClient from '@/lib/api/client'
-import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
-import {
-  DEFAULT_QUESTION_TRACK,
-  QUESTION_TRACK_OPTIONS,
-  trackLabel,
-} from '@/lib/constants/trackTypes'
+import { useRouter, usePathname } from 'next/navigation'
+import { useAuthStore } from '@/lib/store/authStore'
 import {
   isSuperAdmin,
   isTenantAdmin,
   isAdminAgencia,
   isAdminAcademia,
 } from '@/lib/auth/roles'
-import { QuestionEditModal, type EditableQuestion } from '@/components/admin/preguntas/QuestionEditModal'
+import { trackLabel } from '@/lib/constants/trackTypes'
 import { NEON } from '@/lib/constants/theme'
-
-interface Question {
-  id: string
-  questionText: string
-  category: string
-  difficulty: number
-  status: string
-  yearValuation: number
-  trackType?: string | null
-  answerOptions?: {
-    id: string
-    optionText: string
-    isCorrect: boolean
-    optionIndex: number
-  }[]
-}
-
-interface Category {
-  id: string
-  name: string
-  color: string
-  orderIndex: number
-}
-
-const NEON2 = '#4FC3F7'
-const PAGE_SIZE = 50
-
-const PRESET_COLORS = [
-  '#4FC3F7', '#A78BFA', '#F59E0B', '#EF4444',
-  '#10B981', '#F472B6', '#60A5FA', '#34D399',
-  '#FB923C', '#818CF8'
-]
+import { useAdminQuestions } from '@/hooks/useAdminQuestions'
+import { QuestionEditModal } from '@/components/admin/preguntas/QuestionEditModal'
+import { QuestionAddForm, TrackSelector, NEON2 } from '@/components/admin/preguntas/QuestionAddForm'
+import { CategoryPanel, QuestionsList } from '@/components/admin/preguntas/CategoryPanel'
+import { PAGE_SIZE } from '@/components/admin/preguntas/types'
 
 export default function PreguntasPage() {
   const { user, loadFromStorage } = useAuthStore()
@@ -63,70 +28,18 @@ export default function PreguntasPage() {
   const isAcademia = isAdminAcademia(user?.role, user?.tenantType)
   const showOwnScope = isSuperAdminMode || isAcademia
 
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [exams, setExams] = useState<{ id: string; title: string }[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [uploadingCat, setUploadingCat] = useState<string | null>(null)
-  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
-  const [editingQuestion, setEditingQuestion] = useState<EditableQuestion | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [showAddCategory, setShowAddCategory] = useState(false)
-  const [newCatName, setNewCatName] = useState('')
-  const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0])
-  const [questionScope, setQuestionScope] = useState<'base' | 'own'>('base')
-  const [activeTrackType, setActiveTrackType] = useState(DEFAULT_QUESTION_TRACK)
-
-  const canEditCurrentScope =
-    isSuperAdminMode
-      ? true
-      : questionScope === 'own' && isAcademia
-  const readOnly = isAgencia || !canEditCurrentScope
-
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
-
-  const [qForm, setQForm] = useState({
-    examId: '',
-    questionText: '',
-    category: '',
-    yearValuation: 2025,
-    orderIndex: 1,
-    explanation: '',
-    options: [
-      { optionText: '', isCorrect: true,  optionIndex: 0 },
-      { optionText: '', isCorrect: false, optionIndex: 1 },
-      { optionText: '', isCorrect: false, optionIndex: 2 },
-      { optionText: '', isCorrect: false, optionIndex: 3 },
-    ]
+  const q = useAdminQuestions({
+    isSuperAdminMode,
+    enabled: Boolean(user),
   })
 
-  const loadAll = useCallback(async () => {
-    setLoading(true)
-    try {
-      const trackQuery = isSuperAdminMode ? `&trackType=${activeTrackType}` : ''
-      const [qRes, eRes, cRes] = await Promise.all([
-        apiClient.get(`/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}${trackQuery}`),
-        apiClient.get('/exams/list'),
-        apiClient.get('/categories'),
-      ])
-      const qs = Array.isArray(qRes.data) ? qRes.data : qRes.data?.items || []
-      const cats = Array.isArray(cRes.data) ? cRes.data : []
-      setQuestions(qs)
-      setExams(Array.isArray(eRes.data) ? eRes.data : [])
-      setCategories(cats)
-      const firstCat = cats[0]?.name
-      if (firstCat) {
-        setSelectedCategory((prev) => prev || firstCat)
-        setQForm((f) => ({ ...f, category: f.category || firstCat }))
-      }
-    } catch { /* ignore */ } finally { setLoading(false) }
-  }, [activeTrackType, isSuperAdminMode])
+  const canEditCurrentScope =
+    isSuperAdminMode || (q.questionScope === 'own' && isAcademia)
+  const readOnly = isAgencia || !canEditCurrentScope
 
-  useEffect(() => { loadFromStorage() }, [loadFromStorage])
+  useEffect(() => {
+    loadFromStorage()
+  }, [loadFromStorage])
 
   useEffect(() => {
     if (!user) return
@@ -136,189 +49,12 @@ export default function PreguntasPage() {
     }
     if (!isSuperAdminMode && !isTenantAdmin(user.role)) {
       router.push('/dashboard')
-      return
     }
-    void loadAll()
-  }, [user, loadAll, router, isSuperAdminMode, pathname, activeTrackType])
+  }, [user, router, isSuperAdminMode, pathname])
 
-  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploadingCat(category)
-    setMsg(null)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const res = await apiClient.post(
-        `/admin/import/questions?categoria=${encodeURIComponent(category)}&trackType=${activeTrackType}&forOwnTenant=${questionScope === 'own'}`,
-        formData
-      )
-      const imported = res.data.imported ?? 0
-      const totalErrors = res.data.totalErrors ?? 0
-      const firstErrors = (res.data.errors as string[] | undefined)?.slice(0, 3).join(' · ') ?? ''
-
-      if (imported === 0) {
-        setMsg({
-          text: `⚠️ 0 importadas en ${category}. ${res.data.message || ''}${firstErrors ? ` ${firstErrors}` : ''}`,
-          ok: false
-        })
-      } else {
-        setMsg({
-          text: `✅ ${imported} preguntas importadas en ${category}${totalErrors > 0 ? ` (${totalErrors} filas con error)` : ''}`,
-          ok: true
-        })
-      }
-      setTimeout(() => setMsg(null), totalErrors > 0 || imported === 0 ? 12000 : 4000)
-      loadAll()
-    } catch (err: unknown) {
-      setMsg({ text: getApiErrorDetail(err, 'Error al subir'), ok: false })
-    } finally {
-      setUploadingCat(null)
-      if (fileRefs.current[category]) fileRefs.current[category]!.value = ''
-    }
-  }
-
-  const handleDownloadTemplate = async (category?: string) => {
-    try {
-      const params = category ? { categoria: category } : undefined
-      const res = await apiClient.get('/admin/import/template', { responseType: 'blob', params })
-      const url = window.URL.createObjectURL(new Blob([res.data]))
-      const a = document.createElement('a'); a.href = url
-      const safeCat = category?.toLowerCase().replace(/\s+/g, '_') ?? 'general'
-      a.download = `plantilla_preguntas_${safeCat}.csv`; a.click()
-    } catch { }
-  }
-
-  const handleAddCategory = async () => {
-    if (!newCatName.trim()) return
-    setSaving(true)
-    try {
-      const res = await apiClient.post('/categories', { name: newCatName, color: newCatColor })
-      setCategories(prev => [...prev, res.data])
-      setNewCatName('')
-      setNewCatColor(PRESET_COLORS[0])
-      setShowAddCategory(false)
-      setMsg({ text: `✅ Categoría "${res.data.name}" creada`, ok: true })
-      setTimeout(() => setMsg(null), 3000)
-    } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error al crear categoría'), ok: false })
-    } finally { setSaving(false) }
-  }
-
-  const handleDeleteCategory = async (id: string, name: string) => {
-    if (!confirm(`¿Eliminar la categoría "${name}"? También se eliminarán TODAS sus preguntas.`)) return
-    try {
-      const res = await apiClient.delete(`/categories/${id}`)
-      setCategories(prev => prev.filter(c => c.id !== id))
-      await loadAll()
-      if (selectedCategory === name && categories.length > 1) {
-        const remaining = categories.filter(c => c.id !== id)
-        setSelectedCategory(remaining[0]?.name || '')
-      }
-      const deletedCount = res.data?.deletedQuestions as number | undefined
-      setMsg({
-        text: `🗑️ Categoría eliminada${deletedCount != null ? ` (${deletedCount} preguntas)` : ''}`,
-        ok: false
-      })
-      setTimeout(() => setMsg(null), 2000)
-    } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
-    }
-  }
-
-  const handleAddQuestion = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setMsg(null)
-    try {
-      await apiClient.post(`/admin/Questions?forOwnTenant=${questionScope === 'own'}`, {
-        examId: qForm.examId,
-        questionText: qForm.questionText,
-        category: qForm.category,
-        difficulty: 1,
-        yearValuation: qForm.yearValuation,
-        orderIndex: qForm.orderIndex,
-        explanation: qForm.explanation,
-        trackType: activeTrackType,
-        answerOptions: qForm.options
-      })
-      setMsg({ text: '✅ Pregunta creada', ok: true })
-      setQForm({ ...qForm, questionText: '', explanation: '', orderIndex: qForm.orderIndex + 1 })
-      setShowAddForm(false)
-      loadAll()
-    } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
-    } finally { setSaving(false) }
-  }
-
-  const handleEditQuestion = async (q: Question) => {
-    try {
-      const res = await apiClient.get(`/admin/Questions/${q.id}`)
-      setEditingQuestion(res.data)
-    } catch { setEditingQuestion(q) }
-  }
-
-  const handleSaveEdit = async () => {
-    if (!editingQuestion) return
-    setSaving(true)
-    try {
-      await apiClient.put(`/admin/Questions/${editingQuestion.id}`, {
-        questionText: editingQuestion.questionText,
-        category: editingQuestion.category,
-        difficulty: 1,
-        yearValuation: editingQuestion.yearValuation,
-        answerOptions: editingQuestion.answerOptions
-      })
-      setMsg({ text: '✅ Pregunta actualizada', ok: true })
-      setEditingQuestion(null)
-      loadAll()
-    } catch { setMsg({ text: 'Error al actualizar', ok: false }) }
-    finally { setSaving(false) }
-  }
-
-  const handleDeleteQuestion = async (id: string) => {
-    if (!confirm('¿Eliminar esta pregunta?')) return
-    try {
-      await apiClient.delete(`/admin/Questions/${id}`)
-      setQuestions(prev => prev.filter(q => q.id !== id))
-      setMsg({ text: '🗑️ Pregunta eliminada', ok: false })
-      setTimeout(() => setMsg(null), 2000)
-    } catch { }
-  }
-
-  const handleDeleteAll = async () => {
-    if (!confirm('⚠️ ¿Eliminar TODAS las preguntas del banco?')) return
-    if (!confirm('¿Estás SEGURO? Esta acción no se puede deshacer.')) return
-    try {
-      const res = await apiClient.delete(`/admin/Questions/bulk?ownOnly=${questionScope === 'own'}`)
-      setMsg({ text: `🗑️ ${res.data.deleted} preguntas eliminadas`, ok: false })
-      setTimeout(() => { setMsg(null); loadAll() }, 2000)
-    } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
-    }
-  }
-
-  const scopedQuestions = questions.filter((q) => {
-    const qWithTenant = q as Question & { tenantId?: string | null }
-    if (questionScope === 'base') return !qWithTenant.tenantId
-    return Boolean(qWithTenant.tenantId)
-  })
-
-  const filtered = scopedQuestions.filter(q => {
-    const matchCat = q.category === selectedCategory
-    const matchSearch = search === '' || q.questionText.toLowerCase().includes(search.toLowerCase())
-    return matchCat && matchSearch
-  })
-
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-  const counts = categories.reduce((acc, cat) => {
-    acc[cat.name] = scopedQuestions.filter(q => q.category === cat.name).length
-    return acc
-  }, {} as Record<string, number>)
-
-  const currentCat = categories.find(c => c.name === selectedCategory)
-  const letters = ['A', 'B', 'C', 'D']
+  const totalPages = Math.ceil(q.filtered.length / PAGE_SIZE)
+  const paginated = q.filtered.slice((q.page - 1) * PAGE_SIZE, q.page * PAGE_SIZE)
+  const currentCat = q.categories.find((c) => c.name === q.selectedCategory)
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -331,20 +67,22 @@ export default function PreguntasPage() {
         select.input-q option { background:#111; }
       `}</style>
 
-      {editingQuestion && (
+      {q.editingQuestion && (
         <QuestionEditModal
-          question={editingQuestion}
-          categories={categories}
-          saving={saving}
-          onClose={() => setEditingQuestion(null)}
-          onChange={setEditingQuestion}
-          onSave={() => void handleSaveEdit()}
+          question={q.editingQuestion}
+          categories={q.categories}
+          saving={q.saving}
+          onClose={() => q.setEditingQuestion(null)}
+          onChange={q.setEditingQuestion}
+          onSave={() => void q.handleSaveEdit()}
         />
       )}
 
-      {/* HEADER */}
       <div className="flex items-center gap-4 mb-6 flex-wrap">
-        <Link href={isSuperAdminMode ? '/superadmin?tab=agencias' : '/admin'} className="text-gray-600 hover:text-gray-300 text-sm transition-colors">
+        <Link
+          href={isSuperAdminMode ? '/superadmin?tab=agencias' : '/admin'}
+          className="text-gray-600 hover:text-gray-300 text-sm transition-colors"
+        >
           ← {isSuperAdminMode ? 'SuperAdmin' : 'Panel Admin'}
         </Link>
         <div className="flex-1">
@@ -358,33 +96,47 @@ export default function PreguntasPage() {
           <p className="text-gray-600 text-xs mt-0.5">
             {readOnly && isAgencia
               ? 'Solo lectura — las preguntas de ascenso las gestiona Simulacros.pe'
-              : `${scopedQuestions.length} preguntas en vista · ${categories.length} categorías · balotario: ${trackLabel(activeTrackType)}`}
+              : `${q.scopedQuestions.length} preguntas en vista · ${q.categories.length} categorías · balotario: ${trackLabel(q.activeTrackType)}`}
           </p>
         </div>
         {!readOnly && (
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => handleDownloadTemplate(selectedCategory || undefined)}
-            className="px-3 py-2 rounded-lg text-xs font-medium transition-colors"
-            style={{ backgroundColor: 'rgba(79,195,247,0.1)', color: NEON2, border: '1px solid rgba(79,195,247,0.2)' }}>
-            ⬇️ Plantilla CSV
-          </button>
-          <button onClick={() => setShowAddForm(!showAddForm)}
-            className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
-            style={{
-              backgroundColor: showAddForm ? 'rgba(255,255,255,0.05)' : 'rgba(74,124,89,0.12)',
-              color: showAddForm ? '#6B7280' : NEON,
-              border: `1px solid ${showAddForm ? 'rgba(255,255,255,0.08)' : 'rgba(74,124,89,0.25)'}`
-            }}>
-            {showAddForm ? '✕ Cancelar' : '+ Nueva pregunta'}
-          </button>
-          {questions.length > 0 && (
-            <button onClick={handleDeleteAll}
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => void q.handleDownloadTemplate(q.selectedCategory || undefined)}
               className="px-3 py-2 rounded-lg text-xs font-medium transition-colors"
-              style={{ backgroundColor: 'rgba(255,82,82,0.08)', color: '#ef4444', border: '1px solid rgba(255,82,82,0.2)' }}>
-              Eliminar todo
+              style={{
+                backgroundColor: 'rgba(79,195,247,0.1)',
+                color: NEON2,
+                border: '1px solid rgba(79,195,247,0.2)',
+              }}
+            >
+              ⬇️ Plantilla CSV
             </button>
-          )}
-        </div>
+            <button
+              onClick={() => q.setShowAddForm(!q.showAddForm)}
+              className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
+              style={{
+                backgroundColor: q.showAddForm ? 'rgba(255,255,255,0.05)' : 'rgba(74,124,89,0.12)',
+                color: q.showAddForm ? '#6B7280' : NEON,
+                border: `1px solid ${q.showAddForm ? 'rgba(255,255,255,0.08)' : 'rgba(74,124,89,0.25)'}`,
+              }}
+            >
+              {q.showAddForm ? '✕ Cancelar' : '+ Nueva pregunta'}
+            </button>
+            {q.questions.length > 0 && (
+              <button
+                onClick={() => void q.handleDeleteAll()}
+                className="px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: 'rgba(255,82,82,0.08)',
+                  color: '#ef4444',
+                  border: '1px solid rgba(255,82,82,0.2)',
+                }}
+              >
+                Eliminar todo
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -395,369 +147,102 @@ export default function PreguntasPage() {
             ? [{ key: 'own' as const, label: '🏷️ Propias de academia', hint: 'Preguntas de tu institución' }]
             : []),
         ].map((s) => (
-          <button key={s.key} type="button" onClick={() => { setQuestionScope(s.key); setPage(1) }}
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => {
+              q.setQuestionScope(s.key)
+              q.setPage(1)
+            }}
             className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
             title={s.hint}
             style={{
-              backgroundColor: questionScope === s.key ? `${NEON}20` : 'rgba(0,5,2,0.5)',
-              color: questionScope === s.key ? NEON : '#6B7280',
-              border: `1px solid ${questionScope === s.key ? NEON : '#ffffff10'}`,
-            }}>
+              backgroundColor: q.questionScope === s.key ? `${NEON}20` : 'rgba(0,5,2,0.5)',
+              color: q.questionScope === s.key ? NEON : '#6B7280',
+              border: `1px solid ${q.questionScope === s.key ? NEON : '#ffffff10'}`,
+            }}
+          >
             {s.label}
           </button>
         ))}
-        <span className="text-xs text-gray-600 self-center ml-auto">
-          {scopedQuestions.length} en esta vista
-        </span>
+        <span className="text-xs text-gray-600 self-center ml-auto">{q.scopedQuestions.length} en esta vista</span>
       </div>
 
       {isSuperAdminMode && !readOnly && (
-        <div className="rounded-2xl p-4 mb-5 space-y-3"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}>
-          <div className="rounded-xl px-3 py-2 text-xs text-gray-400"
-            style={{ background: 'rgba(79,195,247,0.06)', border: '1px solid rgba(79,195,247,0.15)' }}>
-            <strong className="text-gray-300">Importación solo CSV</strong> — un archivo por categoría (botón ↑ CSV).
-            Balotarios: <span className="text-gray-300">Suboficiales</span> y <span className="text-gray-300">Oficiales</span> por separado.
-            No uses Excel (.xlsx). Si editas en Excel, guarda como <span className="text-gray-300">CSV UTF-8</span>.
-          </div>
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="text-white font-semibold text-sm mb-1">Balotario de preguntas</div>
-              <p className="text-xs text-gray-500">
-                Elige el balotario y verás o subirás preguntas del mismo. Capacidad hasta 3000 por balotario.
-              </p>
-            </div>
-            <div className="w-full md:max-w-xs">
-              <label className="block text-xs text-gray-500 mb-1.5">Balotario activo</label>
-              <select
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
-                value={activeTrackType}
-                onChange={(e) => {
-                  setActiveTrackType(Number(e.target.value))
-                  setPage(1)
-                }}
-              >
-                {QUESTION_TRACK_OPTIONS.map((track) => (
-                  <option key={track.value} value={track.value}>{track.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+        <TrackSelector
+          activeTrackType={q.activeTrackType}
+          onChange={(track) => {
+            q.setActiveTrackType(track)
+            q.setPage(1)
+          }}
+        />
       )}
 
-      {msg && (
-        <div className="mb-4 px-4 py-3 rounded-xl text-sm fade-in"
+      {q.msg && (
+        <div
+          className="mb-4 px-4 py-3 rounded-xl text-sm fade-in"
           style={{
-            backgroundColor: msg.ok ? 'rgba(74,124,89,0.08)' : 'rgba(255,82,82,0.08)',
-            border: `1px solid ${msg.ok ? 'rgba(74,124,89,0.2)' : 'rgba(255,82,82,0.2)'}`,
-            color: msg.ok ? NEON : '#ef4444'
-          }}>
-          {msg.text}
+            backgroundColor: q.msg.ok ? 'rgba(74,124,89,0.08)' : 'rgba(255,82,82,0.08)',
+            border: `1px solid ${q.msg.ok ? 'rgba(74,124,89,0.2)' : 'rgba(255,82,82,0.2)'}`,
+            color: q.msg.ok ? NEON : '#ef4444',
+          }}
+        >
+          {q.msg.text}
         </div>
       )}
 
-      {/* FORM NUEVA PREGUNTA */}
-      {showAddForm && !readOnly && (
-        <div className="rounded-xl p-5 mb-4 fade-in"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="text-white font-medium text-sm mb-4">Nueva pregunta manual</p>
-          <form onSubmit={handleAddQuestion} className="space-y-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Examen *</label>
-              <select className="input-q" value={qForm.examId}
-                onChange={e => setQForm({ ...qForm, examId: e.target.value })} required>
-                <option value="">Selecciona un examen</option>
-                {exams.map(ex => <option key={ex.id} value={ex.id}>{ex.title}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Pregunta *</label>
-              <textarea className="input-q" rows={3} placeholder="Escribe la pregunta..."
-                value={qForm.questionText}
-                onChange={e => setQForm({ ...qForm, questionText: e.target.value })} required />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Categoría</label>
-                <select className="input-q" value={qForm.category}
-                  onChange={e => setQForm({ ...qForm, category: e.target.value })}>
-                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Año</label>
-                <input className="input-q" type="number" value={qForm.yearValuation}
-                  onChange={e => setQForm({ ...qForm, yearValuation: Number(e.target.value) })} />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                Opciones — <span style={{ color: NEON }}>toca la letra para marcar correcta</span>
-              </label>
-              {qForm.options.map((opt, i) => (
-                <div key={i} className="flex items-center gap-2 mb-1.5">
-                  <button type="button"
-                    onClick={() => setQForm({ ...qForm, options: qForm.options.map((o, j) => ({ ...o, isCorrect: j === i })) })}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-all"
-                    style={{
-                      backgroundColor: opt.isCorrect ? NEON : 'rgba(255,255,255,0.06)',
-                      color: opt.isCorrect ? '#000' : '#6B7280',
-                      border: `1px solid ${opt.isCorrect ? NEON : 'rgba(255,255,255,0.1)'}`
-                    }}>
-                    {letters[i]}
-                  </button>
-                  <input className="input-q flex-1" placeholder={`Opción ${letters[i]}`}
-                    value={opt.optionText}
-                    onChange={e => setQForm({ ...qForm, options: qForm.options.map((o, j) => j === i ? { ...o, optionText: e.target.value } : o) })}
-                    required />
-                </div>
-              ))}
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Explicación (opcional)</label>
-              <textarea className="input-q" rows={2} placeholder="¿Por qué es correcta?"
-                value={qForm.explanation}
-                onChange={e => setQForm({ ...qForm, explanation: e.target.value })} />
-            </div>
-            <button type="submit" disabled={saving}
-              className="w-full py-2.5 rounded-xl font-semibold text-sm transition-opacity"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'Guardando...' : 'Guardar pregunta'}
-            </button>
-          </form>
-        </div>
+      {q.showAddForm && !readOnly && (
+        <QuestionAddForm
+          exams={q.exams}
+          categories={q.categories}
+          qForm={q.qForm}
+          saving={q.saving}
+          onChange={q.setQForm}
+          onSubmit={(e) => void q.handleAddQuestion(e)}
+        />
       )}
 
-      {/* CATEGORÍAS */}
-      <div className="rounded-xl overflow-hidden mb-4"
-        style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div className="flex items-center justify-between px-4 py-3"
-          style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <p className="text-gray-400 text-xs font-medium">Categorías</p>
-          {(!readOnly || isSuperAdminMode) && (
-          <button onClick={() => setShowAddCategory(!showAddCategory)}
-            className="text-xs px-3 py-1.5 rounded-lg transition-colors"
-            style={{
-              backgroundColor: showAddCategory ? 'rgba(255,255,255,0.05)' : 'rgba(74,124,89,0.1)',
-              color: showAddCategory ? '#6B7280' : NEON,
-              border: `1px solid ${showAddCategory ? 'rgba(255,255,255,0.08)' : 'rgba(74,124,89,0.2)'}`
-            }}>
-            {showAddCategory ? '✕ Cancelar' : '+ Agregar categoría'}
-          </button>
-          )}
-        </div>
+      <CategoryPanel
+        categories={q.categories}
+        counts={q.counts}
+        loading={q.loading}
+        readOnly={readOnly}
+        isSuperAdminMode={isSuperAdminMode}
+        selectedCategory={q.selectedCategory}
+        uploadingCat={q.uploadingCat}
+        showAddCategory={q.showAddCategory}
+        newCatName={q.newCatName}
+        newCatColor={q.newCatColor}
+        saving={q.saving}
+        fileRefs={q.fileRefs}
+        onSelectCategory={(name) => {
+          q.setSelectedCategory(name)
+          q.setPage(1)
+          q.setSearch('')
+        }}
+        onToggleAddCategory={() => q.setShowAddCategory(!q.showAddCategory)}
+        onNewCatNameChange={q.setNewCatName}
+        onNewCatColorChange={q.setNewCatColor}
+        onAddCategory={() => void q.handleAddCategory()}
+        onDeleteCategory={(id, name) => void q.handleDeleteCategory(id, name)}
+        onCSVUpload={(e, cat) => void q.handleCSVUpload(e, cat)}
+      />
 
-        {showAddCategory && (
-          <div className="px-4 py-3 fade-in"
-            style={{ background: 'rgba(74,124,89,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex items-center gap-3 flex-wrap">
-              <input className="input-q flex-1 min-w-48"
-                placeholder="Nombre de la categoría (ej. ETICA POLICIAL)"
-                value={newCatName}
-                onChange={e => setNewCatName(e.target.value.toUpperCase())} />
-              <div className="flex gap-1.5 shrink-0">
-                {PRESET_COLORS.map(c => (
-                  <button key={c} type="button"
-                    onClick={() => setNewCatColor(c)}
-                    className="w-6 h-6 rounded-full transition-all"
-                    style={{
-                      backgroundColor: c,
-                      transform: newCatColor === c ? 'scale(1.25)' : 'scale(1)',
-                      boxShadow: newCatColor === c ? `0 0 8px ${c}80` : 'none'
-                    }} />
-                ))}
-              </div>
-              <button onClick={handleAddCategory} disabled={saving || !newCatName.trim()}
-                className="px-4 py-2 rounded-lg text-xs font-semibold shrink-0 transition-opacity"
-                style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', opacity: saving || !newCatName.trim() ? 0.5 : 1 }}>
-                Crear
-              </button>
-            </div>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="text-gray-600 text-center py-6 text-sm">Cargando...</div>
-        ) : categories.length === 0 ? (
-          <div className="text-gray-600 text-center py-6 text-sm">No hay categorías — agrega una</div>
-        ) : (
-          <div>
-            {categories.map((cat, idx) => {
-              const isSelected = selectedCategory === cat.name
-              const count = counts[cat.name] || 0
-              const isUploading = uploadingCat === cat.name
-              return (
-                <div key={cat.id}
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
-                  style={{
-                    background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    borderBottom: idx < categories.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                    borderLeft: isSelected ? `3px solid ${cat.color}` : '3px solid transparent',
-                  }}
-                  onClick={() => { setSelectedCategory(cat.name); setPage(1); setSearch('') }}>
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: cat.color, opacity: 0.8 }} />
-                  <span className="flex-1 text-sm"
-                    style={{ color: isSelected ? '#e5e7eb' : '#9CA3AF' }}>
-                    {cat.name}
-                  </span>
-                  <span className="text-xs tabular-nums"
-                    style={{ color: count > 0 ? '#6B7280' : '#374151' }}>
-                    {count} {count === 1 ? 'pregunta' : 'preguntas'}
-                  </span>
-                    {!readOnly && (
-                    <div className="flex items-center gap-1.5 shrink-0"
-                      onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => fileRefs.current[cat.name]?.click()}
-                        disabled={isUploading}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                        style={{
-                          backgroundColor: isUploading ? 'rgba(255,255,255,0.05)' : `${cat.color}18`,
-                          color: isUploading ? '#4B5563' : cat.color,
-                          border: `1px solid ${cat.color}30`
-                        }}>
-                        {isUploading ? '⏳ Subiendo...' : '↑ CSV'}
-                      </button>
-                      <input type="file" accept=".csv" className="hidden"
-                        ref={el => { fileRefs.current[cat.name] = el }}
-                        onChange={e => handleCSVUpload(e, cat.name)} />
-                      <button
-                        onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors"
-                        style={{ backgroundColor: 'rgba(255,82,82,0.06)', color: '#ef4444' }}>
-                        ✕
-                      </button>
-                    </div>
-                    )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* BUSCADOR */}
-      {currentCat && (
-        <div className="mb-3">
-          <input className="input-q"
-            placeholder={`Buscar en ${currentCat.name}...`}
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }} />
-        </div>
-      )}
-
-      {/* LISTA PREGUNTAS */}
-      {currentCat && (
-        <div className="rounded-xl overflow-hidden"
-          style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="flex items-center justify-between px-4 py-3"
-            style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: currentCat.color }} />
-              <p className="text-xs text-gray-400">
-                {currentCat.name} · {filtered.length} {filtered.length === 1 ? 'pregunta' : 'preguntas'}
-                {search && ` · "${search}"`}
-              </p>
-            </div>
-            {filtered.length > PAGE_SIZE && (
-              <div className="flex items-center gap-2">
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                  className="px-2 py-1 rounded text-xs"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: page === 1 ? '#374151' : '#9CA3AF' }}>←</button>
-                <span className="text-xs text-gray-600">{page}/{totalPages}</span>
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                  className="px-2 py-1 rounded text-xs"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: page === totalPages ? '#374151' : '#9CA3AF' }}>→</button>
-              </div>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="text-gray-600 text-center py-10 text-sm">Cargando...</div>
-          ) : paginated.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-gray-600 text-sm mb-4">
-                {search ? `Sin resultados para "${search}"` : `No hay preguntas en ${currentCat.name}`}
-              </p>
-              {!search && (
-                <button onClick={() => fileRefs.current[currentCat.name]?.click()}
-                  className="inline-flex px-4 py-2 rounded-lg text-xs font-medium"
-                  style={{ backgroundColor: `${currentCat.color}15`, color: currentCat.color, border: `1px solid ${currentCat.color}25` }}>
-                  ↑ Subir CSV de {currentCat.name}
-                </button>
-              )}
-            </div>
-          ) : (
-            <div>
-              {paginated.map((q, i) => {
-                const globalIdx = (page - 1) * PAGE_SIZE + i + 1
-                return (
-                  <div key={q.id}
-                    className="px-4 py-4 flex items-start gap-3 transition-colors hover:bg-white/[0.015]"
-                    style={{ borderBottom: i < paginated.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                    <span className="text-xs text-gray-700 w-6 shrink-0 pt-0.5 text-right tabular-nums">{globalIdx}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-200 text-sm leading-relaxed mb-2">{q.questionText}</p>
-                      {q.answerOptions && (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                          {q.answerOptions
-                            .sort((a, b) => a.optionIndex - b.optionIndex)
-                            .map((opt, oi) => (
-                              <div key={oi} className="flex items-start gap-1.5">
-                                <span className="text-xs font-semibold shrink-0 mt-px"
-                                  style={{ color: opt.isCorrect ? currentCat.color : '#4B5563' }}>
-                                  {letters[oi]}.
-                                </span>
-                                <span className="text-xs leading-relaxed"
-                                  style={{ color: opt.isCorrect ? '#d1d5db' : '#6B7280' }}>
-                                  {opt.optionText}
-                                </span>
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                    {!readOnly && (
-                    <div className="flex gap-1 shrink-0">
-                      <button onClick={() => handleEditQuestion(q)}
-                        className="px-2.5 py-1.5 rounded-lg text-xs transition-colors"
-                        style={{ backgroundColor: 'rgba(79,195,247,0.08)', color: '#60a5fa' }}>✏️</button>
-                      <button onClick={() => handleDeleteQuestion(q.id)}
-                        className="px-2.5 py-1.5 rounded-lg text-xs transition-colors"
-                        style={{ backgroundColor: 'rgba(255,82,82,0.08)', color: '#ef4444' }}>🗑️</button>
-                    </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {filtered.length > PAGE_SIZE && (
-            <div className="flex items-center justify-center gap-2 px-4 py-3"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <button onClick={() => setPage(1)} disabled={page === 1}
-                className="px-3 py-1.5 rounded-lg text-xs"
-                style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: page === 1 ? '#374151' : '#9CA3AF' }}>««</button>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="px-3 py-1.5 rounded-lg text-xs"
-                style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: page === 1 ? '#374151' : '#9CA3AF' }}>← Anterior</button>
-              <span className="text-xs text-gray-600 px-2">
-                Página {page} de {totalPages} · {filtered.length} preguntas
-              </span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="px-3 py-1.5 rounded-lg text-xs"
-                style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: page === totalPages ? '#374151' : '#9CA3AF' }}>Siguiente →</button>
-              <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
-                className="px-3 py-1.5 rounded-lg text-xs"
-                style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: page === totalPages ? '#374151' : '#9CA3AF' }}>»»</button>
-            </div>
-          )}
-        </div>
-      )}
+      <QuestionsList
+        currentCat={currentCat}
+        paginated={paginated}
+        filtered={q.filtered}
+        loading={q.loading}
+        readOnly={readOnly}
+        search={q.search}
+        onSearchChange={q.setSearch}
+        page={q.page}
+        pageSize={PAGE_SIZE}
+        fileRefs={q.fileRefs}
+        onPageChange={q.setPage}
+        onEdit={(question) => void q.handleEditQuestion(question)}
+        onDelete={(id) => void q.handleDeleteQuestion(id)}
+      />
     </div>
   )
 }
