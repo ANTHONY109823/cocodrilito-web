@@ -1,48 +1,132 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchTenantConfig, type TenantConfig } from '@/lib/api/tenants'
+import { useTenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
+import { preloadBrandingImages } from '@/lib/utils/preloadBrandingImages'
 import { useTenantSlug } from './useTenantSlug'
+
+const CACHE_PREFIX = 'tenant:config:'
+const CACHE_TTL_MS = 10 * 60 * 1000
+
+function readCachedConfig(slug: string): TenantConfig | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(`${CACHE_PREFIX}${slug}`)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { savedAt: number; config: TenantConfig }
+    if (Date.now() - parsed.savedAt > CACHE_TTL_MS) return null
+    return parsed.config
+  } catch {
+    return null
+  }
+}
+
+function writeCachedConfig(slug: string, config: TenantConfig) {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.setItem(
+      `${CACHE_PREFIX}${slug}`,
+      JSON.stringify({ savedAt: Date.now(), config })
+    )
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+function resolveSeedConfig(
+  slug: string | null,
+  bootstrapSlug: string | null,
+  initialConfig: TenantConfig | null
+): TenantConfig | null {
+  if (!slug) return null
+  if (bootstrapSlug === slug && initialConfig) return initialConfig
+  return readCachedConfig(slug)
+}
 
 export function useTenantConfig(overrideSlug?: string | null) {
   const autoSlug = useTenantSlug()
   const slug = overrideSlug ?? autoSlug
-  const [config, setConfig] = useState<TenantConfig | null>(null)
-  const [loading, setLoading] = useState(false)
+  const { initialConfig, slug: bootstrapSlug } = useTenantLoginBootstrap()
+
+  const seedConfig = useMemo(
+    () => resolveSeedConfig(slug, bootstrapSlug, initialConfig),
+    [slug, bootstrapSlug, initialConfig]
+  )
+
+  const [config, setConfig] = useState<TenantConfig | null>(seedConfig)
+  const [loading, setLoading] = useState(Boolean(slug && !seedConfig))
   const [error, setError] = useState<string | null>(null)
+  const [brandingReady, setBrandingReady] = useState(
+    () => !seedConfig?.loginBackgroundUrl
+  )
 
   useEffect(() => {
-    if (!slug) return
+    if (!slug) {
+      setConfig(null)
+      setLoading(false)
+      setError(null)
+      setBrandingReady(true)
+      return
+    }
+
+    if (seedConfig) {
+      setConfig(seedConfig)
+      setLoading(false)
+      setBrandingReady(!seedConfig.loginBackgroundUrl)
+    }
 
     let cancelled = false
-    setLoading(true)
-    setError(null)
 
-    fetchTenantConfig(slug)
-      .then((data) => {
+    const loadBranding = async (data: TenantConfig) => {
+      if (!data.loginBackgroundUrl && !data.logoUrl) {
+        if (!cancelled) setBrandingReady(true)
+        return
+      }
+      await preloadBrandingImages([data.loginBackgroundUrl, data.logoUrl])
+      if (!cancelled) setBrandingReady(true)
+    }
+
+    const load = async () => {
+      if (!seedConfig) setLoading(true)
+
+      try {
+        const data = await fetchTenantConfig(slug)
         if (cancelled) return
-        if (!data) {
-          setError('Tenant no encontrado')
-          setConfig(null)
-        } else {
-          setConfig(data)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setError('Error al cargar configuración')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
 
+        if (!data) {
+          if (!seedConfig) {
+            setError('Tenant no encontrado')
+            setConfig(null)
+          }
+          setLoading(false)
+          setBrandingReady(true)
+          return
+        }
+
+        setConfig(data)
+        setError(null)
+        setLoading(false)
+        writeCachedConfig(slug, data)
+        await loadBranding(data)
+      } catch {
+        if (cancelled) return
+        if (!seedConfig) setError('Error al cargar configuración')
+        setLoading(false)
+        setBrandingReady(true)
+      }
+    }
+
+    void load()
     return () => {
       cancelled = true
     }
-  }, [slug])
+  }, [slug, seedConfig])
 
   return {
     config: slug ? config : null,
     loading: slug ? loading : false,
     error: slug ? error : null,
+    brandingReady: slug ? brandingReady : true,
   }
 }

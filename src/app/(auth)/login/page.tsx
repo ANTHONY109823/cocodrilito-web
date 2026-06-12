@@ -103,7 +103,7 @@ function LoginForm() {
 
   const tenantSlug = useTenantSlug()
   const [isRootLogin, setIsRootLogin] = useState(false)
-  const { config, loading: configLoading, error: tenantConfigError } = useTenantConfig()
+  const { config, loading: configLoading, error: tenantConfigError, brandingReady } = useTenantConfig()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -131,8 +131,12 @@ function LoginForm() {
       : undefined
 
   const bgLionClassName = tenantSlug
-    ? 'bg-lion bg-lion--tenant'
+    ? `bg-lion bg-lion--tenant${
+        brandingReady || !config?.loginBackgroundUrl ? ' bg-lion--ready' : ''
+      }`
     : 'bg-lion'
+
+  const showLoginContent = isPlatformLogin || !tenantSlug || brandingReady
 
   const socialLinks = isPlatformLogin
     ? []
@@ -208,7 +212,7 @@ function LoginForm() {
           </a>
         )}
 
-        <main className="page">
+        <main className={`page${showLoginContent ? ' page--ready' : ''}`}>
         {tenantSlug && tenantConfigError && !configLoading && (
           <div className="login-error-banner" role="alert">
             <strong>Agencia no encontrada.</strong>
@@ -297,8 +301,8 @@ function LoginForm() {
                 {isPlatformLogin ? 'Panel SuperAdmin' : 'Iniciar sesión'}
               </h2>
               <p className="login-sub">
-                {configLoading
-                  ? 'Cargando...'
+                {!showLoginContent
+                  ? 'Preparando tu portal...'
                   : isPlatformLogin
                     ? 'Solo administradores de plataforma. Agencias y alumnos: usa tu-agencia.simulacros.pe'
                     : tenantSlug

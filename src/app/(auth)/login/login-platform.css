@@ -40,6 +40,11 @@
 .bg-lion--tenant {
   background: center top / cover no-repeat;
   animation: bgZoom 25s ease-in-out infinite alternate;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+.bg-lion--tenant.bg-lion--ready {
+  opacity: 1;
 }
 @keyframes bgZoom {
   from { transform: scale(1.0); }
@@ -156,6 +161,11 @@
   justify-content: center;
   padding: 20px 16px 16px;
   gap: 0;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+.page.page--ready {
+  opacity: 1;
 }
 
 /* ═══ HEADER MARCA ═══ */
