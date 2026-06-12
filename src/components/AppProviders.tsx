@@ -3,6 +3,7 @@
 import { SWRConfig } from 'swr'
 import { swrFetcher } from '@/lib/swr/fetcher'
 import { ToastContainer } from '@/components/Toast'
+import { TenantFaviconManager } from '@/components/tenant/TenantFaviconManager'
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         shouldRetryOnError: false,
       }}
     >
+      <TenantFaviconManager />
       {children}
       <ToastContainer />
     </SWRConfig>

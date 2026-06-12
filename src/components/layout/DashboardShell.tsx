@@ -20,7 +20,6 @@ import { cn } from '@/lib/utils/cn'
 import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
 import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
-import { useTenantFavicon } from '@/hooks/useTenantFavicon'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -72,11 +71,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     navContext === 'superadmin'
       ? null
       : (user?.tenantLogoUrl ?? tenantConfig?.logoUrl ?? null)
-
-  useTenantFavicon(
-    brandLogo,
-    navContext !== 'superadmin'
-  )
 
   const navItems =
     navContext === 'superadmin'

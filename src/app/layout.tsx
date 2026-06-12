@@ -7,8 +7,8 @@ import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { buildFaviconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
 
 const PLATFORM_ICONS: Metadata['icons'] = {
-  icon: [{ url: '/favicon.svg', type: 'image/svg+xml', sizes: 'any' }],
-  apple: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+  icon: [{ url: '/icon', type: 'image/svg+xml', sizes: 'any' }],
+  apple: [{ url: '/apple-icon', type: 'image/svg+xml' }],
   shortcut: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
 }
 

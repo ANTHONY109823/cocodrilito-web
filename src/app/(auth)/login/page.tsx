@@ -14,7 +14,6 @@ import { useTenantSlug } from '@/hooks/useTenantSlug'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { LoginBrandedSkeleton, LoginSuspenseFallback } from '@/components/auth/LoginBrandedSkeleton'
 import { buildLoginThemeStyle } from '@/lib/utils/loginTheme'
-import { useTenantFavicon } from '@/hooks/useTenantFavicon'
 import Image from 'next/image'
 import { BRAND_LOGIN, BRAND_PLATFORM } from '@/lib/constants/brand'
 import { resolveLoginBranding } from '@/lib/constants/defaultLoginBranding'
@@ -150,8 +149,6 @@ function LoginForm() {
   const longBrandName = displayName.length > 14
 
   const { particlesRef, loginBtnRef } = useLoginDecorEffects(showLoginContent)
-
-  useTenantFavicon(config?.logoUrl, Boolean(tenantSlug && !isPlatformLogin))
 
   const socialLinks = isPlatformLogin
     ? []

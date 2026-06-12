@@ -29,18 +29,30 @@ function clearTenantFaviconLinks() {
   document.querySelectorAll('link[data-tenant-favicon]').forEach((node) => node.remove())
 }
 
-export function useTenantFavicon(logoUrl?: string | null, enabled = true) {
+/**
+ * Refuerza el favicon de la agencia en cliente (navegación SPA).
+ * No quita el icono mientras carga config; no limpia al desmontar.
+ */
+export function useTenantFavicon(
+  logoUrl?: string | null,
+  enabled = true,
+  pending = false
+) {
   useEffect(() => {
     if (typeof document === 'undefined') return
 
-    if (!enabled || !logoUrl) {
+    if (!enabled) {
       clearTenantFaviconLinks()
       upsertFaviconLink('icon', PLATFORM_FAVICON, 'platform-icon')
       return
     }
 
+    if (pending || !logoUrl) return
+
     const href = resolveTenantAssetUrl(logoUrl)
     if (!href) return
+
+    document.querySelector('link[data-tenant-favicon="platform-icon"]')?.remove()
 
     document
       .querySelectorAll('link[rel*="icon"]:not([data-tenant-favicon])')
@@ -49,9 +61,5 @@ export function useTenantFavicon(logoUrl?: string | null, enabled = true) {
     upsertFaviconLink('icon', href, 'icon')
     upsertFaviconLink('shortcut icon', href, 'shortcut')
     upsertFaviconLink('apple-touch-icon', href, 'apple')
-
-    return () => {
-      clearTenantFaviconLinks()
-    }
-  }, [logoUrl, enabled])
+  }, [logoUrl, enabled, pending])
 }
