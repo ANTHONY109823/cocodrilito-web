@@ -162,17 +162,20 @@
   padding: 20px 16px 16px;
   gap: 0;
   opacity: 0;
-  transition: opacity 0.28s ease;
+  transform: translateY(18px);
+  transition:
+    opacity 0.35s ease,
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .page.page--ready {
   opacity: 1;
+  transform: translateY(0);
 }
 
 /* ═══ HEADER MARCA ═══ */
 .brand {
   text-align: center;
   margin-bottom: 28px;
-  animation: fadeDown .8s ease both;
   pointer-events: none;
 }
 .brand-sup {
@@ -201,7 +204,6 @@
   margin-top: 14px;
   margin-bottom: 2px;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
-  animation: fadeDown 0.8s 0.15s ease both;
 }
 
 .brand-logo {
@@ -227,7 +229,6 @@
     0 0  20px rgba(245,200,66,0.5),
     0  5px 0   rgba(0,0,0,0.95);
   line-height: 1;
-  animation: fadeDown .8s .1s ease both;
 }
 .brand-ornament {
   display: flex;
@@ -235,7 +236,6 @@
   justify-content: center;
   gap: 8px;
   margin-top: 10px;
-  animation: fadeDown .8s .2s ease both;
 }
 .orn-bar  { width: 70px; height: 0.5px; background: rgba(245,200,66,0.28); }
 .orn-diamond { width:7px; height:7px; background:var(--gold); transform:rotate(45deg); opacity:.65; }
@@ -247,7 +247,44 @@
   color: rgba(245,200,66,0.42);
   margin-top: 8px;
   text-transform: uppercase;
+}
+
+/* Entrada animada al mostrar el login (SuperAdmin y agencias) */
+.page.page--ready .brand {
+  animation: fadeDown .8s ease both;
+}
+.page.page--ready .brand-logo {
+  animation: fadeDown .75s .05s ease both;
+}
+.page.page--ready .brand-name {
+  animation: fadeDown .8s .1s ease both;
+}
+.page.page--ready .brand-tagline {
+  animation: fadeDown 0.8s 0.15s ease both;
+}
+.page.page--ready .brand-ornament {
+  animation: fadeDown .8s .2s ease both;
+}
+.page.page--ready .brand-sub {
   animation: fadeDown .8s .28s ease both;
+}
+.page.page--ready .card {
+  animation: cardUp .9s .15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page.page--ready .brand,
+  .page.page--ready .brand-logo,
+  .page.page--ready .brand-name,
+  .page.page--ready .brand-tagline,
+  .page.page--ready .brand-ornament,
+  .page.page--ready .brand-sub,
+  .page.page--ready .card {
+    animation: none;
+  }
+  .page {
+    transition: none;
+  }
 }
 
 /* ═══ CARD PRINCIPAL ═══ */
@@ -264,7 +301,6 @@
     0 0 0 1px rgba(245,200,66,0.08),
     0 30px 80px rgba(0,0,0,0.5),
     0  0px 40px rgba(0,0,0,0.3);
-  animation: cardUp .9s .15s ease both;
   position: relative;
 }
 
