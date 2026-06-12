@@ -13,9 +13,14 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
-import { NEON, DANGER, WARNING, GOLD, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON, DANGER, WARNING, GOLD, INFO, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { TenantLoginBrandingFields, emptyLoginBranding } from '@/components/superadmin/TenantLoginBrandingFields'
+import {
+  TenantBrandingUploadFields,
+  emptyTenantBrandingFiles,
+  type TenantBrandingFiles,
+} from '@/components/superadmin/TenantBrandingUploadFields'
 import { TenantPlansSection } from '@/components/admin/TenantPlansSection'
 import { resolveLoginBranding, type TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
 import { SuperAdminUsersPanel } from '@/components/superadmin/SuperAdminUsersPanel'
@@ -64,6 +69,8 @@ export default function TenantDetailPage() {
   const [savingTenant, setSavingTenant] = useState(false)
   const [loginBranding, setLoginBranding] = useState<TenantLoginBranding>(emptyLoginBranding())
   const [savingLoginBranding, setSavingLoginBranding] = useState(false)
+  const [brandingFiles, setBrandingFiles] = useState<TenantBrandingFiles>(emptyTenantBrandingFiles())
+  const [savingBranding, setSavingBranding] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -276,6 +283,37 @@ export default function TenantDetailPage() {
       toast(ax.response?.data?.message || 'Error al guardar el panel de login', 'error')
     } finally {
       setSavingLoginBranding(false)
+    }
+  }
+
+  const handleSaveBranding = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!brandingFiles.logoFile && !brandingFiles.backgroundFile) {
+      toast('Selecciona al menos un archivo para actualizar', 'error')
+      return
+    }
+
+    setSavingBranding(true)
+    try {
+      let updated = tenant
+      if (brandingFiles.logoFile) {
+        const logoRes = await superadminApi.uploadTenantLogo(tenantId, brandingFiles.logoFile)
+        updated = updated ? { ...updated, logoUrl: logoRes.data.logoUrl } : updated
+      }
+      if (brandingFiles.backgroundFile) {
+        const bgRes = await superadminApi.uploadTenantLoginBackground(tenantId, brandingFiles.backgroundFile)
+        updated = updated
+          ? { ...updated, loginBackgroundUrl: bgRes.data.loginBackgroundUrl }
+          : updated
+      }
+      if (updated) setTenant(updated)
+      setBrandingFiles(emptyTenantBrandingFiles())
+      toast('Identidad visual actualizada', 'success')
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } } }
+      toast(ax.response?.data?.message || 'Error al subir las imágenes', 'error')
+    } finally {
+      setSavingBranding(false)
     }
   }
 
@@ -514,6 +552,34 @@ export default function TenantDetailPage() {
           </div>
         )}
       </div>
+
+      <form onSubmit={handleSaveBranding} className="rounded-2xl p-4 mb-6 space-y-4"
+        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${INFO}35` }}>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-white font-semibold">Identidad visual</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Logo e imagen de fondo del login de {tenant.slug}.simulacros.pe
+            </p>
+          </div>
+          <button type="submit" disabled={savingBranding}
+            className="px-4 py-2 rounded-xl text-xs font-bold shrink-0"
+            style={{
+              backgroundColor: INFO,
+              color: '#000',
+              opacity: savingBranding ? 0.6 : 1,
+            }}>
+            {savingBranding ? 'Subiendo...' : 'Guardar imágenes'}
+          </button>
+        </div>
+        <TenantBrandingUploadFields
+          value={brandingFiles}
+          onChange={setBrandingFiles}
+          disabled={savingBranding}
+          existingLogoUrl={tenant.logoUrl}
+          existingBackgroundUrl={tenant.loginBackgroundUrl}
+        />
+      </form>
 
       <form onSubmit={handleSaveLoginBranding} className="rounded-2xl p-4 mb-6 space-y-4"
         style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${WARNING}35` }}>

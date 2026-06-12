@@ -11,6 +11,12 @@ import {
   TenantLoginBrandingFields,
   emptyLoginBranding,
 } from '@/components/superadmin/TenantLoginBrandingFields'
+import {
+  TenantBrandingUploadFields,
+  emptyTenantBrandingFiles,
+  validateTenantBrandingFiles,
+  type TenantBrandingFiles,
+} from '@/components/superadmin/TenantBrandingUploadFields'
 import type { TenantLoginBranding } from '@/lib/constants/defaultLoginBranding'
 
 export interface CreateTenantFormState extends CreateTenantPayload {
@@ -19,6 +25,7 @@ export interface CreateTenantFormState extends CreateTenantPayload {
   adminEmail: string
   adminDni: string
   adminPassword: string
+  branding: TenantBrandingFiles
 }
 
 export const emptyCreateTenantForm = (): CreateTenantFormState => ({
@@ -34,6 +41,7 @@ export const emptyCreateTenantForm = (): CreateTenantFormState => ({
   adminEmail: '',
   adminDni: '',
   adminPassword: '',
+  branding: emptyTenantBrandingFiles(),
 })
 
 interface CreateTenantPanelProps {
@@ -70,7 +78,9 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
       form.adminFullName !== empty.adminFullName ||
       form.adminEmail !== empty.adminEmail ||
       form.adminDni !== empty.adminDni ||
-      form.adminPassword !== empty.adminPassword
+      form.adminPassword !== empty.adminPassword ||
+      form.branding.logoFile !== null ||
+      form.branding.backgroundFile !== null
     )
   }, [form])
 
@@ -102,6 +112,12 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
 
     if (form.adminDni.length !== 8 || !/^\d+$/.test(form.adminDni)) {
       setError('El DNI del administrador debe tener 8 dígitos numéricos.')
+      return
+    }
+
+    const brandingError = validateTenantBrandingFiles(form.branding)
+    if (brandingError) {
+      setError(brandingError)
       return
     }
 
@@ -188,6 +204,19 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
                 value={form.customDomain ?? ''}
                 onChange={(e) => setForm({ ...form, customDomain: e.target.value })} />
             </div>
+          </div>
+
+          <div className="mt-4 pt-4" style={{ borderTop: '1px solid #ffffff10' }}>
+            <h4 className="text-white text-sm font-semibold mb-1">Identidad visual</h4>
+            <p className="text-xs text-gray-500 mb-3">
+              Logo e imagen de fondo para la página de inicio de sesión del subdominio.
+            </p>
+            <TenantBrandingUploadFields
+              value={form.branding}
+              onChange={(branding) => setForm({ ...form, branding })}
+              disabled={loading}
+              required
+            />
           </div>
         </section>
 

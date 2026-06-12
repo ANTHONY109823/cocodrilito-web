@@ -40,6 +40,7 @@ export interface TenantDetail {
   slug: string
   tenantType: string
   logoUrl?: string | null
+  loginBackgroundUrl?: string | null
   primaryColor?: string | null
   secondaryColor?: string | null
   welcomeMessage?: string | null
@@ -157,6 +158,24 @@ export const superadminApi = {
   getPendingSubscriptions: () =>
     apiClient.get('/superadmin/subscriptions/pending'),
   deleteTenant: (id: string) => apiClient.delete(`/superadmin/tenants/${id}`),
+  uploadTenantLogo: (tenantId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post<{ logoUrl: string; message: string }>(
+      `/superadmin/tenants/${tenantId}/logo`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+  },
+  uploadTenantLoginBackground: (tenantId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post<{ loginBackgroundUrl: string; message: string }>(
+      `/superadmin/tenants/${tenantId}/login-background`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+  },
   getExamConfig: () => apiClient.get<ExamDistributionConfig[]>('/superadmin/exam-config'),
   getExamConfigByTotal: (total: number) =>
     apiClient.get<ExamDistributionConfig>(`/superadmin/exam-config/${total}`),

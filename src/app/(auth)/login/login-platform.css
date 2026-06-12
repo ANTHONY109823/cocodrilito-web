@@ -37,6 +37,10 @@
   background: url('/login-bg.jpg') center top / cover no-repeat;
   animation: bgZoom 25s ease-in-out infinite alternate;
 }
+.bg-lion--tenant {
+  background: center top / cover no-repeat;
+  animation: bgZoom 25s ease-in-out infinite alternate;
+}
 @keyframes bgZoom {
   from { transform: scale(1.0); }
   to   { transform: scale(1.07); }

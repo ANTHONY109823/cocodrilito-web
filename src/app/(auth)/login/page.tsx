@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { AlertCircle, Loader2 } from 'lucide-react'
@@ -122,6 +122,18 @@ function LoginForm() {
     ? resolveLoginBranding(config?.loginConfig)
     : SUPERADMIN_LOGIN_BRANDING
 
+  const loginBackgroundStyle: CSSProperties | undefined = tenantSlug && config?.loginBackgroundUrl
+    ? { backgroundImage: `url('${config.loginBackgroundUrl}')` }
+    : tenantSlug && config?.primaryColor
+      ? {
+          background: `linear-gradient(160deg, ${config.primaryColor} 0%, #060e07 55%, #0b1f0d 100%)`,
+        }
+      : undefined
+
+  const bgLionClassName = tenantSlug
+    ? 'bg-lion bg-lion--tenant'
+    : 'bg-lion'
+
   const socialLinks = isPlatformLogin
     ? []
     : [
@@ -177,7 +189,7 @@ function LoginForm() {
     <ThemeProvider config={config}>
       <div className="loginRoot">
         <div className="bg-wrap">
-          <div className="bg-lion" />
+          <div className={bgLionClassName} style={loginBackgroundStyle} />
           <div className="bg-clouds" aria-hidden>
             <div className="cloud-wave cloud-wave-1" />
             <div className="cloud-wave cloud-wave-2" />

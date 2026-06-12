@@ -115,9 +115,10 @@ export default function SuperAdminPage() {
   const handleCreateTenant = async (data: CreateTenantFormState) => {
     setCreating(true)
     try {
-      const res = await superadminApi.createTenant(data)
-      const payload = res.data as {
-        tenant?: { name?: string }
+      const { branding, ...payload } = data
+      const res = await superadminApi.createTenant(payload)
+      const responseData = res.data as {
+        tenant?: { id?: string; name?: string }
         admin?: {
           fullName: string
           email: string
@@ -126,15 +127,28 @@ export default function SuperAdminPage() {
           temporaryPassword: string
         }
       }
+
+      const tenantId = responseData.tenant?.id
+      if (!tenantId) {
+        throw new Error('No se recibió el ID de la institución creada')
+      }
+
+      if (branding.logoFile) {
+        await superadminApi.uploadTenantLogo(tenantId, branding.logoFile)
+      }
+      if (branding.backgroundFile) {
+        await superadminApi.uploadTenantLoginBackground(tenantId, branding.backgroundFile)
+      }
+
       setShowCreate(false)
-      if (payload.admin) {
+      if (responseData.admin) {
         setCreatedCredentials({
-          tenantName: payload.tenant?.name ?? data.name,
-          fullName: payload.admin.fullName,
-          email: payload.admin.email,
-          dni: payload.admin.dni,
-          role: payload.admin.role,
-          temporaryPassword: payload.admin.temporaryPassword,
+          tenantName: responseData.tenant?.name ?? data.name,
+          fullName: responseData.admin.fullName,
+          email: responseData.admin.email,
+          dni: responseData.admin.dni,
+          role: responseData.admin.role,
+          temporaryPassword: responseData.admin.temporaryPassword,
         })
       }
       toast('Institución y administrador creados correctamente', 'success')

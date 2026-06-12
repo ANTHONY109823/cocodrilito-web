@@ -5,6 +5,7 @@ export interface TenantConfig {
   name: string
   slug: string
   logoUrl?: string | null
+  loginBackgroundUrl?: string | null
   primaryColor?: string | null
   welcomeMessage?: string | null
   loginConfig?: Partial<TenantLoginBranding> | null
