@@ -10,16 +10,20 @@ interface BrandingImageFieldProps {
   label: string
   hint: string
   previewUrl: string | null
+  selectedFileName?: string | null
   onSelect: (file: File) => void
   disabled?: boolean
+  largePreview?: boolean
 }
 
 function BrandingImageField({
   label,
   hint,
   previewUrl,
+  selectedFileName,
   onSelect,
   disabled,
+  largePreview,
 }: BrandingImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -34,9 +38,17 @@ function BrandingImageField({
     <div>
       <label className="block text-xs text-gray-500 mb-1">{label}</label>
       <div className="flex items-start gap-3">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/30 overflow-hidden">
+        <div
+          className={`shrink-0 flex items-center justify-center rounded-xl border border-white/10 bg-black/30 overflow-hidden ${
+            largePreview ? 'h-28 w-full max-w-[220px]' : 'h-20 w-20'
+          }`}
+        >
           {previewUrl ? (
-            <img src={previewUrl} alt="" className="h-full w-full object-contain" />
+            <img
+              src={previewUrl}
+              alt=""
+              className={`h-full w-full ${largePreview ? 'object-cover' : 'object-contain'}`}
+            />
           ) : (
             <span className="text-xl text-gray-600">🖼</span>
           )}
@@ -65,6 +77,11 @@ function BrandingImageField({
             Elegir imagen
           </button>
           <p className="text-[10px] text-gray-600 max-w-[220px]">{hint}</p>
+          {selectedFileName && (
+            <p className="text-[10px] font-medium" style={{ color: NEON }}>
+              ✓ {selectedFileName}
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -128,11 +145,12 @@ export function TenantBrandingUploadFields({
   const backgroundPreview = value.backgroundPreview ?? existingBackgroundUrl ?? null
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
+    <div className="grid md:grid-cols-2 gap-5">
       <BrandingImageField
         label={required ? 'Logo de la institución *' : 'Logo de la institución'}
         hint="Escudo o isotipo. JPG, PNG o WebP · máx. 2 MB"
         previewUrl={logoPreview}
+        selectedFileName={value.logoFile?.name}
         onSelect={selectLogo}
         disabled={disabled}
       />
@@ -140,8 +158,10 @@ export function TenantBrandingUploadFields({
         label={required ? 'Imagen de fondo del login *' : 'Imagen de fondo del login'}
         hint="Banner o foto institucional. Reemplaza el fondo por defecto."
         previewUrl={backgroundPreview}
+        selectedFileName={value.backgroundFile?.name}
         onSelect={selectBackground}
         disabled={disabled}
+        largePreview
       />
     </div>
   )

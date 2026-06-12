@@ -34,8 +34,8 @@ export function TenantLoginBrandingFields({ value, onChange }: TenantLoginBrandi
   return (
     <div className="space-y-3">
       <p className="text-xs text-gray-500">
-        Personaliza el panel de inicio de sesión de esta agencia. El fondo del león se mantiene para todos.
-        El logo lo sube la agencia después desde su configuración.
+        Personaliza los textos del panel de inicio de sesión. El logo y la imagen de fondo se configuran
+        en la sección <strong className="text-gray-400">Identidad visual</strong> (arriba).
       </p>
 
       <div className="grid md:grid-cols-2 gap-3">

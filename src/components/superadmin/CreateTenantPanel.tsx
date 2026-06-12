@@ -206,25 +206,38 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
             </div>
           </div>
 
-          <div className="mt-4 pt-4" style={{ borderTop: '1px solid #ffffff10' }}>
-            <h4 className="text-white text-sm font-semibold mb-1">Identidad visual</h4>
-            <p className="text-xs text-gray-500 mb-3">
-              Logo e imagen de fondo para la página de inicio de sesión del subdominio.
-            </p>
-            <TenantBrandingUploadFields
-              value={form.branding}
-              onChange={(branding) => setForm({ ...form, branding })}
-              disabled={loading}
-              required
-            />
-          </div>
+        </section>
+
+        <section
+          className="rounded-xl p-4"
+          style={{
+            border: `2px solid ${NEON}55`,
+            background: 'rgba(49,143,72,0.08)',
+          }}
+        >
+          <h3 className="text-white font-semibold text-sm mb-1">
+            2. Identidad visual *
+          </h3>
+          <p className="text-xs text-gray-400 mb-3">
+            Sube el logo y la imagen de fondo que verán en{' '}
+            <strong className="text-white">
+              {(form.slug || form.name || 'institucion').toLowerCase().replace(/[^a-z0-9-]/g, '') || 'institucion'}.simulacros.pe
+            </strong>
+            . Sin estas imágenes no se puede crear la institución.
+          </p>
+          <TenantBrandingUploadFields
+            value={form.branding}
+            onChange={(branding) => setForm({ ...form, branding })}
+            disabled={loading}
+            required
+          />
         </section>
 
         <details className="pt-4 group" style={{ borderTop: '1px solid #ffffff10' }}>
           <summary className="cursor-pointer list-none text-white font-semibold text-sm mb-1 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center gap-2">
               <span className="text-gray-500 transition-transform group-open:rotate-90">▶</span>
-              2. Panel de inicio de sesión
+              3. Panel de inicio de sesión
               <span className="font-normal text-gray-500">(opcional — valores por defecto)</span>
             </span>
           </summary>
@@ -237,7 +250,7 @@ export function CreateTenantPanel({ open, loading, defaultTenantType, onClose, o
         </details>
 
         <section className="pt-4" style={{ borderTop: '1px solid #ffffff10' }}>
-          <h3 className="text-white font-semibold text-sm mb-1">3. Administrador de acceso</h3>
+          <h3 className="text-white font-semibold text-sm mb-1">4. Administrador de acceso</h3>
           <p className="text-xs text-gray-500 mb-3">
             Cuenta con rol Admin {form.tenantType}. Recibirá credenciales temporales y deberá cambiar la contraseña al ingresar.
           </p>

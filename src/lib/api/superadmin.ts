@@ -5,6 +5,9 @@ export interface DashboardStats {
   totalTenants: number
   activeTenants: number
   totalStudents: number
+  totalAdmins: number
+  newTenantsThisMonth: number
+  newStudentsThisMonth: number
   agencias: { total: number; active: number; students: number }
   academias: { total: number; active: number; students: number }
   totalExamsToday: number

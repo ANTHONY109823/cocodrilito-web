@@ -245,13 +245,29 @@ export default function SuperAdminPage() {
     { key: 'audit', label: '📋 Audit Log' },
   ]
 
-  const statCard = (label: string, value: string | number, color = NEON) => (
+  const kpiCard = (
+    label: string,
+    value: string | number,
+    opts?: { color?: string; icon?: string; sub?: string }
+  ) => (
     <div
-      className="rounded-2xl p-4"
-      style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}
+      className="rounded-2xl p-4 min-h-[108px] flex flex-col justify-between"
+      style={{
+        background: 'linear-gradient(145deg, rgba(0,14,8,0.95), rgba(0,8,4,0.88))',
+        border: `1px solid ${policeGreenRgba(0.22)}`,
+        boxShadow: 'inset 0 1px 0 rgba(189,255,223,0.06)',
+      }}
     >
-      <div className="text-xs text-gray-500 mb-1">{label}</div>
-      <div className="text-2xl font-bold" style={{ color }}>{value}</div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-[11px] uppercase tracking-wide text-gray-500">{label}</div>
+        {opts?.icon ? <span className="text-base opacity-80">{opts.icon}</span> : null}
+      </div>
+      <div>
+        <div className="text-2xl md:text-3xl font-bold tabular-nums" style={{ color: opts?.color ?? NEON }}>
+          {value}
+        </div>
+        {opts?.sub ? <div className="text-[10px] text-gray-600 mt-1">{opts.sub}</div> : null}
+      </div>
     </div>
   )
 
@@ -349,9 +365,24 @@ export default function SuperAdminPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Panel SuperAdmin ⚡</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Gestión global de la plataforma Simulacros.pe</p>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 mb-1">Powered by Simulacros.pe</p>
+          <h1 className="text-2xl font-bold text-white">Panel SuperAdmin</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Métricas globales y registro de instituciones</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button type="button" onClick={() => openCreate('Agencia')}
+            className="px-4 py-2 rounded-xl text-xs font-bold"
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+            ➕ Registrar agencia
+          </button>
+          <button type="button" onClick={() => openCreate('Academia')}
+            className="px-4 py-2 rounded-xl text-xs font-bold"
+            style={{ background: 'rgba(79,195,247,0.15)', color: INFO, border: `1px solid ${INFO}40` }}>
+            ➕ Registrar academia
+          </button>
+        </div>
       </div>
 
       <CreateTenantPanel
@@ -386,17 +417,41 @@ export default function SuperAdminPage() {
         loading ? <SkeletonTable rows={4} /> : dashboard ? (
           <div className="space-y-4">
             <SystemHealthPanel />
+
+            <div className="rounded-2xl p-4"
+              style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${WARNING}35` }}>
+              <h3 className="text-white font-semibold text-sm mb-1">Registro de cuentas</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Crea instituciones con logo y fondo personalizado para su página de login.
+              </p>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {kpiCard('Instituciones registradas', dashboard.totalTenants, {
+                  icon: '🏢',
+                  sub: `+${dashboard.newTenantsThisMonth ?? 0} este mes`,
+                })}
+                {kpiCard('Admins de institución', dashboard.totalAdmins ?? 0, {
+                  icon: '👤',
+                  color: INFO,
+                  sub: 'Cuentas administradoras activas',
+                })}
+                {kpiCard('Alumnos registrados', dashboard.totalStudents, {
+                  icon: '🎓',
+                  sub: `+${dashboard.newStudentsThisMonth ?? 0} este mes`,
+                })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {statCard('Instituciones', dashboard.totalTenants)}
-              {statCard('Activas', dashboard.activeTenants, INFO)}
-              {statCard('Estudiantes', dashboard.totalStudents, NEON)}
-              {statCard('Ingreso mensual est.', `S/. ${dashboard.monthlyRevenue}`, WARNING)}
+              {kpiCard('Activas', dashboard.activeTenants, { icon: '✅', color: INFO })}
+              {kpiCard('Ingreso mensual est.', `S/. ${dashboard.monthlyRevenue}`, { icon: '💰', color: WARNING })}
+              {kpiCard('Agencias', `${dashboard.agencias.active}/${dashboard.agencias.total}`, { icon: '🏢' })}
+              {kpiCard('Academias', `${dashboard.academias.active}/${dashboard.academias.total}`, { icon: '🎓', color: INFO })}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {statCard('Agencias', `${dashboard.agencias.active}/${dashboard.agencias.total}`)}
-              {statCard('Academias', `${dashboard.academias.active}/${dashboard.academias.total}`)}
-              {statCard('Exámenes hoy', dashboard.totalExamsToday, INFO)}
-              {statCard('Exámenes del mes', dashboard.totalExamsThisMonth, INFO)}
+              {kpiCard('Exámenes hoy', dashboard.totalExamsToday, { icon: '📝', color: INFO })}
+              {kpiCard('Exámenes del mes', dashboard.totalExamsThisMonth, { icon: '📊', color: INFO })}
+              {kpiCard('Alumnos agencias', dashboard.agencias.students, { icon: '👥' })}
+              {kpiCard('Alumnos academias', dashboard.academias.students, { icon: '👥', color: INFO })}
             </div>
             {dashboard.pendingPayments > 0 && (
               <div className="rounded-2xl p-4 text-sm"
