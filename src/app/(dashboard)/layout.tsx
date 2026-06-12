@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
@@ -16,17 +16,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const { isAuthenticated, user, loadFromStorage } = useAuthStore()
   const { loadFromStorage: loadImpersonation, active: impersonating } = useImpersonationStore()
+  const [authReady, setAuthReady] = useState(false)
 
   useSessionSync()
 
   useEffect(() => {
     loadFromStorage()
     loadImpersonation()
+    setAuthReady(true)
   }, [loadFromStorage, loadImpersonation])
 
   useEffect(() => {
+    if (!authReady) return
     if (!isAuthenticated) router.push('/login')
-  }, [isAuthenticated, router])
+  }, [authReady, isAuthenticated, router])
 
   useEffect(() => {
     if (!user?.mustChangePassword) return
@@ -72,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user, pathname, router, impersonating])
 
-  if (!isAuthenticated) {
+  if (!authReady || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#080E0A]">
         <p className="text-[#A8BFB0] text-sm">Cargando...</p>

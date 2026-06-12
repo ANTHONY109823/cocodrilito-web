@@ -115,7 +115,6 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [skeletonPhase, setSkeletonPhase] = useState<'hidden' | 'visible' | 'exiting'>('hidden')
 
   useEffect(() => {
     setIsRootLogin(isRootHost())
@@ -144,9 +143,9 @@ function LoginForm() {
       }`
     : 'bg-lion'
 
-  const showLoginContent = isPlatformLogin || !tenantSlug || brandingReady
-  const showSkeleton = skeletonPhase === 'visible' || skeletonPhase === 'exiting'
-  const skeletonExiting = skeletonPhase === 'exiting'
+  const showLoginContent =
+    isPlatformLogin || !tenantSlug || Boolean(config) || Boolean(tenantConfigError)
+  const showSkeleton = Boolean(tenantSlug && configLoading && !config && !tenantConfigError)
   const hasTenantBackground = Boolean(tenantSlug && config?.loginBackgroundUrl)
   const loginRootClass = isPlatformLogin || !tenantSlug
     ? 'loginRoot loginRoot--platform'
@@ -156,20 +155,6 @@ function LoginForm() {
   const { particlesRef, loginBtnRef } = useLoginDecorEffects(showLoginContent)
 
   useTenantFavicon(config?.logoUrl, Boolean(tenantSlug && !isPlatformLogin))
-
-  useEffect(() => {
-    if (!tenantSlug) {
-      setSkeletonPhase('hidden')
-      return
-    }
-    if (!showLoginContent) {
-      setSkeletonPhase('visible')
-      return
-    }
-    setSkeletonPhase('exiting')
-    const timer = window.setTimeout(() => setSkeletonPhase('hidden'), 380)
-    return () => window.clearTimeout(timer)
-  }, [showLoginContent, tenantSlug])
 
   const socialLinks = isPlatformLogin
     ? []
@@ -240,7 +225,7 @@ function LoginForm() {
         </div>
 
         {showSkeleton && (
-          <LoginBrandedSkeleton config={config} exiting={skeletonExiting} />
+          <LoginBrandedSkeleton config={config} />
         )}
 
         {branding.whatsappUrl && !isPlatformLogin && showLoginContent && (

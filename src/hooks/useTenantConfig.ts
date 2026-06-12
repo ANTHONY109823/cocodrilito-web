@@ -83,8 +83,12 @@ export function useTenantConfig(overrideSlug?: string | null) {
         if (!cancelled) setBrandingReady(true)
         return
       }
-      await preloadBrandingImages([data.loginBackgroundUrl, data.logoUrl])
-      if (!cancelled) setBrandingReady(true)
+
+      try {
+        await preloadBrandingImages([data.loginBackgroundUrl, data.logoUrl])
+      } finally {
+        if (!cancelled) setBrandingReady(true)
+      }
     }
 
     const load = async () => {
@@ -108,13 +112,22 @@ export function useTenantConfig(overrideSlug?: string | null) {
         setError(null)
         setLoading(false)
         writeCachedConfig(slug, data)
-        await loadBranding(data)
+
+        if (data.loginBackgroundUrl) {
+          void loadBranding(data)
+        } else {
+          setBrandingReady(true)
+        }
       } catch {
         if (cancelled) return
         if (!seedConfig) setError('Error al cargar configuración')
         setLoading(false)
         setBrandingReady(true)
       }
+    }
+
+    if (seedConfig?.loginBackgroundUrl) {
+      void loadBranding(seedConfig)
     }
 
     void load()

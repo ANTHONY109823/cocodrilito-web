@@ -1,7 +1,5 @@
 import type { NextConfig } from 'next'
 
-const apiUrl = process.env.API_URL || 'http://localhost:5034/api'
-
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -41,16 +39,7 @@ const nextConfig: NextConfig = {
     ]
   },
   async rewrites() {
-    return [
-      {
-        source: '/favicon.ico',
-        destination: '/favicon.svg',
-      },
-      {
-        source: '/api/:path*',
-        destination: `${apiUrl}/:path*`,
-      },
-    ]
+    return [{ source: '/favicon.ico', destination: '/favicon.svg' }]
   },
 }
 
