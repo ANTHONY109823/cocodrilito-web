@@ -59,14 +59,17 @@ function InstagramIcon() {
   )
 }
 
-function useLoginDecorEffects() {
+function useLoginDecorEffects(enabled = true) {
   const particlesRef = useRef<HTMLDivElement>(null)
   const loginBtnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
+    if (!enabled) return
+
     const container = particlesRef.current
     if (!container) return
 
+    container.replaceChildren()
     for (let i = 0; i < 22; i++) {
       const p = document.createElement('div')
       p.className = 'particle'
@@ -74,9 +77,11 @@ function useLoginDecorEffects() {
       p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random() * 100}%;bottom:${Math.random() * 50}%;--dur:${Math.random() * 5 + 4}s;--delay:${Math.random() * 7}s;`
       container.appendChild(p)
     }
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
+    if (!enabled) return
+
     const btn = loginBtnRef.current
     if (!btn) return
 
@@ -92,7 +97,7 @@ function useLoginDecorEffects() {
       btn.removeEventListener('mouseenter', onEnter)
       btn.removeEventListener('mouseleave', onLeave)
     }
-  }, [])
+  }, [enabled])
 
   return { particlesRef, loginBtnRef }
 }
@@ -102,7 +107,6 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const { setUser } = useAuthStore()
   const { stopImpersonation } = useImpersonationStore()
-  const { particlesRef, loginBtnRef } = useLoginDecorEffects()
 
   const tenantSlug = useTenantSlug()
   const [isRootLogin, setIsRootLogin] = useState(false)
@@ -148,6 +152,8 @@ function LoginForm() {
     ? 'loginRoot loginRoot--platform'
     : 'loginRoot loginRoot--tenant'
   const longBrandName = displayName.length > 14
+
+  const { particlesRef, loginBtnRef } = useLoginDecorEffects(showLoginContent)
 
   useTenantFavicon(config?.logoUrl, Boolean(tenantSlug && !isPlatformLogin))
 
@@ -495,15 +501,6 @@ function LoginForm() {
               )}
             </div>
           </div>
-
-          {tenantSlug && !isPlatformLogin && showLoginContent && (
-            <p className="login-powered-by">
-              Powered by{' '}
-              <a href="https://simulacros.pe" target="_blank" rel="noopener noreferrer">
-                Simulacros.pe
-              </a>
-            </p>
-          )}
         </main>
       </div>
     </ThemeProvider>

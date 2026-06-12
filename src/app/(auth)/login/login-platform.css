@@ -285,46 +285,9 @@
   animation: cardUp .9s .15s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Agencias: entrada solo con opacidad (sin transform) para evitar desliz lateral */
-.loginRoot--tenant .page {
-  transform: none;
-  transition: opacity 0.45s ease;
-}
-.loginRoot--tenant .page.page--ready {
-  transform: none;
-}
-.loginRoot--tenant .page.page--ready .brand,
-.loginRoot--tenant .page.page--ready .brand-logo,
-.loginRoot--tenant .page.page--ready .brand-name,
-.loginRoot--tenant .page.page--ready .brand-tagline,
-.loginRoot--tenant .page.page--ready .brand-ornament,
-.loginRoot--tenant .page.page--ready .brand-sub,
-.loginRoot--tenant .page.page--ready .card,
-.loginRoot--tenant .page.page--ready .login-powered-by {
-  animation: loginFadeIn 0.55s ease both;
-}
-.loginRoot--tenant .page.page--ready .brand-logo { animation-delay: 0.04s; }
-.loginRoot--tenant .page.page--ready .brand-name { animation-delay: 0.08s; }
-.loginRoot--tenant .page.page--ready .brand-tagline { animation-delay: 0.12s; }
-.loginRoot--tenant .page.page--ready .brand-ornament { animation-delay: 0.16s; }
-.loginRoot--tenant .page.page--ready .brand-sub { animation-delay: 0.2s; }
-.loginRoot--tenant .page.page--ready .card { animation-delay: 0.1s; }
-.loginRoot--tenant .page.page--ready .login-powered-by { animation-delay: 0.22s; }
-
-/* Sin deriva horizontal en nubes de fondo (agencias) */
+/* Agencias: mismas animaciones que el login principal; nubes un poco más suaves con foto propia */
 .loginRoot--tenant .bg-clouds {
-  opacity: 0.45;
-  animation: none;
-}
-.loginRoot--tenant .cloud-wave {
-  animation: none;
-  transform: none;
-  opacity: 0.28;
-}
-
-@keyframes loginFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  opacity: 0.55;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -334,19 +297,10 @@
   .page.page--ready .brand-tagline,
   .page.page--ready .brand-ornament,
   .page.page--ready .brand-sub,
-  .page.page--ready .card,
-  .loginRoot--tenant .page.page--ready .brand,
-  .loginRoot--tenant .page.page--ready .brand-logo,
-  .loginRoot--tenant .page.page--ready .brand-name,
-  .loginRoot--tenant .page.page--ready .brand-tagline,
-  .loginRoot--tenant .page.page--ready .brand-ornament,
-  .loginRoot--tenant .page.page--ready .brand-sub,
-  .loginRoot--tenant .page.page--ready .card,
-  .loginRoot--tenant .page.page--ready .login-powered-by {
+  .page.page--ready .card {
     animation: none;
   }
-  .page,
-  .loginRoot--tenant .page {
+  .page {
     transition: none;
   }
 }
@@ -870,7 +824,6 @@
   .brand-name--long { font-size:32px; letter-spacing:8px; text-indent: 8px; }
   .brand-logo { width:80px; height:80px; }
   .page { padding:16px 12px 12px; }
-  .login-powered-by { font-size:10px; margin-top:12px; }
 }
 
 /* ═══ TENANT THEME (CSS vars desde loginTheme.ts) ═══ */
@@ -970,30 +923,6 @@
 .page.page--hidden {
   opacity: 0;
   pointer-events: none;
-}
-
-.login-powered-by {
-  margin-top: 18px;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.4px;
-  color: rgba(255, 255, 255, 0.38);
-  text-align: center;
-}
-.login-powered-by a {
-  color: rgba(245, 200, 66, 0.65);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.login-powered-by a:hover {
-  color: var(--gold);
-  text-decoration: underline;
-}
-.loginRoot--tenant .login-powered-by a {
-  color: color-mix(in srgb, var(--login-secondary) 70%, transparent);
-}
-.loginRoot--tenant .login-powered-by a:hover {
-  color: var(--login-secondary);
 }
 
 /* ═══ SKELETON DE CARGA ═══ */
