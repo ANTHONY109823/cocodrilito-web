@@ -124,7 +124,7 @@ export default function PreguntasPage() {
             >
               {q.showAddForm ? '✕ Cancelar' : '+ Nueva pregunta'}
             </button>
-            {q.questions.length > 0 && (
+            {q.scopedQuestions.length > 0 && (
               <button
                 onClick={() => void q.handleDeleteAll()}
                 className="px-3 py-2 rounded-lg text-xs font-medium transition-colors"

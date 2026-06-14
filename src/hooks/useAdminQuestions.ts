@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
 import apiClient from '@/lib/api/client'
 import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
-import { DEFAULT_QUESTION_TRACK } from '@/lib/constants/trackTypes'
+import { DEFAULT_QUESTION_TRACK, trackLabel } from '@/lib/constants/trackTypes'
 import {
   hasUsableExplanation,
   matchesExplanationFilter,
@@ -67,8 +67,8 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
         setSelectedCategory((prev) => prev || firstCat)
         setQForm((f) => ({ ...f, category: f.category || firstCat }))
       }
-    } catch {
-      /* ignore */
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorDetail(err, 'Error al cargar el banco de preguntas'), ok: false })
     } finally {
       setLoading(false)
     }
@@ -126,14 +126,27 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
     try {
       const params = category ? { categoria: category } : undefined
       const res = await apiClient.get('/admin/import/template', { responseType: 'blob', params })
-      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const contentType = String(res.headers['content-type'] ?? '')
+      if (contentType.includes('application/json')) {
+        const text = await (res.data as Blob).text()
+        const json = JSON.parse(text) as { message?: string }
+        setMsg({ text: json.message ?? 'No se pudo descargar la plantilla', ok: false })
+        return
+      }
+
+      const safeCat = category?.toLowerCase().replace(/\s+/g, '_') ?? 'general'
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }))
       const a = document.createElement('a')
       a.href = url
-      const safeCat = category?.toLowerCase().replace(/\s+/g, '_') ?? 'general'
       a.download = `plantilla_preguntas_${safeCat}.csv`
+      document.body.appendChild(a)
       a.click()
-    } catch {
-      /* ignore */
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      setMsg({ text: '✅ Plantilla CSV descargada', ok: true })
+      setTimeout(() => setMsg(null), 3000)
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorDetail(err, 'No se pudo descargar la plantilla CSV'), ok: false })
     }
   }
 
@@ -156,21 +169,28 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
   }
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    if (!confirm(`¿Eliminar la categoría "${name}"? También se eliminarán TODAS sus preguntas.`)) return
+    const trackSuffix = isSuperAdminMode ? ` del balotario ${trackLabel(activeTrackType)}` : ''
+    if (!confirm(`¿Eliminar las preguntas de "${name}"${trackSuffix}?${isSuperAdminMode ? ' La categoría solo se borra si queda vacía en todos los balotarios.' : ' También se eliminará la categoría si queda vacía.'}`)) return
     try {
-      const res = await apiClient.delete(`/categories/${id}`)
-      setCategories((prev) => prev.filter((c) => c.id !== id))
+      const trackQuery = isSuperAdminMode ? `?trackType=${activeTrackType}` : ''
+      const res = await apiClient.delete(`/categories/${id}${trackQuery}`)
+      setCategories((prev) => {
+        const remaining = prev.filter((c) => c.id !== id)
+        if (selectedCategory === name) {
+          setSelectedCategory(remaining[0]?.name || '')
+        }
+        return res.data?.categoryDeactivated === false ? prev : remaining
+      })
       await loadAll()
-      if (selectedCategory === name && categories.length > 1) {
-        const remaining = categories.filter((c) => c.id !== id)
-        setSelectedCategory(remaining[0]?.name || '')
-      }
       const deletedCount = res.data?.deletedQuestions as number | undefined
       setMsg({
-        text: `🗑️ Categoría eliminada${deletedCount != null ? ` (${deletedCount} preguntas)` : ''}`,
+        text:
+          deletedCount != null
+            ? `🗑️ ${deletedCount} preguntas eliminadas en ${name}${trackSuffix}`
+            : `🗑️ Categoría eliminada`,
         ok: false,
       })
-      setTimeout(() => setMsg(null), 2000)
+      setTimeout(() => setMsg(null), 4000)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
     }
@@ -238,17 +258,24 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
       setQuestions((prev) => prev.filter((q) => q.id !== id))
       setMsg({ text: '🗑️ Pregunta eliminada', ok: false })
       setTimeout(() => setMsg(null), 2000)
-    } catch {
-      /* ignore */
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al eliminar la pregunta'), ok: false })
     }
   }
 
   const handleDeleteAll = async () => {
-    if (!confirm('⚠️ ¿Eliminar TODAS las preguntas del banco?')) return
+    const trackSuffix = isSuperAdminMode ? ` del balotario ${trackLabel(activeTrackType)}` : ''
+    if (!confirm(`⚠️ ¿Eliminar TODAS las preguntas${trackSuffix}?`)) return
     if (!confirm('¿Estás SEGURO? Esta acción no se puede deshacer.')) return
     try {
-      const res = await apiClient.delete(`/admin/Questions/bulk?ownOnly=${questionScope === 'own'}`)
-      setMsg({ text: `🗑️ ${res.data.deleted} preguntas eliminadas`, ok: false })
+      const trackQuery = isSuperAdminMode ? `&trackType=${activeTrackType}` : ''
+      const res = await apiClient.delete(
+        `/admin/Questions/bulk?ownOnly=${questionScope === 'own'}${trackQuery}`
+      )
+      setMsg({
+        text: `🗑️ ${res.data.deleted} preguntas eliminadas${trackSuffix}`,
+        ok: false,
+      })
       setTimeout(() => {
         setMsg(null)
         void loadAll()
