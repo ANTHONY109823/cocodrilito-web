@@ -15,7 +15,7 @@ import {
   formatPlanPrice,
   inferDaysFromAmount,
 } from '@/lib/constants/subscriptionPlans'
-import { ASCENSO_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK, trackLabel } from '@/lib/constants/trackTypes'
+import { ASCENSO_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK, resolveDefaultStudentTrack, trackLabel } from '@/lib/constants/trackTypes'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
@@ -132,6 +132,12 @@ function AdminPageContent() {
     else if (rawTab === 'subscriptions' || rawTab === 'ventas' || rawTab === 'plans') router.replace('/admin')
   }, [rawTab, router])
 
+  useEffect(() => {
+    if (userSub !== 'crear' || !user) return
+    const defaultTrack = resolveDefaultStudentTrack(user)
+    setForm((prev) => (prev.trackType === defaultTrack ? prev : { ...prev, trackType: defaultTrack }))
+  }, [userSub, user])
+
   const loadData = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false
     if (!silent) setLoading(true)
@@ -232,7 +238,7 @@ function AdminPageContent() {
       })
       setForm({
         fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180,
-        trackType: DEFAULT_QUESTION_TRACK,
+        trackType: resolveDefaultStudentTrack(user),
         activationDate: new Date().toISOString().slice(0, 10),
       })
       router.push('/admin?tab=users&sub=activos')

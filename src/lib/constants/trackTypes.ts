@@ -31,8 +31,33 @@ export function resolveUserTrackKey(
   user?: { activeTrackType?: string | null; allowedTrackTypes?: string[] } | null
 ): string {
   const active = user?.activeTrackType?.trim()
-  if (active) return active
+  if (active) return normalizeTrackKey(active) ?? active
   const allowed = user?.allowedTrackTypes?.find((t) => t?.trim())
-  if (allowed) return allowed.trim()
+  if (allowed) return normalizeTrackKey(allowed) ?? allowed.trim()
   return 'AscensosSuboficiales'
+}
+
+function normalizeTrackKey(value: string): string | null {
+  const trimmed = value.trim()
+  const byValue = QUESTION_TRACK_OPTIONS.find((t) => String(t.value) === trimmed)
+  if (byValue) return byValue.key
+  const byKey = QUESTION_TRACK_OPTIONS.find((t) => t.key === trimmed)
+  return byKey?.key ?? null
+}
+
+/** Balotario por defecto al crear alumno según lo habilitado en la agencia/academia. */
+export function resolveDefaultStudentTrack(
+  user?: { allowedTrackTypes?: string[] } | null
+): number {
+  const allowed = (user?.allowedTrackTypes ?? [])
+    .map((t) => normalizeTrackKey(String(t)))
+    .filter((t): t is string => Boolean(t))
+
+  const hasOfficials = allowed.includes('AscensosOficiales')
+  const hasSubofficials = allowed.includes('AscensosSuboficiales')
+
+  if (hasOfficials && !hasSubofficials) return 2
+  if (hasSubofficials) return 1
+  if (hasOfficials) return 2
+  return DEFAULT_QUESTION_TRACK
 }
