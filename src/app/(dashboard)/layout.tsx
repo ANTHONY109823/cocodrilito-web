@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
@@ -12,37 +12,43 @@ import { useSessionSync } from '@/hooks/useSessionSync'
 
 const STUDENT_ONLY_PREFIXES = ['/exams', '/history', '/ranking', '/premium', '/exam/', '/result/', '/review/']
 
-let clientStoresHydrated = false
+let storesHydrated = false
 
 function hydrateClientStores() {
-  if (clientStoresHydrated || typeof window === 'undefined') return
-  clientStoresHydrated = true
+  if (typeof window === 'undefined' || storesHydrated) return
+  storesHydrated = true
   useAuthStore.getState().loadFromStorage()
   useImpersonationStore.getState().loadFromStorage()
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [authReady, setAuthReady] = useState(false)
   const pathname = usePathname()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const user = useAuthStore((s) => s.user)
   const impersonating = useImpersonationStore((s) => s.active)
 
-  hydrateClientStores()
+  useLayoutEffect(() => {
+    hydrateClientStores()
+    setAuthReady(true)
+  }, [])
+
   useSessionSync()
 
   useEffect(() => {
+    if (!authReady) return
     if (!isAuthenticated) redirectToLogin()
-  }, [isAuthenticated])
+  }, [authReady, isAuthenticated])
 
   useEffect(() => {
-    if (!user?.mustChangePassword) return
+    if (!authReady || !user?.mustChangePassword) return
     if (pathname !== '/cambiar-clave') {
       window.location.replace('/cambiar-clave')
     }
-  }, [user, pathname])
+  }, [authReady, user, pathname])
 
   useEffect(() => {
-    if (!user) return
+    if (!authReady || !user) return
 
     if (enforceTenantHostAccess(user.role, user.tenantSlug, impersonating, pathname)) {
       return
@@ -77,9 +83,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (ctx === 'tenant-admin' && pathname === '/dashboard') {
       window.location.replace('/admin')
     }
-  }, [user, pathname, impersonating])
+  }, [authReady, user, pathname, impersonating])
 
-  if (!isAuthenticated) {
+  if (!authReady || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#080E0A] flex items-center justify-center text-[#6B8A75] text-sm">
         Cargando...
