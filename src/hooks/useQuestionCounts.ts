@@ -16,7 +16,7 @@ export function useQuestionCounts(track?: string | null) {
   const trackKey = track?.trim() || null
   const swrKey = trackKey
     ? `/exams/question-counts?track=${encodeURIComponent(trackKey)}`
-    : null
+    : '/exams/question-counts'
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<QuestionCountsData>(
     swrKey,
