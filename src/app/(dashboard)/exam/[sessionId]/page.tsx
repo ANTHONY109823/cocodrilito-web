@@ -57,12 +57,12 @@ export default function ExamPage() {
   const handleFinish = useCallback(async () => {
     if (finishing) return
     setFinishing(true)
-    try {
-      await examsApi.finish(sessionId)
-      router.push(`/result/${sessionId}`)
-    } catch {
-      router.push(`/result/${sessionId}`)
-    }
+    // Race API call vs 8s timeout — redirect regardless so user never waits minutes
+    await Promise.race([
+      examsApi.finish(sessionId).catch(() => {}),
+      new Promise<void>((resolve) => setTimeout(resolve, 8000)),
+    ])
+    router.push(`/result/${sessionId}`)
   }, [finishing, sessionId, router])
 
   const loadSession = useCallback(async () => {

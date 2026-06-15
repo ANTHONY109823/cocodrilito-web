@@ -30,7 +30,16 @@ export function AppNavLink({
       href={href}
       prefetch={true}
       className={className}
-      onClick={() => setPending(href)}
+      onClick={() => {
+        // Same-path navigation (only query params change): pathname won't change so the
+        // clearing effect never fires — skip pendingHref entirely for these transitions.
+        if (href.split('?')[0] === pathname) return
+        setPending(href)
+        // Safety: clear after 5 s if the pathname never changed (e.g. navigation aborted)
+        setTimeout(() => {
+          if (useNavigationStore.getState().pendingHref === href) setPending(null)
+        }, 5000)
+      }}
     >
       {children}
     </Link>
