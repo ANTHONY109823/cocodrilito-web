@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { QUESTION_TRACK_OPTIONS } from '@/lib/constants/trackTypes'
 
 export interface AuthUser {
   id: string
@@ -30,16 +31,29 @@ interface AuthState {
   loadFromStorage: () => void
 }
 
+function normalizeTrackKey(value: string | null | undefined): string | null {
+  if (value == null || value === '') return null
+  const trimmed = String(value).trim()
+  const byValue = QUESTION_TRACK_OPTIONS.find((t) => String(t.value) === trimmed)
+  if (byValue) return byValue.key
+  const byKey = QUESTION_TRACK_OPTIONS.find((t) => t.key === trimmed)
+  if (byKey) return byKey.key
+  return trimmed
+}
+
 export function normalizeUser(data: Record<string, unknown>): AuthUser {
   const id = String(data.id ?? data.userId ?? '')
   const allowedTrackTypes = Array.isArray(data.allowedTrackTypes)
     ? (data.allowedTrackTypes as string[])
+        .map((t) => normalizeTrackKey(String(t)))
+        .filter((t): t is string => Boolean(t))
     : []
-  const activeFromApi =
+  const activeFromApi = normalizeTrackKey(
     data.activeTrackType != null ? String(data.activeTrackType) : null
+  )
   const activeTrackType =
     activeFromApi ??
-    (allowedTrackTypes[0] != null ? String(allowedTrackTypes[0]) : null)
+    (allowedTrackTypes[0] != null ? allowedTrackTypes[0] : 'AscensosSuboficiales')
 
   return {
     id,
@@ -68,6 +82,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
 
   setUser: (user) => {
+    const prev = useAuthStore.getState().user
+    if (
+      prev &&
+      prev.id === user.id &&
+      prev.role === user.role &&
+      prev.activeTrackType === user.activeTrackType &&
+      prev.tenantSlug === user.tenantSlug &&
+      prev.mustChangePassword === user.mustChangePassword
+    ) {
+      return
+    }
     localStorage.setItem('user', JSON.stringify(user))
     set({ user, isAuthenticated: true })
   },

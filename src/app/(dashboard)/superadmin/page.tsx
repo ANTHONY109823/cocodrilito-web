@@ -1,8 +1,7 @@
 ﻿'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useClientSearchString } from '@/hooks/useClientSearch'
+import { Suspense, useCallback, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
@@ -48,10 +47,22 @@ interface AuditLogEntry {
   createdAt: string
 }
 
+function SuperAdminPageLoading() {
+  return <p className="py-12 text-center text-[#6B8A75]">Cargando panel...</p>
+}
+
 export default function SuperAdminPage() {
+  return (
+    <Suspense fallback={<SuperAdminPageLoading />}>
+      <SuperAdminPageContent />
+    </Suspense>
+  )
+}
+
+function SuperAdminPageContent() {
   const router = useRouter()
-  const search = useClientSearchString()
-  const tabParam = new URLSearchParams(search).get('tab') as TabKey | null
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab') as TabKey | null
   const tab: TabKey = tabParam && ['inicio', 'agencias', 'academias', 'usuarios', 'audit'].includes(tabParam)
     ? tabParam
     : 'inicio'

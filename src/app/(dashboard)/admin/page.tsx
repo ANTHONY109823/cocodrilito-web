@@ -1,9 +1,8 @@
 ﻿'use client'
 
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { Suspense, useCallback, useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
-import { useRouter } from 'next/navigation'
-import { useClientSearchString } from '@/hooks/useClientSearch'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
@@ -60,11 +59,22 @@ const PURPLE = '#A855F7'
 type AdminTab = 'dashboard' | 'users'
 type UserSubTab = 'activos' | 'inactivos' | 'crear'
 
+function AdminPageLoading() {
+  return <p className="py-12 text-center text-[#6B8A75]">Cargando panel...</p>
+}
+
 export default function AdminPage() {
+  return (
+    <Suspense fallback={<AdminPageLoading />}>
+      <AdminPageContent />
+    </Suspense>
+  )
+}
+
+function AdminPageContent() {
   const { user, loadFromStorage } = useAuthStore()
   const router = useRouter()
-  const search = useClientSearchString()
-  const searchParams = new URLSearchParams(search)
+  const searchParams = useSearchParams()
   const rawTab = searchParams.get('tab')
   const rawSub = searchParams.get('sub')
 

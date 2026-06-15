@@ -1,65 +1,20 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useMemo, useSyncExternalStore, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-type HistoryWithPatch = History & { __cocodrilitoSearchPatched?: boolean }
-
-const searchListeners = new Set<() => void>()
-
-function notifySearchChange() {
-  searchListeners.forEach((listener) => listener())
-}
-
-function ensureHistoryPatched() {
-  if (typeof window === 'undefined') return
-  const historyRef = window.history as HistoryWithPatch
-  if (historyRef.__cocodrilitoSearchPatched) return
-
-  const { pushState, replaceState } = historyRef
-  historyRef.pushState = function (...args) {
-    const result = pushState.apply(this, args)
-    notifySearchChange()
-    return result
-  }
-  historyRef.replaceState = function (...args) {
-    const result = replaceState.apply(this, args)
-    notifySearchChange()
-    return result
-  }
-  historyRef.__cocodrilitoSearchPatched = true
-}
-
-function subscribeToSearch(onChange: () => void) {
-  ensureHistoryPatched()
-  searchListeners.add(onChange)
-  if (typeof window !== 'undefined') {
-    window.addEventListener('popstate', onChange)
-  }
-  return () => {
-    searchListeners.delete(onChange)
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('popstate', onChange)
-    }
-  }
-}
-
-function getSearchSnapshot(): string {
+function readSearch(): string {
   if (typeof window === 'undefined') return ''
   return window.location.search
 }
 
-/**
- * Query string reactivo sin useSearchParams (evita Suspense en el shell).
- * Escucha pushState/replaceState para tabs ?tab= en /admin y /superadmin.
- */
+/** Solo para login/premium fuera del dashboard (sin Suspense). */
 export function useClientSearchString(): string {
   const pathname = usePathname()
-  const search = useSyncExternalStore(subscribeToSearch, getSearchSnapshot, () => '')
+  const [search, setSearch] = useState(readSearch)
 
-  // Asegura re-lectura cuando Next cambia de ruta (pathname) sin pushState propio
   useEffect(() => {
-    notifySearchChange()
+    setSearch(readSearch())
   }, [pathname])
 
   return search
