@@ -29,8 +29,8 @@ export const examsApi = {
     apiClient.get('/exams/sessions/stats'),
   getCategoryStats: () =>
     apiClient.get('/exams/sessions/stats/categories'),
-  getHistory: () =>
-    apiClient.get('/exams/sessions/history'),
+  getHistory: (limit = 50) =>
+    apiClient.get(`/exams/sessions/history?limit=${limit}`),
   getReviewSession: (sessionId: string) =>
     apiClient.get(`/exams/sessions/${sessionId}/review`),
 }

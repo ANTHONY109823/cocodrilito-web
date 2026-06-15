@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   FileText,
@@ -97,7 +97,7 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const { user, loadFromStorage } = useAuthStore()
+  const { user } = useAuthStore()
   const [gami, setGami] = useState<GamificationStatus | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [latest, setLatest] = useState<LatestSession | null>(null)
@@ -114,7 +114,7 @@ export default function DashboardPage() {
         gamificationApi.getMyStatus(),
         examsApi.getMyStats(),
         examsApi.getLatestSession(),
-        examsApi.getHistory(),
+        examsApi.getHistory(7),
         gamificationApi.getMyRanking(),
       ])
       setGami(g.data)
@@ -141,9 +141,8 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    loadFromStorage()
     void loadAll()
-  }, [loadFromStorage])
+  }, [])
 
   const firstName = user?.fullName?.split(' ')[0] || 'Cadete'
   const today = new Date().toLocaleDateString('es-PE', {

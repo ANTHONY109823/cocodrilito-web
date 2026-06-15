@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import apiClient from '@/lib/api/client'
 import { redirectToLogin } from '@/lib/auth/logoutRedirect'
@@ -13,16 +13,22 @@ function isAuthPage(pathname: string) {
 }
 
 /**
- * Sincroniza Zustand con cookies HttpOnly. No corre en /login para evitar bucles.
+ * Sincroniza Zustand con cookies HttpOnly una vez por sesión (no en cada navegación).
  */
 export function useSessionSync() {
   const pathname = usePathname()
   const { isAuthenticated, setUser, clearUser } = useAuthStore()
+  const syncedRef = useRef(false)
 
   useEffect(() => {
-    if (!isAuthenticated || isAuthPage(pathname)) return
+    if (!isAuthenticated) {
+      syncedRef.current = false
+      return
+    }
+    if (isAuthPage(pathname) || syncedRef.current) return
 
     let cancelled = false
+    syncedRef.current = true
 
     const syncSession = (allowRetry: boolean) => {
       apiClient
@@ -36,6 +42,7 @@ export function useSessionSync() {
         })
         .catch(() => {
           if (cancelled) return
+          syncedRef.current = false
           if (allowRetry) {
             window.setTimeout(() => syncSession(false), RETRY_DELAY_MS)
             return

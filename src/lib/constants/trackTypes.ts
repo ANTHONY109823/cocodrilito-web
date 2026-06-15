@@ -25,3 +25,14 @@ export function trackLabel(value: number | string | null | undefined): string {
 export function trackKeyFromValue(value: number): string {
   return QUESTION_TRACK_OPTIONS.find((t) => t.value === value)?.key ?? 'AscensosSuboficiales'
 }
+
+/** Track efectivo del alumno: activeTrackType del perfil o primer balotario permitido. */
+export function resolveUserTrackKey(
+  user?: { activeTrackType?: string | null; allowedTrackTypes?: string[] } | null
+): string {
+  const active = user?.activeTrackType?.trim()
+  if (active) return active
+  const allowed = user?.allowedTrackTypes?.find((t) => t?.trim())
+  if (allowed) return allowed.trim()
+  return 'AscensosSuboficiales'
+}

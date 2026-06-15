@@ -32,6 +32,15 @@ interface AuthState {
 
 export function normalizeUser(data: Record<string, unknown>): AuthUser {
   const id = String(data.id ?? data.userId ?? '')
+  const allowedTrackTypes = Array.isArray(data.allowedTrackTypes)
+    ? (data.allowedTrackTypes as string[])
+    : []
+  const activeFromApi =
+    data.activeTrackType != null ? String(data.activeTrackType) : null
+  const activeTrackType =
+    activeFromApi ??
+    (allowedTrackTypes[0] != null ? String(allowedTrackTypes[0]) : null)
+
   return {
     id,
     userId: id,
@@ -48,10 +57,8 @@ export function normalizeUser(data: Record<string, unknown>): AuthUser {
     tenantSlug: data.tenantSlug != null ? String(data.tenantSlug) : null,
     tenantType: data.tenantType != null ? String(data.tenantType) : null,
     tenantLogoUrl: data.tenantLogoUrl != null ? String(data.tenantLogoUrl) : null,
-    allowedTrackTypes: Array.isArray(data.allowedTrackTypes)
-      ? (data.allowedTrackTypes as string[])
-      : [],
-    activeTrackType: data.activeTrackType != null ? String(data.activeTrackType) : null,
+    allowedTrackTypes,
+    activeTrackType,
     mustChangePassword: Boolean(data.mustChangePassword),
   }
 }

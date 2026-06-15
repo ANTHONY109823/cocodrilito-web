@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useMemo, useState } from 'react'
 import { useSWRConfig } from 'swr'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import axios from 'axios'
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store/authStore'
 import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
-import { DEFAULT_QUESTION_TRACK, trackKeyFromValue, trackLabel } from '@/lib/constants/trackTypes'
+import { DEFAULT_QUESTION_TRACK, resolveUserTrackKey, trackKeyFromValue, trackLabel } from '@/lib/constants/trackTypes'
 import { TrackSwitchBar } from '@/components/admin/preguntas/TrackSwitchBar'
 import { prefetchAscensoQuestionCounts } from '@/lib/api/questionCounts'
 import { examsApi } from '@/lib/api/exams'
@@ -50,14 +50,14 @@ interface Exam {
 export default function ExamsPage() {
   const router = useRouter()
   const { mutate } = useSWRConfig()
-  const { user, loadFromStorage } = useAuthStore()
+  const { user } = useAuthStore()
   const previewMode = isTenantAdmin(user?.role) || isSuperAdmin(user?.role)
   const backHref = isSuperAdmin(user?.role) ? '/superadmin?tab=inicio' : '/admin'
   const [previewTrack, setPreviewTrack] = useState(DEFAULT_QUESTION_TRACK)
-  const studentTrack = user?.activeTrackType ?? 'AscensosSuboficiales'
+  const studentTrackKey = useMemo(() => resolveUserTrackKey(user), [user])
   const effectiveTrackKey = previewMode
     ? trackKeyFromValue(previewTrack)
-    : studentTrack
+    : studentTrackKey
   const { exams, isLoading: examsLoading, error: examsError } = useExamList()
   const { categories, isLoading: catsLoading, error: catsError } = useCategories()
   const {
@@ -71,11 +71,7 @@ export default function ExamsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCount, setSelectedCount] = useState<25 | 50 | 100>(100)
 
-  const loading = examsLoading || catsLoading || (countsLoading && totalQuestions === 0)
-
-  useEffect(() => {
-    loadFromStorage()
-  }, [loadFromStorage])
+  const loading = examsLoading && exams.length === 0
 
   useEffect(() => {
     if (!previewMode) return
@@ -181,7 +177,7 @@ export default function ExamsPage() {
       {previewMode && (
         <TrackSwitchBar
           activeTrackType={previewTrack}
-          onChange={setPreviewTrack}
+          onChange={(track) => startTransition(() => setPreviewTrack(track))}
           hint="Prueba el simulacro como lo verían alumnos Oficiales o Suboficiales. No afecta métricas ni ranking."
         />
       )}
@@ -199,7 +195,7 @@ export default function ExamsPage() {
         </div>
         <Badge color="green" className="gap-1.5 px-3.5 py-1.5">
           <BookOpen className="h-3.5 w-3.5" />
-          {totalQuestions} preguntas · {trackLabel(previewMode ? previewTrack : studentTrack)}
+          {totalQuestions} preguntas · {trackLabel(previewMode ? previewTrack : studentTrackKey)}
         </Badge>
       </div>
 
@@ -253,7 +249,7 @@ export default function ExamsPage() {
                     <button
                       key={n}
                       type="button"
-                      onClick={() => setSelectedCount(n)}
+                      onClick={() => startTransition(() => setSelectedCount(n))}
                       className="rounded-lg border px-4 py-2 text-sm font-bold transition-all"
                       style={{
                         borderColor: selectedCount === n ? '#318F48' : 'rgba(189,255,223,0.15)',
