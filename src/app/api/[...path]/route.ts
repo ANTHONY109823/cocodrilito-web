@@ -18,6 +18,17 @@ const HOP_BY_HOP = new Set([
   'content-length',
 ])
 
+// Headers internos de infraestructura que el cliente no debe poder inyectar al backend
+const BLOCKED_FROM_CLIENT = new Set([
+  'x-tenant-slug',
+  'x-tenant-host',
+  'x-tenant-custom-domain',
+  'x-forwarded-for',
+  'x-real-ip',
+  'x-vercel-ip-country',
+  'x-vercel-ip-city',
+])
+
 function sanitizeUpstreamCookie(cookie: string): string {
   return cookie.replace(/;\s*Domain=[^;]*/gi, '')
 }
@@ -36,7 +47,8 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
 
   const headers = new Headers()
   request.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
+    const lower = key.toLowerCase()
+    if (!HOP_BY_HOP.has(lower) && !BLOCKED_FROM_CLIENT.has(lower)) {
       headers.set(key, value)
     }
   })
