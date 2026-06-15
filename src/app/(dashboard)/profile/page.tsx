@@ -10,7 +10,7 @@ import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin } from '@/lib/auth/roles'
 import { useAuthStore } from '@/lib/store/authStore'
-import { cn } from '@/lib/utils/cn'
+import { resolveUserTrackKey, trackLabel } from '@/lib/constants/trackTypes'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -138,6 +138,9 @@ export default function ProfilePage() {
             <div className="text-lg font-bold text-white">{user?.fullName}</div>
             <div className="text-sm text-[#6B8A75]">{user?.email}</div>
             <div className="mt-0.5 text-xs text-[#6B8A75]">DNI: {user?.dni}</div>
+            <div className="mt-1 text-xs font-medium text-[#318F48]">
+              Balotario: {trackLabel(resolveUserTrackKey(user))}
+            </div>
           </div>
         </div>
 

@@ -15,7 +15,7 @@ import {
   formatPlanPrice,
   inferDaysFromAmount,
 } from '@/lib/constants/subscriptionPlans'
-import { ASCENSO_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK } from '@/lib/constants/trackTypes'
+import { ASCENSO_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK, trackLabel } from '@/lib/constants/trackTypes'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
@@ -34,6 +34,8 @@ interface User {
   isActive: boolean
   createdByAdmin: boolean
   createdAt: string
+  activeTrackType?: string | null
+  allowedTrackTypes?: string[]
   subscription?: { expiresAt: string; startsAt: string } | null
 }
 
@@ -88,7 +90,10 @@ export default function AdminPage() {
   const [uploadingExcel, setUploadingExcel] = useState(false)
 
   const [editTarget, setEditTarget] = useState<User | null>(null)
-  const [editForm, setEditForm] = useState({ fullName: '', email: '', dni: '', rank: '', unit: '' })
+  const [editForm, setEditForm] = useState({
+    fullName: '', email: '', dni: '', rank: '', unit: '',
+    trackType: DEFAULT_QUESTION_TRACK,
+  })
 
   const [rejectTarget, setRejectTarget] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -138,9 +143,11 @@ export default function AdminPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await apiClient.post('/admin/users/import/excel', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      const res = await apiClient.post(
+        `/admin/users/import/excel?trackType=${form.trackType}`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
       setMsg({ text: `✅ ${res.data.created} usuarios importados`, ok: true })
       if (res.data.errors?.length > 0) console.warn('Errores:', res.data.errors)
       void loadData()
@@ -153,7 +160,7 @@ export default function AdminPage() {
   }
 
   const handleDownloadExcelTemplate = () => {
-    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado,Unidad,Días\nJuan Pérez Torres,12345678,juan@gmail.com,Ejemplo1234,Suboficial de 3ra,Comisaría Lima Norte,180\n'
+    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado,Unidad,Días,Balotario\nJuan Pérez Torres,12345678,juan@gmail.com,Ejemplo1234,Suboficial de 3ra,Comisaría Lima Norte,180,Suboficiales\n'
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -327,12 +334,16 @@ export default function AdminPage() {
 
   const openEditUser = (u: User) => {
     setEditTarget(u)
+    const trackValue =
+      ASCENSO_TRACK_OPTIONS.find((t) => t.key === u.activeTrackType)?.value ??
+      DEFAULT_QUESTION_TRACK
     setEditForm({
       fullName: u.fullName,
       email: u.email,
       dni: u.dni,
       rank: u.rank,
       unit: u.unit,
+      trackType: trackValue,
     })
   }
 
@@ -341,7 +352,14 @@ export default function AdminPage() {
     setModalLoading(true)
     try {
       await apiClient.put(`/admin/users/${editTarget.id}`, editForm)
-      setUsers(prev => prev.map(u => u.id === editTarget.id ? { ...u, ...editForm } : u))
+      const trackKey = ASCENSO_TRACK_OPTIONS.find((t) => t.value === editForm.trackType)?.key
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editTarget.id
+            ? { ...u, ...editForm, activeTrackType: trackKey ?? u.activeTrackType }
+            : u
+        )
+      )
       setMsg({ text: '✅ Usuario actualizado', ok: true })
       setTimeout(() => setMsg(null), 2500)
       setEditTarget(null)
@@ -566,6 +584,10 @@ export default function AdminPage() {
                         <span className="text-xs px-2 py-0.5 rounded-full"
                           style={{ backgroundColor: u.planType === 'Premium' ? `${NEON}20` : `${GOLD}15`, color: u.planType === 'Premium' ? NEON : GOLD }}>
                           {u.planType}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${PURPLE}15`, color: PURPLE }}>
+                          📚 {trackLabel(u.activeTrackType)}
                         </span>
                         {!u.createdByAdmin && (
                           <span className="text-xs px-2 py-0.5 rounded-full"
@@ -819,7 +841,8 @@ export default function AdminPage() {
               style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${PURPLE}25` }}>
               <h3 className="text-white font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
               <p className="text-gray-500 text-xs mb-3">
-                Sube un Excel con columnas: Nombre, DNI, Email, Contraseña, Grado, Unidad, Días (30/60/180)
+                Columnas: Nombre, DNI, Email, Contraseña, Grado, Unidad, Días (30/60/180), Balotario (opcional: Suboficiales/Oficiales).
+                Si no hay columna Balotario, se usa el seleccionado arriba ({trackLabel(form.trackType)}).
               </p>
               <div className="flex gap-3 flex-wrap">
                 <button type="button" onClick={handleDownloadExcelTemplate}
@@ -887,6 +910,26 @@ export default function AdminPage() {
             <label className="block text-xs text-gray-500 mb-1">Unidad</label>
             <input className="input-admin" value={editForm.unit}
               onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-2">Balotario</label>
+            <div className="grid grid-cols-2 gap-2">
+              {ASCENSO_TRACK_OPTIONS.map((track) => (
+                <button
+                  key={track.value}
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, trackType: track.value })}
+                  className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
+                  style={{
+                    border: `1px solid ${editForm.trackType === track.value ? NEON : '#ffffff15'}`,
+                    backgroundColor: editForm.trackType === track.value ? 'rgba(74,124,89,0.12)' : 'transparent',
+                    color: editForm.trackType === track.value ? NEON : '#9CA3AF',
+                  }}
+                >
+                  {track.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </Modal>

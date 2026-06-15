@@ -1,6 +1,5 @@
 ﻿'use client'
 
-import { startTransition, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   FileText,
@@ -9,13 +8,11 @@ import {
   TrendingUp,
   Trophy,
 } from 'lucide-react'
-import { toast } from '@/components/Toast'
 import { Button, ErrorState } from '@/components/ui'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { examsApi } from '@/lib/api/exams'
-import { gamificationApi } from '@/lib/api/gamification'
+import { useStudentDashboard } from '@/hooks/useStudentDashboard'
 import { useAuthStore } from '@/lib/store/authStore'
 import { cn } from '@/lib/utils/cn'
 
@@ -98,51 +95,12 @@ function StatCard({
 
 export default function DashboardPage() {
   const { user } = useAuthStore()
-  const [gami, setGami] = useState<GamificationStatus | null>(null)
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [latest, setLatest] = useState<LatestSession | null>(null)
-  const [myRanking, setMyRanking] = useState<MyRanking | null>(null)
-  const [chartScores, setChartScores] = useState<number[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { gami, stats, latest, myRanking, chartScores, loading, error } = useStudentDashboard()
 
-  const loadAll = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [g, s, l, h, r] = await Promise.all([
-        gamificationApi.getMyStatus(),
-        examsApi.getMyStats(),
-        examsApi.getLatestSession(),
-        examsApi.getHistory(7),
-        gamificationApi.getMyRanking(),
-      ])
-      setGami(g.data)
-      setStats(s.data)
-      setLatest(l.data)
-      setMyRanking(r.data)
-
-      const historyItems: HistoryEntry[] = Array.isArray(h.data)
-        ? h.data
-        : h.data?.items ?? []
-      const scores = historyItems
-        .slice(0, 7)
-        .reverse()
-        .map((entry) => entry.score)
-      setChartScores(scores)
-    } catch (err) {
-      const msg = getApiErrorMessage(err, 'Error al cargar el dashboard')
-      console.error('[dashboard] loadAll failed:', err)
-      setError(msg)
-      toast(msg, 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    void loadAll()
-  }, [])
+  const gamiData = gami as GamificationStatus | null
+  const statsData = stats as Stats | null
+  const latestData = latest as LatestSession | null
+  const rankingData = myRanking as MyRanking | null
 
   const firstName = user?.fullName?.split(' ')[0] || 'Cadete'
   const today = new Date().toLocaleDateString('es-PE', {
@@ -152,21 +110,21 @@ export default function DashboardPage() {
     year: 'numeric',
   })
 
-  const sessions = stats?.totalSessions ?? gami?.examsCompleted ?? 0
-  const totalQ = stats?.totalQuestions ?? 0
+  const sessions = statsData?.totalSessions ?? gamiData?.examsCompleted ?? 0
+  const totalQ = statsData?.totalQuestions ?? 0
   const avgPct =
     totalQ > 0
-      ? Math.round(((stats?.totalCorrect ?? 0) / totalQ) * 100)
-      : latest?.score ?? 0
-  const streak = gami?.currentStreakDays ?? 0
-  const liga = getLeague(latest?.correctAnswers ?? 0)
+      ? Math.round(((statsData?.totalCorrect ?? 0) / totalQ) * 100)
+      : latestData?.score ?? 0
+  const streak = gamiData?.currentStreakDays ?? 0
+  const liga = getLeague(latestData?.correctAnswers ?? 0)
   const ligaCfg = leagueConfig[liga] ?? leagueConfig.Dinosaurio
-  const xp = gami?.totalXp ?? 0
+  const xp = gamiData?.totalXp ?? 0
   const xpTarget = ligaCfg.xpTarget || 2000
   const hour = new Date().getHours()
   const greet = hour < 12 ? 'Buen día' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'
 
-  if (loading) {
+  if (loading && !gamiData && !statsData) {
     return (
       <div className="mx-auto max-w-6xl py-12 text-center text-[#6B8A75]">
         Cargando estadísticas...
@@ -174,10 +132,11 @@ export default function DashboardPage() {
     )
   }
 
-  if (error) {
+  if (error && !gamiData && !statsData) {
+    const msg = getApiErrorMessage(error, 'Error al cargar el dashboard')
     return (
       <div className="mx-auto max-w-6xl">
-        <ErrorState message={error} onRetry={() => void loadAll()} />
+        <ErrorState message={msg} onRetry={() => window.location.reload()} />
       </div>
     )
   }
@@ -225,7 +184,7 @@ export default function DashboardPage() {
             <Trophy className="h-[18px] w-[18px] text-[#C9943A]" />
           </div>
           <div className="text-[22px] font-extrabold text-white">
-            {myRanking?.position != null ? `#${myRanking.position}` : '—'}
+            {rankingData?.position != null ? `#${rankingData.position}` : '—'}
           </div>
           <div className="mt-0.5 text-[11px] text-[#6B8A75]">Posición ranking</div>
           <Link
@@ -239,15 +198,15 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-3 gap-2.5">
         <div className="rounded-xl border border-[rgba(74,124,89,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
-          <div className="text-[20px] font-extrabold text-[#318F48]">{stats?.totalCorrect ?? 0}</div>
+          <div className="text-[20px] font-extrabold text-[#318F48]">{statsData?.totalCorrect ?? 0}</div>
           <div className="mt-0.5 text-[11px] text-[#6B8A75]">✅ Correctas (total)</div>
         </div>
         <div className="rounded-xl border border-[rgba(255,82,82,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
-          <div className="text-[20px] font-extrabold text-[#FF5252]">{stats?.totalIncorrect ?? 0}</div>
+          <div className="text-[20px] font-extrabold text-[#FF5252]">{statsData?.totalIncorrect ?? 0}</div>
           <div className="mt-0.5 text-[11px] text-[#6B8A75]">❌ Incorrectas (total)</div>
         </div>
         <div className="rounded-xl border border-[rgba(255,215,0,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
-          <div className="text-[20px] font-extrabold text-[#FFD700]">{stats?.totalUnanswered ?? 0}</div>
+          <div className="text-[20px] font-extrabold text-[#FFD700]">{statsData?.totalUnanswered ?? 0}</div>
           <div className="mt-0.5 text-[11px] text-[#6B8A75]">⬜ Sin responder (total)</div>
         </div>
       </div>
@@ -336,12 +295,12 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {latest && (
+      {latestData && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-4">
           <div>
             <p className="text-sm font-semibold text-white">Último simulacro</p>
             <p className="text-xs text-[#6B8A75]">
-              {latest.passed ? 'Aprobado' : 'No aprobado'} · {latest.score}%
+              {latestData.passed ? 'Aprobado' : 'No aprobado'} · {latestData.score}%
             </p>
           </div>
           <Link
