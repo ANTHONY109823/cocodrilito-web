@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
@@ -9,7 +8,6 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { getNavContext, isSuperAdmin } from '@/lib/auth/roles'
 import {
-  pageTitleForPath,
   STUDENT_NAV,
   SUPERADMIN_NAV,
   TENANT_ADMIN_NAV,
@@ -19,14 +17,14 @@ import { cn } from '@/lib/utils/cn'
 import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
 import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
-import { FastNavLink } from '@/components/navigation/FastNavLink'
-import { StudentNavLink } from '@/components/navigation/StudentNavLink'
+import { AppNavLink } from '@/components/navigation/AppNavLink'
 import {
   DashboardMobileNav,
-  DashboardPageSearch,
+  DashboardPageTitle,
   DashboardSidebarNav,
 } from '@/components/navigation/DashboardNav'
-import { useStudentRoutePrefetch } from '@/hooks/useStudentRoutePrefetch'
+import { NavigationProgressBar } from '@/components/navigation/NavigationProgressBar'
+import { useDashboardRoutePrefetch } from '@/hooks/useDashboardRoutePrefetch'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -44,7 +42,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const navContext = getNavContext(user?.role, impersonating)
   const useQueryNav = navContext !== 'student'
 
-  useStudentRoutePrefetch(navContext === 'student')
+  useDashboardRoutePrefetch()
 
   const needsTenantFetch = navContext !== 'superadmin' && Boolean(user?.tenantSlug) && !user?.tenantName
   const { config: tenantConfig } = useTenantConfig(needsTenantFetch ? user?.tenantSlug : null)
@@ -86,6 +84,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#080E0A]">
+      <NavigationProgressBar />
       <ImpersonationBanner />
 
       <div className="flex flex-1 min-h-0">
@@ -121,12 +120,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             {navContext === 'superadmin' && (
               <>
                 <div className="my-2 h-px bg-[rgba(189,255,223,0.12)]" />
-                <FastNavLink
+                <AppNavLink
                   href="/exams"
                   className="px-2.5 py-1.5 text-[10px] text-[#6B8A75] hover:text-[#A8BFB0] transition-colors"
                 >
                   Modo prueba examen
-                </FastNavLink>
+                </AppNavLink>
               </>
             )}
           </nav>
@@ -153,47 +152,47 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="flex flex-1 flex-col min-w-0">
-          <DashboardPageSearch useQuery={useQueryNav}>
-            {(search) => (
-              <header className="hidden lg:flex items-center justify-between border-b border-[rgba(189,255,223,0.12)] bg-[#080E0A] px-8 py-4">
-                <div className="flex items-center gap-3">
-                  {brandLogo && (
-                    <Image
-                      src={brandLogo}
-                      alt=""
-                      width={32}
-                      height={32}
-                      unoptimized
-                      className="h-8 w-8 rounded object-contain"
-                    />
-                  )}
-                  <div>
-                    <p className="text-xs text-[#6B8A75]">
-                      {navContext === 'superadmin' ? BRAND_PLATFORM : brandName}
-                    </p>
-                    <h1 className="text-lg font-bold text-white">
-                      {pageTitleForPath(pathname, search, user?.role)}
-                    </h1>
-                  </div>
-                </div>
-                {navContext === 'tenant-admin' ? (
-                  <FastNavLink
-                    href="/admin/configuracion"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
-                  >
-                    {initials}
-                  </FastNavLink>
-                ) : navContext === 'student' ? (
-                  <StudentNavLink
-                    href="/profile"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
-                  >
-                    {initials}
-                  </StudentNavLink>
-                ) : null}
-              </header>
-            )}
-          </DashboardPageSearch>
+          <header className="hidden lg:flex items-center justify-between border-b border-[rgba(189,255,223,0.12)] bg-[#080E0A] px-8 py-4">
+            <div className="flex items-center gap-3">
+              {brandLogo && (
+                <Image
+                  src={brandLogo}
+                  alt=""
+                  width={32}
+                  height={32}
+                  unoptimized
+                  className="h-8 w-8 rounded object-contain"
+                />
+              )}
+              <div>
+                <p className="text-xs text-[#6B8A75]">
+                  {navContext === 'superadmin' ? BRAND_PLATFORM : brandName}
+                </p>
+                <h1 className="text-lg font-bold text-white">
+                  <DashboardPageTitle
+                    useQuery={useQueryNav}
+                    pathname={pathname}
+                    role={user?.role}
+                  />
+                </h1>
+              </div>
+            </div>
+            {navContext === 'tenant-admin' ? (
+              <AppNavLink
+                href="/admin/configuracion"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
+              >
+                {initials}
+              </AppNavLink>
+            ) : navContext === 'student' ? (
+              <AppNavLink
+                href="/profile"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
+              >
+                {initials}
+              </AppNavLink>
+            ) : null}
+          </header>
 
           <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">
             {children}

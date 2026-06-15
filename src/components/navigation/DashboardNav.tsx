@@ -1,12 +1,11 @@
 'use client'
 
-import { Suspense, type ReactNode } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { type LucideIcon } from 'lucide-react'
-import { isNavActive } from '@/lib/navigation'
+import { isNavActive, pageTitleForPath } from '@/lib/navigation'
 import { cn } from '@/lib/utils/cn'
-import { FastNavLink } from '@/components/navigation/FastNavLink'
-import { StudentNavLink } from '@/components/navigation/StudentNavLink'
+import { AppNavLink } from '@/components/navigation/AppNavLink'
+import { useNavSearchStore } from '@/lib/store/navigationStore'
 
 export type DashboardNavItem = {
   href: string
@@ -24,142 +23,6 @@ function navClass(active: boolean) {
   )
 }
 
-function StudentSidebarNav({ items }: { items: DashboardNavItem[] }) {
-  const pathname = usePathname()
-
-  return (
-    <>
-      {items.map((item) => {
-        const { href, label, icon: Icon } = item
-        const active = isNavActive(pathname, href, '')
-        return (
-          <StudentNavLink key={href} href={href} className={navClass(active)}>
-            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-            {label}
-          </StudentNavLink>
-        )
-      })}
-    </>
-  )
-}
-
-function StudentMobileNav({ items }: { items: DashboardNavItem[] }) {
-  const pathname = usePathname()
-
-  return (
-    <>
-      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
-        const active = isNavActive(pathname, href, '')
-        return (
-          <StudentNavLink
-            key={href}
-            href={href}
-            className={cn(
-              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
-              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
-            )}
-          >
-            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
-            {mobileLabel ?? label}
-          </StudentNavLink>
-        )
-      })}
-    </>
-  )
-}
-
-function AdminSidebarNav({ items }: { items: DashboardNavItem[] }) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const search = searchParams.toString() ? `?${searchParams.toString()}` : ''
-
-  return (
-    <>
-      {items.map((item) => {
-        const { href, label, icon: Icon } = item
-        const active = isNavActive(pathname, href, search)
-        return (
-          <FastNavLink key={href} href={href} className={navClass(active)}>
-            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-            {label}
-          </FastNavLink>
-        )
-      })}
-    </>
-  )
-}
-
-function AdminSidebarFallback({ items }: { items: DashboardNavItem[] }) {
-  const pathname = usePathname()
-
-  return (
-    <>
-      {items.map((item) => {
-        const { href, label, icon: Icon } = item
-        const active = isNavActive(pathname, href, '')
-        return (
-          <FastNavLink key={href} href={href} className={navClass(active)}>
-            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-            {label}
-          </FastNavLink>
-        )
-      })}
-    </>
-  )
-}
-
-function AdminMobileNav({ items }: { items: DashboardNavItem[] }) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const search = searchParams.toString() ? `?${searchParams.toString()}` : ''
-
-  return (
-    <>
-      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
-        const active = isNavActive(pathname, href, search)
-        return (
-          <FastNavLink
-            key={href}
-            href={href}
-            className={cn(
-              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
-              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
-            )}
-          >
-            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
-            {mobileLabel ?? label}
-          </FastNavLink>
-        )
-      })}
-    </>
-  )
-}
-
-function AdminMobileFallback({ items }: { items: DashboardNavItem[] }) {
-  const pathname = usePathname()
-
-  return (
-    <>
-      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
-        const active = isNavActive(pathname, href, '')
-        return (
-          <FastNavLink
-            key={href}
-            href={href}
-            className={cn(
-              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
-              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
-            )}
-          >
-            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
-            {mobileLabel ?? label}
-          </FastNavLink>
-        )
-      })}
-    </>
-  )
-}
-
 export function DashboardSidebarNav({
   items,
   useQuery,
@@ -167,14 +30,27 @@ export function DashboardSidebarNav({
   items: DashboardNavItem[]
   useQuery: boolean
 }) {
-  if (!useQuery) {
-    return <StudentSidebarNav items={items} />
-  }
+  const pathname = usePathname()
+  const search = useNavSearchStore((s) => s.search)
 
   return (
-    <Suspense fallback={<AdminSidebarFallback items={items} />}>
-      <AdminSidebarNav items={items} />
-    </Suspense>
+    <>
+      {items.map((item) => {
+        const { href, label, icon: Icon } = item
+        const active = isNavActive(pathname, href, useQuery ? search : '')
+        return (
+          <AppNavLink
+            key={href}
+            href={href}
+            trackQuery={useQuery}
+            className={navClass(active)}
+          >
+            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+            {label}
+          </AppNavLink>
+        )
+      })}
+    </>
   )
 }
 
@@ -185,42 +61,41 @@ export function DashboardMobileNav({
   items: DashboardNavItem[]
   useQuery: boolean
 }) {
-  if (!useQuery) {
-    return <StudentMobileNav items={items} />
-  }
+  const pathname = usePathname()
+  const search = useNavSearchStore((s) => s.search)
 
   return (
-    <Suspense fallback={<AdminMobileFallback items={items} />}>
-      <AdminMobileNav items={items} />
-    </Suspense>
+    <>
+      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
+        const active = isNavActive(pathname, href, useQuery ? search : '')
+        return (
+          <AppNavLink
+            key={href}
+            href={href}
+            trackQuery={useQuery}
+            className={cn(
+              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
+              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
+            )}
+          >
+            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+            {mobileLabel ?? label}
+          </AppNavLink>
+        )
+      })}
+    </>
   )
 }
 
-export function DashboardPageSearch({
+export function DashboardPageTitle({
   useQuery,
-  children,
+  pathname,
+  role,
 }: {
   useQuery: boolean
-  children: (search: string) => React.ReactNode
+  pathname: string
+  role?: string | null
 }) {
-  if (!useQuery) {
-    return <>{children('')}</>
-  }
-
-  return (
-    <Suspense fallback={<>{children('')}</>}>
-      <DashboardPageSearchInner>{children}</DashboardPageSearchInner>
-    </Suspense>
-  )
-}
-
-function DashboardPageSearchInner({
-  children,
-}: {
-  children: (search: string) => React.ReactNode
-}) {
-  const searchParams = useSearchParams()
-  const qs = searchParams.toString()
-  const search = qs ? `?${qs}` : ''
-  return <>{children(search)}</>
+  const search = useNavSearchStore((s) => (useQuery ? s.search : ''))
+  return <>{pageTitleForPath(pathname, search, role)}</>
 }
