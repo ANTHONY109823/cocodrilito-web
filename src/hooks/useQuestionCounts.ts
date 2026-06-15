@@ -24,7 +24,8 @@ export function useQuestionCounts(track?: string | null) {
     {
       keepPreviousData: true,
       revalidateOnFocus: false,
-      dedupingInterval: 60_000,
+      dedupingInterval: 120_000,
+      revalidateIfStale: false,
     }
   )
 

@@ -41,7 +41,7 @@ export function useStudentDashboard() {
     .reverse()
     .map((entry: { score: number }) => entry.score)
 
-  const loading = gamiLoading && statsLoading && latestLoading
+  const loading = gamiLoading && statsLoading && latestLoading && !gami && !stats && !latest
   const error = gamiError || statsError || latestError || historyError || rankingError
 
   return {

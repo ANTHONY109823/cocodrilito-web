@@ -11,7 +11,10 @@ export interface Category {
 }
 
 export function useCategories() {
-  const { data, error, isLoading, mutate } = useSWR<Category[]>('/categories', swrFetcher)
+  const { data, error, isLoading, mutate } = useSWR<Category[]>('/categories', swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 120_000,
+  })
   return {
     categories: data ?? [],
     isLoading,

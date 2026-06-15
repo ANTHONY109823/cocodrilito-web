@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useMemo, useSyncExternalStore } from 'react'
+import { useMemo, useSyncExternalStore, useEffect } from 'react'
 
 type HistoryWithPatch = History & { __cocodrilitoSearchPatched?: boolean }
 
@@ -54,8 +54,15 @@ function getSearchSnapshot(): string {
  * Escucha pushState/replaceState para tabs ?tab= en /admin y /superadmin.
  */
 export function useClientSearchString(): string {
-  usePathname()
-  return useSyncExternalStore(subscribeToSearch, getSearchSnapshot, () => '')
+  const pathname = usePathname()
+  const search = useSyncExternalStore(subscribeToSearch, getSearchSnapshot, () => '')
+
+  // Asegura re-lectura cuando Next cambia de ruta (pathname) sin pushState propio
+  useEffect(() => {
+    notifySearchChange()
+  }, [pathname])
+
+  return search
 }
 
 export function useClientSearchParam(name: string): string | null {

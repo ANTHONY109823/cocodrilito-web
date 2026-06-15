@@ -11,7 +11,10 @@ export interface ExamListItem {
 }
 
 export function useExamList() {
-  const { data, error, isLoading, mutate } = useSWR<ExamListItem[]>('/exams/list', swrFetcher)
+  const { data, error, isLoading, mutate } = useSWR<ExamListItem[]>('/exams/list', swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 120_000,
+  })
   const exams = (data ?? []).map((e) => ({
     ...e,
     id: e.id || (e as ExamListItem & { Id?: string }).Id || '',

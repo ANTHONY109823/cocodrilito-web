@@ -71,7 +71,7 @@ export default function ExamsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCount, setSelectedCount] = useState<25 | 50 | 100>(100)
 
-  const loading = examsLoading && exams.length === 0
+  const loading = examsLoading && exams.length === 0 && countsLoading && totalQuestions === 0
 
   useEffect(() => {
     if (!previewMode) return
