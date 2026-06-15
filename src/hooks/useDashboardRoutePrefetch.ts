@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { mutate } from 'swr'
 import { swrFetcher } from '@/lib/swr/fetcher'
 import { useAuthStore } from '@/lib/store/authStore'
@@ -14,7 +14,6 @@ import {
   TENANT_ADMIN_NAV,
   type NavItem,
 } from '@/lib/navigation'
-import { useNavSearchStore } from '@/lib/store/navigationStore'
 
 function collectHrefs(navContext: ReturnType<typeof getNavContext>): string[] {
   const items: NavItem[] =
@@ -34,16 +33,10 @@ function collectHrefs(navContext: ReturnType<typeof getNavContext>): string[] {
 /** Precarga rutas y APIs en segundo plano para todos los roles. */
 export function useDashboardRoutePrefetch() {
   const router = useRouter()
-  const pathname = usePathname()
   const user = useAuthStore((s) => s.user)
   const impersonating = useImpersonationStore((s) => s.active)
   const navContext = getNavContext(user?.role, impersonating)
   const trackKey = resolveUserTrackKey(user)
-  const syncFromWindow = useNavSearchStore((s) => s.syncFromWindow)
-
-  useEffect(() => {
-    syncFromWindow()
-  }, [pathname, syncFromWindow])
 
   useEffect(() => {
     if (!user) return

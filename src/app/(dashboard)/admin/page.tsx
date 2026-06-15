@@ -21,8 +21,6 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
-import { useNavSearchStore } from '@/lib/store/navigationStore'
-
 interface User {
   id: string
   fullName: string
@@ -78,10 +76,6 @@ function AdminPageContent() {
   const searchParams = useSearchParams()
   const rawTab = searchParams.get('tab')
   const rawSub = searchParams.get('sub')
-
-  useEffect(() => {
-    useNavSearchStore.getState().syncFromWindow()
-  }, [searchParams])
 
   const tab: AdminTab =
     rawTab === 'users' || rawTab === 'inactive' || rawTab === 'create'

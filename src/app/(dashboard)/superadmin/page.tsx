@@ -28,8 +28,6 @@ import {
   SURFACE_BORDER,
   policeGreenRgba,
 } from '@/lib/constants/theme'
-import { useNavSearchStore } from '@/lib/store/navigationStore'
-
 type TabKey =
   | 'inicio'
   | 'agencias'
@@ -70,10 +68,6 @@ function SuperAdminPageContent() {
 
   const { user, loadFromStorage, setUser } = useAuthStore()
   const { startImpersonation } = useImpersonationStore()
-
-  useEffect(() => {
-    useNavSearchStore.getState().syncFromWindow()
-  }, [searchParams])
 
   const [dashboard, setDashboard] = useState<DashboardStats | null>(null)
   const [tenants, setTenants] = useState<TenantSummary[]>([])

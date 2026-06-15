@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
@@ -115,7 +116,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex flex-col gap-0.5">
-            <DashboardSidebarNav items={navItems} useQuery={useQueryNav} />
+            <Suspense>
+              <DashboardSidebarNav items={navItems} useQuery={useQueryNav} />
+            </Suspense>
 
             {navContext === 'superadmin' && (
               <>
@@ -169,11 +172,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   {navContext === 'superadmin' ? BRAND_PLATFORM : brandName}
                 </p>
                 <h1 className="text-lg font-bold text-white">
-                  <DashboardPageTitle
-                    useQuery={useQueryNav}
-                    pathname={pathname}
-                    role={user?.role}
-                  />
+                  <Suspense>
+                    <DashboardPageTitle
+                      useQuery={useQueryNav}
+                      pathname={pathname}
+                      role={user?.role}
+                    />
+                  </Suspense>
                 </h1>
               </div>
             </div>
@@ -206,7 +211,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           hideMobileNav && 'hidden'
         )}
       >
-        <DashboardMobileNav items={mobileNav} useQuery={useQueryNav} />
+        <Suspense>
+          <DashboardMobileNav items={mobileNav} useQuery={useQueryNav} />
+        </Suspense>
       </nav>
     </div>
   )
