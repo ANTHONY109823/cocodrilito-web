@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
@@ -12,24 +12,27 @@ import { useSessionSync } from '@/hooks/useSessionSync'
 
 const STUDENT_ONLY_PREFIXES = ['/exams', '/history', '/ranking', '/premium', '/exam/', '/result/', '/review/']
 
-function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const { isAuthenticated, user, loadFromStorage } = useAuthStore()
-  const { loadFromStorage: loadImpersonation, active: impersonating } = useImpersonationStore()
-  const [authReady, setAuthReady] = useState(false)
+let clientStoresHydrated = false
 
+function hydrateClientStores() {
+  if (clientStoresHydrated || typeof window === 'undefined') return
+  clientStoresHydrated = true
+  useAuthStore.getState().loadFromStorage()
+  useImpersonationStore.getState().loadFromStorage()
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const user = useAuthStore((s) => s.user)
+  const impersonating = useImpersonationStore((s) => s.active)
+
+  hydrateClientStores()
   useSessionSync()
 
   useEffect(() => {
-    loadFromStorage()
-    loadImpersonation()
-    setAuthReady(true)
-  }, [loadFromStorage, loadImpersonation])
-
-  useEffect(() => {
-    if (!authReady) return
     if (!isAuthenticated) redirectToLogin()
-  }, [authReady, isAuthenticated])
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!user?.mustChangePassword) return
@@ -76,17 +79,13 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     }
   }, [user, pathname, impersonating])
 
-  if (!authReady || !isAuthenticated) {
-    return null
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#080E0A] flex items-center justify-center text-[#6B8A75] text-sm">
+        Cargando...
+      </div>
+    )
   }
 
   return <DashboardShell>{children}</DashboardShell>
-}
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <Suspense fallback={null}>
-      <DashboardLayoutInner>{children}</DashboardLayoutInner>
-    </Suspense>
-  )
 }

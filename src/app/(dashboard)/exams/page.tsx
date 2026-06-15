@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { startTransition, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSWRConfig } from 'swr'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import axios from 'axios'
@@ -177,7 +177,7 @@ export default function ExamsPage() {
       {previewMode && (
         <TrackSwitchBar
           activeTrackType={previewTrack}
-          onChange={(track) => startTransition(() => setPreviewTrack(track))}
+          onChange={(track) => setPreviewTrack(track)}
           hint="Prueba el simulacro como lo verían alumnos Oficiales o Suboficiales. No afecta métricas ni ranking."
         />
       )}
@@ -249,7 +249,7 @@ export default function ExamsPage() {
                     <button
                       key={n}
                       type="button"
-                      onClick={() => startTransition(() => setSelectedCount(n))}
+                      onClick={() => setSelectedCount(n)}
                       className="rounded-lg border px-4 py-2 text-sm font-bold transition-all"
                       style={{
                         borderColor: selectedCount === n ? '#318F48' : 'rgba(189,255,223,0.15)',

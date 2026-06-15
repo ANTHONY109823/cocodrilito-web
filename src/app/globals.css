@@ -41,6 +41,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+a,
+button,
+[role='button'] {
+  touch-action: manipulation;
+}
+
 h1 {
   font-size: 2rem;
   font-weight: 800;

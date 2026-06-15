@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useClientSearchParam } from '@/hooks/useClientSearch'
 import { toast } from '@/components/Toast'
 import { Badge, Button, Card, Input } from '@/components/ui'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -31,9 +31,8 @@ interface PaymentInfo {
 }
 
 export default function PremiumPage() {
-  const searchParams = useSearchParams()
-  const isNew = searchParams.get('new') === '1'
-  const isBlocked = searchParams.get('blocked') === '1'
+  const isNew = useClientSearchParam('new') === '1'
+  const isBlocked = useClientSearchParam('blocked') === '1'
 
   const [plans, setPlans] = useState<Plan[]>([])
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)

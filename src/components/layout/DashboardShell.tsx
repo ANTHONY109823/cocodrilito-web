@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { LogOut, LucideIcon } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/lib/store/authStore'
@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils/cn'
 import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
 import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
+import { useClientSearchString } from '@/hooks/useClientSearch'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -43,6 +44,7 @@ function SidebarNavItem({
   return (
     <Link
       href={href}
+      prefetch={true}
       className={cn(
         'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-all duration-150',
         active
@@ -58,7 +60,7 @@ function SidebarNavItem({
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const search = useClientSearchString()
   const { user, logout } = useAuthStore()
   const { active: impersonating, stopImpersonation } = useImpersonationStore()
 
@@ -87,8 +89,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     .join('')
     .slice(0, 2)
     .toUpperCase() || '?'
-
-  const search = searchParams.toString() ? `?${searchParams.toString()}` : ''
 
   const hideMobileNav =
     pathname.startsWith('/exam/') ||
@@ -232,6 +232,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <Link
               key={href}
               href={href}
+              prefetch={true}
               className={cn(
                 'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
                 active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'

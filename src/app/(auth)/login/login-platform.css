@@ -31,6 +31,7 @@
   position: fixed;
   inset: 0;
   z-index: 0;
+  pointer-events: none;
 }
 .bg-lion {
   position: absolute;
@@ -109,6 +110,7 @@
   position: absolute;
   inset: 0;
   z-index: 2;
+  pointer-events: none;
   background:
     radial-gradient(ellipse 90% 70% at 50% 35%,
       transparent 0%,

@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState, type CSSProperties } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useClientSearchParam } from '@/hooks/useClientSearch'
 import axios from 'axios'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
@@ -12,7 +12,7 @@ import { navigateAfterLogin } from '@/lib/auth/navigateAfterLogin'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { useTenantSlug } from '@/hooks/useTenantSlug'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import { LoginBrandedSkeleton, LoginSuspenseFallback } from '@/components/auth/LoginBrandedSkeleton'
+import { LoginBrandedSkeleton } from '@/components/auth/LoginBrandedSkeleton'
 import { buildLoginThemeStyle } from '@/lib/utils/loginTheme'
 import Image from 'next/image'
 import { BRAND_LOGIN, BRAND_PLATFORM } from '@/lib/constants/brand'
@@ -101,7 +101,7 @@ function useLoginDecorEffects(enabled = true) {
 }
 
 function LoginForm() {
-  const searchParams = useSearchParams()
+  const nextPath = useClientSearchParam('next')
   const { setUser } = useAuthStore()
   const { stopImpersonation } = useImpersonationStore()
 
@@ -179,7 +179,6 @@ function LoginForm() {
       stopImpersonation()
       setUser(loggedUser)
 
-      const nextPath = searchParams.get('next')
       navigateAfterLogin(loggedUser.role, loggedUser.mustChangePassword, nextPath)
     } catch (err: unknown) {
       if (!axios.isAxiosError(err) || !err.response) {
@@ -476,9 +475,5 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={<LoginSuspenseFallback />}>
-      <LoginForm />
-    </Suspense>
-  )
+  return <LoginForm />
 }

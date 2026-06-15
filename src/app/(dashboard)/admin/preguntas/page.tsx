@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { startTransition, useEffect } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/authStore'
@@ -182,10 +182,8 @@ export default function PreguntasPage() {
         <TrackSwitchBar
           activeTrackType={q.activeTrackType}
           onChange={(track) => {
-            startTransition(() => {
-              q.setActiveTrackType(track)
-              q.setPage(1)
-            })
+            q.setActiveTrackType(track)
+            q.setPage(1)
           }}
           hint="Solo lectura — Simulacros.pe gestiona el banco. Tus alumnos ven el balotario que les asignes."
         />
@@ -195,10 +193,8 @@ export default function PreguntasPage() {
         <TrackSelector
           activeTrackType={q.activeTrackType}
           onChange={(track) => {
-            startTransition(() => {
-              q.setActiveTrackType(track)
-              q.setPage(1)
-            })
+            q.setActiveTrackType(track)
+            q.setPage(1)
           }}
         />
       )}
@@ -263,11 +259,9 @@ export default function PreguntasPage() {
         saving={q.saving}
         fileRefs={q.fileRefs}
         onSelectCategory={(name) => {
-          startTransition(() => {
-            q.setSelectedCategory(name)
-            q.setPage(1)
-            q.setSearch('')
-          })
+          q.setSelectedCategory(name)
+          q.setPage(1)
+          q.setSearch('')
         }}
         onToggleAddCategory={() => q.setShowAddCategory(!q.showAddCategory)}
         onNewCatNameChange={q.setNewCatName}

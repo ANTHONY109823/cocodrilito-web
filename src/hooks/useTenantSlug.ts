@@ -1,21 +1,20 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
 import { getTenantSlugFromHost, isRootHost } from '@/lib/utils/tenantHost'
 
 /**
  * Slug del tenant según subdominio (ej. jraasecurity.simulacros.pe).
- * Resolución síncrona en el primer render (sin esperar useEffect).
+ * Resolución síncrona en el primer render (sin useSearchParams / Suspense).
  */
 export function useTenantSlug(): string | null {
-  const searchParams = useSearchParams()
+  if (typeof window === 'undefined') return null
 
-  if (typeof window !== 'undefined' && isRootHost(window.location.hostname)) {
+  if (isRootHost(window.location.hostname)) {
     return null
   }
 
-  const fromHost = typeof window !== 'undefined' ? getTenantSlugFromHost() : null
+  const fromHost = getTenantSlugFromHost()
   if (fromHost) return fromHost
 
-  return searchParams.get('tenant_slug')
+  return new URLSearchParams(window.location.search).get('tenant_slug')
 }
