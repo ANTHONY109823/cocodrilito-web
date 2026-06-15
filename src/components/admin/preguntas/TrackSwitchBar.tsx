@@ -1,5 +1,6 @@
 'use client'
 
+import { startTransition } from 'react'
 import { ASCENSO_TRACK_OPTIONS } from '@/lib/constants/trackTypes'
 import { NEON } from '@/lib/constants/theme'
 
@@ -28,7 +29,7 @@ export function TrackSwitchBar({ activeTrackType, onChange, hint }: TrackSwitchB
             <button
               key={track.value}
               type="button"
-              onClick={() => onChange(track.value)}
+              onClick={() => startTransition(() => onChange(track.value))}
               className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
               style={{
                 backgroundColor: activeTrackType === track.value ? `${NEON}20` : 'rgba(0,5,2,0.5)',

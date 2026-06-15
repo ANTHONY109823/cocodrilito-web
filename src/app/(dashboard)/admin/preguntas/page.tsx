@@ -248,7 +248,7 @@ export default function PreguntasPage() {
         categories={q.categories}
         counts={q.counts}
         missingExplanationByCategory={q.missingExplanationByCategory}
-        loading={q.loading}
+        loading={!q.categories.length && q.loading}
         readOnly={readOnly}
         isSuperAdminMode={isSuperAdminMode}
         selectedCategory={q.selectedCategory}
@@ -275,7 +275,7 @@ export default function PreguntasPage() {
         currentCat={currentCat}
         paginated={paginated}
         filtered={q.filtered}
-        loading={q.loading}
+        loading={q.listLoading}
         readOnly={readOnly}
         search={q.search}
         onSearchChange={q.setSearch}

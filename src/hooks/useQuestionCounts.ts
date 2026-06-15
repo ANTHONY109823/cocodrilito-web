@@ -13,17 +13,28 @@ export function useQuestionCounts(track?: string | null) {
   const trackKey = track?.trim() || null
   const swrKey = trackKey
     ? `/exams/question-counts?track=${encodeURIComponent(trackKey)}`
-    : '/exams/question-counts'
+    : null
 
-  const { data, error, isLoading, mutate } = useSWR<QuestionCountsData>(swrKey, swrFetcher)
+  const { data, error, isLoading, isValidating, mutate } = useSWR<QuestionCountsData>(
+    swrKey,
+    swrFetcher,
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
+    }
+  )
+
   const counts: Record<string, number> = {}
   ;(data?.byCategory ?? []).forEach((row) => {
     counts[row.category] = row.count
   })
+
   return {
     total: data?.total ?? 0,
     byCategory: counts,
-    isLoading,
+    isLoading: isLoading && !data,
+    isValidating,
     error,
     refresh: mutate,
   }

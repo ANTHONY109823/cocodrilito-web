@@ -1,10 +1,20 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSWRConfig } from 'swr'
 import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
 import apiClient from '@/lib/api/client'
-import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
-import { DEFAULT_QUESTION_TRACK, QUESTION_TRACK_OPTIONS, trackLabel } from '@/lib/constants/trackTypes'
+import { prefetchAscensoQuestionCounts } from '@/lib/api/questionCounts'
+import {
+  ADMIN_QUESTIONS_PAGE_SIZE,
+  CATEGORY_QUESTIONS_MAX,
+} from '@/lib/constants/questions'
+import {
+  DEFAULT_QUESTION_TRACK,
+  trackKeyFromValue,
+  trackLabel,
+} from '@/lib/constants/trackTypes'
+import { useQuestionCounts } from '@/hooks/useQuestionCounts'
 import {
   hasUsableExplanation,
   matchesExplanationFilter,
@@ -26,15 +36,7 @@ interface UseAdminQuestionsOptions {
   isSuperAdminMode: boolean
   enabled: boolean
   viewerTrackType?: number
-  /** Agencias/academias: pueden alternar Suboficiales/Oficiales en solo lectura. */
   allowTrackSwitch?: boolean
-}
-
-function questionMatchesTrack(q: Question, trackValue: number): boolean {
-  const expected = QUESTION_TRACK_OPTIONS.find((t) => t.value === trackValue)?.key
-  if (!expected) return true
-  if (!q.trackType) return false
-  return q.trackType === expected
 }
 
 export function useAdminQuestions({
@@ -46,7 +48,9 @@ export function useAdminQuestions({
   const [questions, setQuestions] = useState<Question[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [exams, setExams] = useState<{ id: string; title: string }[]>([])
-  const [loading, setLoading] = useState(true)
+  const [metaLoaded, setMetaLoaded] = useState(false)
+  const [bankLoading, setBankLoading] = useState(true)
+  const [listLoading, setListLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingCat, setUploadingCat] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
@@ -64,42 +68,122 @@ export function useAdminQuestions({
   const [qForm, setQForm] = useState<QuestionFormState>(EMPTY_QUESTION_FORM)
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const bankCacheRef = useRef<Map<number, Question[]>>(new Map())
+  const trackRequestRef = useRef(0)
+  const categoryRequestRef = useRef(0)
+  const { mutate: globalMutate } = useSWRConfig()
 
+  const browseMode = allowTrackSwitch && questionScope === 'base'
   const resolvedTrackType =
     isSuperAdminMode || allowTrackSwitch
       ? activeTrackType
       : (viewerTrackType ?? DEFAULT_QUESTION_TRACK)
 
-  const loadAll = useCallback(async () => {
-    setLoading(true)
-    setQuestions([])
+  const trackKey = trackKeyFromValue(resolvedTrackType)
+  const {
+    total: remoteTotal,
+    byCategory: remoteCounts,
+    isLoading: countsLoading,
+    refresh: refreshCounts,
+  } = useQuestionCounts(browseMode ? trackKey : null)
+
+  useEffect(() => {
+    if (!enabled || !browseMode) return
+    prefetchAscensoQuestionCounts(globalMutate)
+  }, [enabled, browseMode, globalMutate])
+
+  const loadMeta = useCallback(async () => {
+    if (metaLoaded) return
     try {
-      const trackQuery = `&trackType=${resolvedTrackType}`
-      const [qRes, eRes, cRes] = await Promise.all([
-        apiClient.get(`/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}${trackQuery}`),
+      const [eRes, cRes] = await Promise.all([
         apiClient.get('/exams/list'),
         apiClient.get('/categories'),
       ])
-      const qs = parseQuestionsResponse(qRes.data)
       const cats = Array.isArray(cRes.data) ? cRes.data : []
-      setQuestions(qs)
       setExams(Array.isArray(eRes.data) ? eRes.data : [])
       setCategories(cats)
-      const firstCat = cats[0]?.name
-      if (firstCat) {
-        setSelectedCategory((prev) => prev || firstCat)
-        setQForm((f) => ({ ...f, category: f.category || firstCat }))
-      }
+      setSelectedCategory((prev) => prev || cats[0]?.name || '')
+      setQForm((f) => ({ ...f, category: f.category || cats[0]?.name || '' }))
+      setMetaLoaded(true)
     } catch (err: unknown) {
+      setMsg({ text: getApiErrorDetail(err, 'Error al cargar categorías'), ok: false })
+    }
+  }, [metaLoaded])
+
+  const loadFullBank = useCallback(async (track: number) => {
+    const requestId = ++trackRequestRef.current
+    const cached = bankCacheRef.current.get(track)
+    if (cached) {
+      setQuestions(cached)
+      setBankLoading(false)
+    } else {
+      setBankLoading(true)
+    }
+
+    try {
+      const res = await apiClient.get(
+        `/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}&trackType=${track}`
+      )
+      if (requestId !== trackRequestRef.current) return
+      const qs = parseQuestionsResponse(res.data)
+      bankCacheRef.current.set(track, qs)
+      setQuestions(qs)
+    } catch (err: unknown) {
+      if (requestId !== trackRequestRef.current) return
       setMsg({ text: getApiErrorDetail(err, 'Error al cargar el banco de preguntas'), ok: false })
     } finally {
-      setLoading(false)
+      if (requestId === trackRequestRef.current) setBankLoading(false)
     }
-  }, [resolvedTrackType])
+  }, [])
+
+  const loadCategoryQuestions = useCallback(async (category: string, track: number) => {
+    if (!category) {
+      setQuestions([])
+      return
+    }
+    const requestId = ++categoryRequestRef.current
+    setListLoading(true)
+    try {
+      const res = await apiClient.get(
+        `/admin/Questions?trackType=${track}&category=${encodeURIComponent(category)}&pageSize=${CATEGORY_QUESTIONS_MAX}`
+      )
+      if (requestId !== categoryRequestRef.current) return
+      setQuestions(parseQuestionsResponse(res.data))
+    } catch (err: unknown) {
+      if (requestId !== categoryRequestRef.current) return
+      setMsg({ text: getApiErrorDetail(err, 'Error al cargar preguntas'), ok: false })
+    } finally {
+      if (requestId === categoryRequestRef.current) setListLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    if (enabled) void loadAll()
-  }, [enabled, loadAll, resolvedTrackType])
+    if (!enabled) return
+    void loadMeta()
+  }, [enabled, loadMeta])
+
+  useEffect(() => {
+    if (!enabled || !metaLoaded) return
+    if (browseMode) {
+      setBankLoading(false)
+      void loadCategoryQuestions(selectedCategory, resolvedTrackType)
+      return
+    }
+    void loadFullBank(resolvedTrackType)
+  }, [
+    enabled,
+    metaLoaded,
+    browseMode,
+    resolvedTrackType,
+    selectedCategory,
+    loadFullBank,
+    loadCategoryQuestions,
+  ])
+
+  const invalidateBankCaches = useCallback(() => {
+    bankCacheRef.current.clear()
+    void refreshCounts()
+  }, [refreshCounts])
 
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const file = e.target.files?.[0]
@@ -136,7 +220,9 @@ export function useAdminQuestions({
         })
       }
       setTimeout(() => setMsg(null), totalErrors > 0 || imported === 0 ? 12000 : 4000)
-      void loadAll()
+      invalidateBankCaches()
+      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
+      else void loadFullBank(resolvedTrackType)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorDetail(err, 'Error al subir'), ok: false })
     } finally {
@@ -192,10 +278,11 @@ export function useAdminQuestions({
   }
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    const trackSuffix = isSuperAdminMode ? ` del balotario ${trackLabel(activeTrackType)}` : ''
+    const trackSuffix = isSuperAdminMode || allowTrackSwitch ? ` del balotario ${trackLabel(activeTrackType)}` : ''
     if (!confirm(`¿Eliminar las preguntas de "${name}"${trackSuffix}?${isSuperAdminMode ? ' La categoría solo se borra si queda vacía en todos los balotarios.' : ' También se eliminará la categoría si queda vacía.'}`)) return
     try {
-      const trackQuery = isSuperAdminMode ? `?trackType=${activeTrackType}` : ''
+      const trackQuery =
+        isSuperAdminMode || allowTrackSwitch ? `?trackType=${activeTrackType}` : ''
       const res = await apiClient.delete(`/categories/${id}${trackQuery}`)
       setCategories((prev) => {
         const remaining = prev.filter((c) => c.id !== id)
@@ -204,7 +291,9 @@ export function useAdminQuestions({
         }
         return res.data?.categoryDeactivated === false ? prev : remaining
       })
-      await loadAll()
+      invalidateBankCaches()
+      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
+      else void loadFullBank(resolvedTrackType)
       const deletedCount = res.data?.deletedQuestions as number | undefined
       setMsg({
         text:
@@ -238,7 +327,9 @@ export function useAdminQuestions({
       setMsg({ text: '✅ Pregunta creada', ok: true })
       setQForm({ ...qForm, questionText: '', explanation: '', orderIndex: qForm.orderIndex + 1 })
       setShowAddForm(false)
-      void loadAll()
+      invalidateBankCaches()
+      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
+      else void loadFullBank(resolvedTrackType)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
     } finally {
@@ -266,7 +357,9 @@ export function useAdminQuestions({
       })
       setMsg({ text: '✅ Pregunta actualizada', ok: true })
       setEditingQuestion(null)
-      void loadAll()
+      invalidateBankCaches()
+      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
+      else void loadFullBank(resolvedTrackType)
     } catch {
       setMsg({ text: 'Error al actualizar', ok: false })
     } finally {
@@ -279,6 +372,7 @@ export function useAdminQuestions({
     try {
       await apiClient.delete(`/admin/Questions/${id}`)
       setQuestions((prev) => prev.filter((q) => q.id !== id))
+      invalidateBankCaches()
       setMsg({ text: '🗑️ Pregunta eliminada', ok: false })
       setTimeout(() => setMsg(null), 2000)
     } catch (err: unknown) {
@@ -287,11 +381,12 @@ export function useAdminQuestions({
   }
 
   const handleDeleteAll = async () => {
-    const trackSuffix = isSuperAdminMode ? ` del balotario ${trackLabel(activeTrackType)}` : ''
+    const trackSuffix = isSuperAdminMode || allowTrackSwitch ? ` del balotario ${trackLabel(activeTrackType)}` : ''
     if (!confirm(`⚠️ ¿Eliminar TODAS las preguntas${trackSuffix}?`)) return
     if (!confirm('¿Estás SEGURO? Esta acción no se puede deshacer.')) return
     try {
-      const trackQuery = isSuperAdminMode ? `&trackType=${activeTrackType}` : ''
+      const trackQuery =
+        isSuperAdminMode || allowTrackSwitch ? `&trackType=${activeTrackType}` : ''
       const res = await apiClient.delete(
         `/admin/Questions/bulk?ownOnly=${questionScope === 'own'}${trackQuery}`
       )
@@ -299,74 +394,143 @@ export function useAdminQuestions({
         text: `🗑️ ${res.data.deleted} preguntas eliminadas${trackSuffix}`,
         ok: false,
       })
+      invalidateBankCaches()
       setTimeout(() => {
         setMsg(null)
-        void loadAll()
+        if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
+        else void loadFullBank(resolvedTrackType)
       }, 2000)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
     }
   }
 
-  const scopedQuestions = questions
-    .filter((q) => (questionScope === 'base' ? !q.tenantId : Boolean(q.tenantId)))
-    .filter((q) => questionMatchesTrack(q, resolvedTrackType))
+  const loadAll = useCallback(async () => {
+    invalidateBankCaches()
+    if (browseMode) {
+      await loadCategoryQuestions(selectedCategory, resolvedTrackType)
+    } else {
+      await loadFullBank(resolvedTrackType)
+    }
+  }, [
+    browseMode,
+    invalidateBankCaches,
+    loadCategoryQuestions,
+    loadFullBank,
+    resolvedTrackType,
+    selectedCategory,
+  ])
 
-  const categorizedQuestions = scopedQuestions.filter((q) =>
-    categories.some((cat) => categoryMatches(q.category, cat.name))
+  const scopedQuestions = useMemo(
+    () => questions.filter((q) => (questionScope === 'base' ? !q.tenantId : Boolean(q.tenantId))),
+    [questions, questionScope]
   )
 
-  const uncategorizedCount = scopedQuestions.length - categorizedQuestions.length
+  const counts = useMemo(() => {
+    if (browseMode) {
+      const merged: Record<string, number> = {}
+      for (const cat of categories) {
+        const fromApi = remoteCounts[cat.name]
+        if (fromApi != null) {
+          merged[cat.name] = fromApi
+          continue
+        }
+        for (const [key, value] of Object.entries(remoteCounts)) {
+          if (categoryMatches(key, cat.name)) {
+            merged[cat.name] = value
+            break
+          }
+        }
+        if (merged[cat.name] == null) merged[cat.name] = 0
+      }
+      return merged
+    }
+    return categories.reduce(
+      (acc, cat) => {
+        acc[cat.name] = scopedQuestions.filter((q) => categoryMatches(q.category, cat.name)).length
+        return acc
+      },
+      {} as Record<string, number>
+    )
+  }, [browseMode, categories, remoteCounts, scopedQuestions])
 
-  const explanationCoverage = {
-    total: categorizedQuestions.length,
-    withExplanation: categorizedQuestions.filter((q) => hasUsableExplanation(q.explanation)).length,
-    withoutExplanation: categorizedQuestions.filter(
-      (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
-    ).length,
-    needsReview: categorizedQuestions.filter((q) => needsExplanationReview(q.explanation)).length,
-  }
+  const categorizedCount = browseMode
+    ? remoteTotal || Object.values(counts).reduce((sum, n) => sum + n, 0)
+    : scopedQuestions.filter((q) =>
+        categories.some((cat) => categoryMatches(q.category, cat.name))
+      ).length
 
-  const filtered = scopedQuestions.filter((q) => {
-    const matchCat = categoryMatches(q.category, selectedCategory)
-    const matchSearch = search === '' || q.questionText.toLowerCase().includes(search.toLowerCase())
-    const matchExplanation = matchesExplanationFilter(q.explanation, explanationFilter)
-    return matchCat && matchSearch && matchExplanation
-  })
+  const uncategorizedCount = browseMode
+    ? 0
+    : scopedQuestions.length -
+      scopedQuestions.filter((q) =>
+        categories.some((cat) => categoryMatches(q.category, cat.name))
+      ).length
 
-  const counts = categories.reduce(
-    (acc, cat) => {
-      const catQuestions = scopedQuestions.filter((q) => categoryMatches(q.category, cat.name))
-      acc[cat.name] = catQuestions.length
-      return acc
-    },
-    {} as Record<string, number>
+  const explanationCoverage = useMemo(() => {
+    const source = browseMode
+      ? scopedQuestions
+      : scopedQuestions.filter((q) =>
+          categories.some((cat) => categoryMatches(q.category, cat.name))
+        )
+    return {
+      total: browseMode ? categorizedCount : source.length,
+      withExplanation: source.filter((q) => hasUsableExplanation(q.explanation)).length,
+      withoutExplanation: source.filter(
+        (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
+      ).length,
+      needsReview: source.filter((q) => needsExplanationReview(q.explanation)).length,
+    }
+  }, [browseMode, categorizedCount, categories, scopedQuestions])
+
+  const filtered = useMemo(
+    () =>
+      scopedQuestions.filter((q) => {
+        const matchCat = categoryMatches(q.category, selectedCategory)
+        const matchSearch =
+          search === '' || q.questionText.toLowerCase().includes(search.toLowerCase())
+        const matchExplanation = matchesExplanationFilter(q.explanation, explanationFilter)
+        return matchCat && matchSearch && matchExplanation
+      }),
+    [scopedQuestions, selectedCategory, search, explanationFilter]
   )
 
-  const missingExplanationByCategory = categories.reduce(
-    (acc, cat) => {
-      const catQuestions = scopedQuestions.filter((q) => categoryMatches(q.category, cat.name))
-      acc[cat.name] = catQuestions.filter((q) => !hasUsableExplanation(q.explanation)).length
-      return acc
-    },
-    {} as Record<string, number>
+  const missingExplanationByCategory = useMemo(
+    () =>
+      categories.reduce(
+        (acc, cat) => {
+          const catQuestions = scopedQuestions.filter((q) => categoryMatches(q.category, cat.name))
+          acc[cat.name] = catQuestions.filter((q) => !hasUsableExplanation(q.explanation)).length
+          return acc
+        },
+        {} as Record<string, number>
+      ),
+    [categories, scopedQuestions]
   )
 
-  const selectedCategoryQuestions = scopedQuestions.filter((q) =>
-    categoryMatches(q.category, selectedCategory)
+  const selectedCategoryQuestions = useMemo(
+    () => scopedQuestions.filter((q) => categoryMatches(q.category, selectedCategory)),
+    [scopedQuestions, selectedCategory]
   )
-  const categoryExplanationCoverage = {
-    withoutExplanation: selectedCategoryQuestions.filter(
-      (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
-    ).length,
-    needsReview: selectedCategoryQuestions.filter((q) => needsExplanationReview(q.explanation)).length,
-  }
+
+  const categoryExplanationCoverage = useMemo(
+    () => ({
+      withoutExplanation: selectedCategoryQuestions.filter(
+        (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
+      ).length,
+      needsReview: selectedCategoryQuestions.filter((q) => needsExplanationReview(q.explanation)).length,
+    }),
+    [selectedCategoryQuestions]
+  )
+
+  const loading = !metaLoaded || (browseMode ? countsLoading && categorizedCount === 0 : bankLoading)
 
   return {
     questions,
     categories,
     exams,
     loading,
+    listLoading,
     saving,
     uploadingCat,
     msg,
@@ -399,7 +563,7 @@ export function useAdminQuestions({
     setQForm,
     fileRefs,
     scopedQuestions,
-    categorizedCount: categorizedQuestions.length,
+    categorizedCount,
     uncategorizedCount,
     filtered,
     counts,

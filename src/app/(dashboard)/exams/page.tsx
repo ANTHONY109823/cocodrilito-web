@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useEffect, useState } from 'react'
+import { useSWRConfig } from 'swr'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
@@ -15,6 +16,7 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
 import { DEFAULT_QUESTION_TRACK, trackKeyFromValue, trackLabel } from '@/lib/constants/trackTypes'
 import { TrackSwitchBar } from '@/components/admin/preguntas/TrackSwitchBar'
+import { prefetchAscensoQuestionCounts } from '@/lib/api/questionCounts'
 import { examsApi } from '@/lib/api/exams'
 import { saveExamSessionMeta } from '@/lib/examSession'
 import { useExamList } from '@/hooks/useExamList'
@@ -24,7 +26,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Badge } from '@/components/ui'
-import { cn } from '@/lib/utils/cn'
 
 const CATEGORY_EMOJI: Record<string, string> = {
   'Ley PNP': '⚖️',
@@ -48,6 +49,7 @@ interface Exam {
 
 export default function ExamsPage() {
   const router = useRouter()
+  const { mutate } = useSWRConfig()
   const { user, loadFromStorage } = useAuthStore()
   const previewMode = isTenantAdmin(user?.role) || isSuperAdmin(user?.role)
   const backHref = isSuperAdmin(user?.role) ? '/superadmin?tab=inicio' : '/admin'
@@ -69,11 +71,16 @@ export default function ExamsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCount, setSelectedCount] = useState<25 | 50 | 100>(100)
 
-  const loading = examsLoading || catsLoading || countsLoading
+  const loading = examsLoading || catsLoading || (countsLoading && totalQuestions === 0)
 
   useEffect(() => {
     loadFromStorage()
   }, [loadFromStorage])
+
+  useEffect(() => {
+    if (!previewMode) return
+    prefetchAscensoQuestionCounts(mutate)
+  }, [previewMode, mutate])
 
   useEffect(() => {
     const err = examsError || catsError || countsError
