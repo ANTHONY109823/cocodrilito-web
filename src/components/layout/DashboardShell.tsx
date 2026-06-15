@@ -20,11 +20,13 @@ import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
 import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { FastNavLink } from '@/components/navigation/FastNavLink'
+import { StudentNavLink } from '@/components/navigation/StudentNavLink'
 import {
   DashboardMobileNav,
   DashboardPageSearch,
   DashboardSidebarNav,
 } from '@/components/navigation/DashboardNav'
+import { useStudentRoutePrefetch } from '@/hooks/useStudentRoutePrefetch'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -41,6 +43,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const navContext = getNavContext(user?.role, impersonating)
   const useQueryNav = navContext !== 'student'
+
+  useStudentRoutePrefetch(navContext === 'student')
 
   const needsTenantFetch = navContext !== 'superadmin' && Boolean(user?.tenantSlug) && !user?.tenantName
   const { config: tenantConfig } = useTenantConfig(needsTenantFetch ? user?.tenantSlug : null)
@@ -180,12 +184,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     {initials}
                   </FastNavLink>
                 ) : navContext === 'student' ? (
-                  <FastNavLink
+                  <StudentNavLink
                     href="/profile"
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
                   >
                     {initials}
-                  </FastNavLink>
+                  </StudentNavLink>
                 ) : null}
               </header>
             )}

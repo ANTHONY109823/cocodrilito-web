@@ -164,5 +164,5 @@ export function isNavActive(pathname: string, href: string, search?: string): bo
       currentTab === 'ventas' || currentTab === 'subscriptions' || currentTab === 'plans'
   }
 
-  return pathname === path || pathname.startsWith(`${path}/`)
+  return pathname === path || (path !== '/exams' && pathname.startsWith(`${path}/`))
 }

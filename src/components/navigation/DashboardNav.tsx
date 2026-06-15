@@ -1,11 +1,12 @@
 'use client'
 
-import { Suspense, useEffect, useState, type ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { type LucideIcon } from 'lucide-react'
 import { isNavActive } from '@/lib/navigation'
 import { cn } from '@/lib/utils/cn'
 import { FastNavLink } from '@/components/navigation/FastNavLink'
+import { StudentNavLink } from '@/components/navigation/StudentNavLink'
 
 export type DashboardNavItem = {
   href: string
@@ -23,44 +24,62 @@ function navClass(active: boolean) {
   )
 }
 
-function resolveActive(
-  pathname: string,
-  search: string,
-  href: string,
-  optimisticHref: string | null
-): boolean {
-  if (optimisticHref === href) return true
-  return isNavActive(pathname, href, search)
-}
-
-function SidebarNavList({
-  items,
-  useQuery,
-}: {
-  items: DashboardNavItem[]
-  useQuery: boolean
-}) {
+function StudentSidebarNav({ items }: { items: DashboardNavItem[] }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const search = useQuery && searchParams.toString() ? `?${searchParams.toString()}` : ''
-  const [optimisticHref, setOptimisticHref] = useState<string | null>(null)
-
-  useEffect(() => {
-    setOptimisticHref(null)
-  }, [pathname, search])
 
   return (
     <>
       {items.map((item) => {
         const { href, label, icon: Icon } = item
-        const active = resolveActive(pathname, search, href, optimisticHref)
+        const active = isNavActive(pathname, href, '')
         return (
-          <FastNavLink
+          <StudentNavLink key={href} href={href} className={navClass(active)}>
+            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+            {label}
+          </StudentNavLink>
+        )
+      })}
+    </>
+  )
+}
+
+function StudentMobileNav({ items }: { items: DashboardNavItem[] }) {
+  const pathname = usePathname()
+
+  return (
+    <>
+      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
+        const active = isNavActive(pathname, href, '')
+        return (
+          <StudentNavLink
             key={href}
             href={href}
-            className={navClass(active)}
-            onNavigate={setOptimisticHref}
+            className={cn(
+              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
+              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
+            )}
           >
+            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+            {mobileLabel ?? label}
+          </StudentNavLink>
+        )
+      })}
+    </>
+  )
+}
+
+function AdminSidebarNav({ items }: { items: DashboardNavItem[] }) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const search = searchParams.toString() ? `?${searchParams.toString()}` : ''
+
+  return (
+    <>
+      {items.map((item) => {
+        const { href, label, icon: Icon } = item
+        const active = isNavActive(pathname, href, search)
+        return (
+          <FastNavLink key={href} href={href} className={navClass(active)}>
             <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
             {label}
           </FastNavLink>
@@ -70,28 +89,70 @@ function SidebarNavList({
   )
 }
 
-function SidebarNavFallback({ items }: { items: DashboardNavItem[] }) {
+function AdminSidebarFallback({ items }: { items: DashboardNavItem[] }) {
   const pathname = usePathname()
-  const [optimisticHref, setOptimisticHref] = useState<string | null>(null)
-
-  useEffect(() => {
-    setOptimisticHref(null)
-  }, [pathname])
 
   return (
     <>
       {items.map((item) => {
         const { href, label, icon: Icon } = item
-        const active = resolveActive(pathname, '', href, optimisticHref)
+        const active = isNavActive(pathname, href, '')
+        return (
+          <FastNavLink key={href} href={href} className={navClass(active)}>
+            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+            {label}
+          </FastNavLink>
+        )
+      })}
+    </>
+  )
+}
+
+function AdminMobileNav({ items }: { items: DashboardNavItem[] }) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const search = searchParams.toString() ? `?${searchParams.toString()}` : ''
+
+  return (
+    <>
+      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
+        const active = isNavActive(pathname, href, search)
         return (
           <FastNavLink
             key={href}
             href={href}
-            className={navClass(active)}
-            onNavigate={setOptimisticHref}
+            className={cn(
+              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
+              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
+            )}
           >
-            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-            {label}
+            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+            {mobileLabel ?? label}
+          </FastNavLink>
+        )
+      })}
+    </>
+  )
+}
+
+function AdminMobileFallback({ items }: { items: DashboardNavItem[] }) {
+  const pathname = usePathname()
+
+  return (
+    <>
+      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
+        const active = isNavActive(pathname, href, '')
+        return (
+          <FastNavLink
+            key={href}
+            href={href}
+            className={cn(
+              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
+              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
+            )}
+          >
+            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+            {mobileLabel ?? label}
           </FastNavLink>
         )
       })}
@@ -107,83 +168,13 @@ export function DashboardSidebarNav({
   useQuery: boolean
 }) {
   if (!useQuery) {
-    return <SidebarNavFallback items={items} />
+    return <StudentSidebarNav items={items} />
   }
 
   return (
-    <Suspense fallback={<SidebarNavFallback items={items} />}>
-      <SidebarNavList items={items} useQuery />
+    <Suspense fallback={<AdminSidebarFallback items={items} />}>
+      <AdminSidebarNav items={items} />
     </Suspense>
-  )
-}
-
-function MobileNavList({
-  items,
-  useQuery,
-}: {
-  items: DashboardNavItem[]
-  useQuery: boolean
-}) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const search = useQuery && searchParams.toString() ? `?${searchParams.toString()}` : ''
-  const [optimisticHref, setOptimisticHref] = useState<string | null>(null)
-
-  useEffect(() => {
-    setOptimisticHref(null)
-  }, [pathname, search])
-
-  return (
-    <>
-      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
-        const active = resolveActive(pathname, search, href, optimisticHref)
-        return (
-          <FastNavLink
-            key={href}
-            href={href}
-            className={cn(
-              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
-              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
-            )}
-            onNavigate={setOptimisticHref}
-          >
-            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
-            {mobileLabel ?? label}
-          </FastNavLink>
-        )
-      })}
-    </>
-  )
-}
-
-function MobileNavFallback({ items }: { items: DashboardNavItem[] }) {
-  const pathname = usePathname()
-  const [optimisticHref, setOptimisticHref] = useState<string | null>(null)
-
-  useEffect(() => {
-    setOptimisticHref(null)
-  }, [pathname])
-
-  return (
-    <>
-      {items.map(({ href, label, mobileLabel, icon: Icon }) => {
-        const active = resolveActive(pathname, '', href, optimisticHref)
-        return (
-          <FastNavLink
-            key={href}
-            href={href}
-            className={cn(
-              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
-              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
-            )}
-            onNavigate={setOptimisticHref}
-          >
-            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
-            {mobileLabel ?? label}
-          </FastNavLink>
-        )
-      })}
-    </>
   )
 }
 
@@ -195,21 +186,14 @@ export function DashboardMobileNav({
   useQuery: boolean
 }) {
   if (!useQuery) {
-    return <MobileNavFallback items={items} />
+    return <StudentMobileNav items={items} />
   }
 
   return (
-    <Suspense fallback={<MobileNavFallback items={items} />}>
-      <MobileNavList items={items} useQuery />
+    <Suspense fallback={<AdminMobileFallback items={items} />}>
+      <AdminMobileNav items={items} />
     </Suspense>
   )
-}
-
-export function useDashboardPageSearch(useQuery: boolean): string {
-  if (!useQuery) return ''
-  const searchParams = useSearchParams()
-  const qs = searchParams.toString()
-  return qs ? `?${qs}` : ''
 }
 
 export function DashboardPageSearch({
@@ -235,6 +219,8 @@ function DashboardPageSearchInner({
 }: {
   children: (search: string) => React.ReactNode
 }) {
-  const search = useDashboardPageSearch(true)
+  const searchParams = useSearchParams()
+  const qs = searchParams.toString()
+  const search = qs ? `?${qs}` : ''
   return <>{children(search)}</>
 }

@@ -101,7 +101,8 @@ export function useRanking(period = 'weekly') {
     mutate: refreshGlobal,
   } = useSWR<GlobalRankingResponse | ApiRankingEntry[]>(
     `/rankings/global?period=${period}`,
-    swrFetcher
+    swrFetcher,
+    { revalidateOnFocus: false, dedupingInterval: 120_000 }
   )
 
   const {
@@ -109,7 +110,10 @@ export function useRanking(period = 'weekly') {
     error: myError,
     isLoading: myLoading,
     mutate: refreshMy,
-  } = useSWR<MyRankingResponse>(`/rankings/me?period=${period}`, swrFetcher)
+  } = useSWR<MyRankingResponse>(`/rankings/me?period=${period}`, swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 120_000,
+  })
 
   const ranking = extractEntries(globalData)
   const myRanking = mapMyRanking(myData)
