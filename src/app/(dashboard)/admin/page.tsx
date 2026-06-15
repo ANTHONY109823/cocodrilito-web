@@ -114,6 +114,9 @@ function AdminPageContent() {
   const [resetPasswordValue, setResetPasswordValue] = useState('')
   const [studentCredentials, setStudentCredentials] = useState<AdminCredentials | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
+  const [createdUser, setCreatedUser] = useState<{
+    fullName: string; email: string; dni: string; planDays: number; expiresAt?: string
+  } | null>(null)
 
   const [form, setForm] = useState({
     fullName: '', dni: '', email: '', password: '',
@@ -199,24 +202,32 @@ function AdminPageContent() {
     setSaving(true)
     setMsg(null)
     try {
-      await apiClient.post('/admin/users', {
-        fullName: form.fullName,
-        dni: form.dni,
-        email: form.email,
-        password: form.password,
-        rank: form.rank,
-        unit: form.unit,
-        planDays: form.planDays,
-        trackType: form.trackType,
-        startsAt: form.activationDate,
+      const savedForm = { ...form }
+      const res = await apiClient.post('/admin/users', {
+        fullName: savedForm.fullName,
+        dni: savedForm.dni,
+        email: savedForm.email,
+        password: savedForm.password,
+        rank: savedForm.rank,
+        unit: savedForm.unit,
+        planDays: savedForm.planDays,
+        trackType: savedForm.trackType,
+        startsAt: savedForm.activationDate,
       })
-      setMsg({ text: '✅ Usuario creado exitosamente', ok: true })
+      const data = res.data as { fullName?: string; email?: string; expiresAt?: string; planDays?: number }
+      setCreatedUser({
+        fullName: data.fullName ?? savedForm.fullName,
+        email: data.email ?? savedForm.email,
+        dni: savedForm.dni,
+        planDays: data.planDays ?? savedForm.planDays,
+        expiresAt: data.expiresAt,
+      })
       setForm({
         fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180,
         trackType: DEFAULT_QUESTION_TRACK,
         activationDate: new Date().toISOString().slice(0, 10),
       })
-      setTimeout(() => { router.push('/admin?tab=users&sub=activos'); setMsg(null) }, 2000)
+      router.push('/admin?tab=users&sub=activos')
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error al crear usuario'), ok: false })
     } finally { setSaving(false) }
@@ -573,6 +584,36 @@ function AdminPageContent() {
 
       {userSub === 'activos' && (
         <div>
+          {createdUser && (
+            <div className="rounded-2xl p-4 mb-4 fade-in" style={{ background: 'rgba(49,143,72,0.1)', border: `2px solid ${NEON}50` }}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold mb-2" style={{ color: NEON }}>✅ Usuario creado correctamente</p>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                    <span className="text-gray-500">Nombre</span>
+                    <span className="text-white font-medium">{createdUser.fullName}</span>
+                    <span className="text-gray-500">Email</span>
+                    <span className="text-white">{createdUser.email}</span>
+                    <span className="text-gray-500">DNI</span>
+                    <span className="text-white">{createdUser.dni}</span>
+                    <span className="text-gray-500">Plan</span>
+                    <span style={{ color: NEON }}>{createdUser.planDays} días</span>
+                    {createdUser.expiresAt && (
+                      <>
+                        <span className="text-gray-500">Vence</span>
+                        <span className="text-white">{new Date(createdUser.expiresAt).toLocaleDateString('es-PE')}</span>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs mt-2" style={{ color: '#6B8A75' }}>
+                    El alumno debe cambiar su contraseña al ingresar por primera vez.
+                  </p>
+                </div>
+                <button type="button" onClick={() => setCreatedUser(null)}
+                  className="text-gray-500 hover:text-white text-lg leading-none shrink-0">✕</button>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-gray-500">
               {activeUsers.length} usuario{activeUsers.length !== 1 ? 's' : ''} activo{activeUsers.length !== 1 ? 's' : ''}

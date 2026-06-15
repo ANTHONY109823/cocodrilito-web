@@ -261,6 +261,11 @@ export default function ExamsPage() {
                     </button>
                   ))}
                 </div>
+                {!countsLoading && totalQuestions === 0 && (
+                  <p className="mt-2 text-[11px] text-[#C9943A]">
+                    ⚠ No hay preguntas disponibles para tu perfil. Contacta a tu administrador.
+                  </p>
+                )}
               </div>
             </div>
             <Button

@@ -163,6 +163,8 @@ function SuperAdminPageContent() {
         })
       }
       toast('Institución y administrador creados correctamente', 'success')
+      const targetTab = data.tenantType === 'Academia' ? 'academias' : 'agencias'
+      router.push(`/superadmin?tab=${targetTab}`)
       loadTabData()
     } catch (err: unknown) {
       const msg = getApiErrorMessage(err, 'Error al crear tenant')
