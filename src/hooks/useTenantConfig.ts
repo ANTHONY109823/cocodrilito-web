@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchTenantConfig, type TenantConfig } from '@/lib/api/tenants'
 import { useTenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { useTenantSlug } from './useTenantSlug'
@@ -65,9 +65,6 @@ export function useTenantConfig(overrideSlug?: string | null) {
   const [loading, setLoading] = useState(Boolean(slug && !seedConfig))
   const [error, setError] = useState<string | null>(null)
 
-  const seedConfigRef = useRef(seedConfig)
-  seedConfigRef.current = seedConfig
-
   useEffect(() => {
     if (!slug) {
       setConfig(null)
@@ -76,7 +73,7 @@ export function useTenantConfig(overrideSlug?: string | null) {
       return
     }
 
-    const seed = seedConfigRef.current
+    const seed = seedConfig
     const fromSsr = hasSsrBootstrap(slug, bootstrapSlug, initialConfig)
 
     if (seed) {
@@ -123,7 +120,7 @@ export function useTenantConfig(overrideSlug?: string | null) {
     return () => {
       cancelled = true
     }
-  }, [slug, bootstrapSlug, initialConfig])
+  }, [slug, bootstrapSlug, initialConfig, seedConfig])
 
   return {
     config: slug ? config : null,

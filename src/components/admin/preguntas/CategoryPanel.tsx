@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { NEON } from '@/lib/constants/theme'
 import { hasUsableExplanation, needsExplanationReview } from '@/lib/utils/explanation'
 import type { ExplanationFilter } from '@/lib/utils/explanation'
@@ -51,6 +52,13 @@ export function CategoryPanel({
   onDeleteCategory,
   onCSVUpload,
 }: CategoryPanelProps) {
+  const setInputRef = useCallback(
+    (name: string) => (el: HTMLInputElement | null) => {
+      fileRefs.current[name] = el
+    },
+    [fileRefs]
+  )
+
   return (
     <div className="rounded-xl overflow-hidden mb-4" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
       <div
@@ -168,9 +176,7 @@ export function CategoryPanel({
                       type="file"
                       accept=".csv"
                       className="hidden"
-                      ref={(el) => {
-                        fileRefs.current[cat.name] = el
-                      }}
+                      ref={setInputRef(cat.name)}
                       onChange={(e) => onCSVUpload(e, cat.name)}
                     />
                     <button
