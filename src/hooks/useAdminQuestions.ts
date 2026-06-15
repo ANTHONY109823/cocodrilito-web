@@ -26,6 +26,8 @@ interface UseAdminQuestionsOptions {
   isSuperAdminMode: boolean
   enabled: boolean
   viewerTrackType?: number
+  /** Agencias/academias: pueden alternar Suboficiales/Oficiales en solo lectura. */
+  allowTrackSwitch?: boolean
 }
 
 function questionMatchesTrack(q: Question, trackValue: number): boolean {
@@ -35,7 +37,12 @@ function questionMatchesTrack(q: Question, trackValue: number): boolean {
   return q.trackType === expected
 }
 
-export function useAdminQuestions({ isSuperAdminMode, enabled, viewerTrackType }: UseAdminQuestionsOptions) {
+export function useAdminQuestions({
+  isSuperAdminMode,
+  enabled,
+  viewerTrackType,
+  allowTrackSwitch = false,
+}: UseAdminQuestionsOptions) {
   const [questions, setQuestions] = useState<Question[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [exams, setExams] = useState<{ id: string; title: string }[]>([])
@@ -58,9 +65,10 @@ export function useAdminQuestions({ isSuperAdminMode, enabled, viewerTrackType }
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
-  const resolvedTrackType = isSuperAdminMode
-    ? activeTrackType
-    : (viewerTrackType ?? DEFAULT_QUESTION_TRACK)
+  const resolvedTrackType =
+    isSuperAdminMode || allowTrackSwitch
+      ? activeTrackType
+      : (viewerTrackType ?? DEFAULT_QUESTION_TRACK)
 
   const loadAll = useCallback(async () => {
     setLoading(true)

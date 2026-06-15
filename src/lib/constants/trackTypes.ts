@@ -21,3 +21,7 @@ export function trackLabel(value: number | string | null | undefined): string {
   const byKey = QUESTION_TRACK_OPTIONS.find((t) => t.key === value)
   return byKey?.label ?? String(value)
 }
+
+export function trackKeyFromValue(value: number): string {
+  return QUESTION_TRACK_OPTIONS.find((t) => t.value === value)?.key ?? 'AscensosSuboficiales'
+}

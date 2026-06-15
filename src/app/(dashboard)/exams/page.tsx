@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store/authStore'
 import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
+import { DEFAULT_QUESTION_TRACK, trackKeyFromValue, trackLabel } from '@/lib/constants/trackTypes'
+import { TrackSwitchBar } from '@/components/admin/preguntas/TrackSwitchBar'
 import { examsApi } from '@/lib/api/exams'
 import { saveExamSessionMeta } from '@/lib/examSession'
 import { useExamList } from '@/hooks/useExamList'
@@ -49,15 +51,19 @@ export default function ExamsPage() {
   const { user, loadFromStorage } = useAuthStore()
   const previewMode = isTenantAdmin(user?.role) || isSuperAdmin(user?.role)
   const backHref = isSuperAdmin(user?.role) ? '/superadmin?tab=inicio' : '/admin'
+  const [previewTrack, setPreviewTrack] = useState(DEFAULT_QUESTION_TRACK)
+  const studentTrack = user?.activeTrackType ?? 'AscensosSuboficiales'
+  const effectiveTrackKey = previewMode
+    ? trackKeyFromValue(previewTrack)
+    : studentTrack
   const { exams, isLoading: examsLoading, error: examsError } = useExamList()
   const { categories, isLoading: catsLoading, error: catsError } = useCategories()
-  const userTrack = user?.activeTrackType ?? 'AscensosSuboficiales'
   const {
     total: totalQuestions,
     byCategory: questionCounts,
     isLoading: countsLoading,
     error: countsError,
-  } = useQuestionCounts(userTrack)
+  } = useQuestionCounts(effectiveTrackKey)
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -97,7 +103,10 @@ export default function ExamsPage() {
     setStarting(label)
     setError(null)
     try {
-      const res = await examsApi.start(examId, options)
+      const res = await examsApi.start(examId, {
+        ...options,
+        track: previewMode ? effectiveTrackKey : undefined,
+      })
       const sessionId = res.data?.sessionId ?? res.data?.SessionId
       if (!sessionId) {
         setError('El servidor no devolvió un ID de sesión.')
@@ -162,6 +171,14 @@ export default function ExamsPage() {
         </div>
       )}
 
+      {previewMode && (
+        <TrackSwitchBar
+          activeTrackType={previewTrack}
+          onChange={setPreviewTrack}
+          hint="Prueba el simulacro como lo verían alumnos Oficiales o Suboficiales. No afecta métricas ni ranking."
+        />
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-extrabold text-white md:text-2xl">
@@ -175,7 +192,7 @@ export default function ExamsPage() {
         </div>
         <Badge color="green" className="gap-1.5 px-3.5 py-1.5">
           <BookOpen className="h-3.5 w-3.5" />
-          {totalQuestions} preguntas disponibles
+          {totalQuestions} preguntas · {trackLabel(previewMode ? previewTrack : studentTrack)}
         </Badge>
       </div>
 

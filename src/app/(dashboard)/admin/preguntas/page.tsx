@@ -15,6 +15,7 @@ import { NEON } from '@/lib/constants/theme'
 import { useAdminQuestions } from '@/hooks/useAdminQuestions'
 import { QuestionEditModal } from '@/components/admin/preguntas/QuestionEditModal'
 import { QuestionAddForm, TrackSelector, NEON2 } from '@/components/admin/preguntas/QuestionAddForm'
+import { TrackSwitchBar } from '@/components/admin/preguntas/TrackSwitchBar'
 import { CategoryPanel, QuestionsList } from '@/components/admin/preguntas/CategoryPanel'
 import { ExplanationCoverageBanner } from '@/components/admin/preguntas/ExplanationCoverage'
 import { PAGE_SIZE } from '@/components/admin/preguntas/types'
@@ -33,10 +34,13 @@ export default function PreguntasPage() {
     QUESTION_TRACK_OPTIONS.find((t) => t.key === user?.activeTrackType)?.value ??
     DEFAULT_QUESTION_TRACK
 
+  const allowTrackSwitch = isAgencia || (isAcademia && !isSuperAdminMode)
+
   const q = useAdminQuestions({
     isSuperAdminMode,
     enabled: Boolean(user),
     viewerTrackType,
+    allowTrackSwitch,
   })
 
   const canEditCurrentScope =
@@ -101,8 +105,8 @@ export default function PreguntasPage() {
           </h1>
           <p className="text-gray-600 text-xs mt-0.5">
             {readOnly && isAgencia
-              ? 'Solo lectura — las preguntas de ascenso las gestiona Simulacros.pe'
-              : `${q.totalCount || q.scopedQuestions.length} preguntas en vista · ${q.categories.length} categorías · balotario: ${trackLabel(isSuperAdminMode ? q.activeTrackType : viewerTrackType)}`}
+              ? `${q.categorizedCount} preguntas en vista · balotario: ${trackLabel(q.activeTrackType)}`
+              : `${q.categorizedCount} preguntas en vista · ${q.categories.length} categorías · balotario: ${trackLabel(isSuperAdminMode ? q.activeTrackType : allowTrackSwitch ? q.activeTrackType : viewerTrackType)}`}
           </p>
         </div>
         {!readOnly && (
@@ -129,7 +133,7 @@ export default function PreguntasPage() {
             >
               {q.showAddForm ? '✕ Cancelar' : '+ Nueva pregunta'}
             </button>
-            {q.scopedQuestions.length > 0 && (
+            {q.categorizedCount > 0 && (
               <button
                 onClick={() => void q.handleDeleteAll()}
                 className="px-3 py-2 rounded-lg text-xs font-medium transition-colors"
@@ -171,8 +175,19 @@ export default function PreguntasPage() {
             {s.label}
           </button>
         ))}
-        <span className="text-xs text-gray-600 self-center ml-auto">{q.totalCount || q.scopedQuestions.length} en esta vista</span>
+        <span className="text-xs text-gray-600 self-center ml-auto">{q.categorizedCount} en esta vista</span>
       </div>
+
+      {allowTrackSwitch && (
+        <TrackSwitchBar
+          activeTrackType={q.activeTrackType}
+          onChange={(track) => {
+            q.setActiveTrackType(track)
+            q.setPage(1)
+          }}
+          hint="Solo lectura — Simulacros.pe gestiona el banco. Tus alumnos ven el balotario que les asignes."
+        />
+      )}
 
       {isSuperAdminMode && !readOnly && (
         <TrackSelector
