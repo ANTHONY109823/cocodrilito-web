@@ -11,6 +11,7 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin } from '@/lib/auth/roles'
 import { useAuthStore } from '@/lib/store/authStore'
 import { resolveUserTrackKey, trackLabel } from '@/lib/constants/trackTypes'
+import { cn } from '@/lib/utils/cn'
 
 export default function ProfilePage() {
   const router = useRouter()
