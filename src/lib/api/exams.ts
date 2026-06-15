@@ -9,8 +9,10 @@ export const examsApi = {
     const query = qs.toString()
     return apiClient.post(`/exams/${examId}/start${query ? `?${query}` : ''}`)
   },
-  getQuestionCounts: () =>
-    apiClient.get('/exams/question-counts'),
+  getQuestionCounts: (track?: string) => {
+    const qs = track ? `?track=${encodeURIComponent(track)}` : ''
+    return apiClient.get(`/exams/question-counts${qs}`)
+  },
   submitAnswer: (sessionId: string, data: {
     questionId: string
     selectedOptionId: string | null

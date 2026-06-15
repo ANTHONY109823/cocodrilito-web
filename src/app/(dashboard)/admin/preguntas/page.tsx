@@ -10,7 +10,7 @@ import {
   isAdminAgencia,
   isAdminAcademia,
 } from '@/lib/auth/roles'
-import { trackLabel } from '@/lib/constants/trackTypes'
+import { trackLabel, QUESTION_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK } from '@/lib/constants/trackTypes'
 import { NEON } from '@/lib/constants/theme'
 import { useAdminQuestions } from '@/hooks/useAdminQuestions'
 import { QuestionEditModal } from '@/components/admin/preguntas/QuestionEditModal'
@@ -29,9 +29,14 @@ export default function PreguntasPage() {
   const isAcademia = isAdminAcademia(user?.role, user?.tenantType)
   const showOwnScope = isSuperAdminMode || isAcademia
 
+  const viewerTrackType =
+    QUESTION_TRACK_OPTIONS.find((t) => t.key === user?.activeTrackType)?.value ??
+    DEFAULT_QUESTION_TRACK
+
   const q = useAdminQuestions({
     isSuperAdminMode,
     enabled: Boolean(user),
+    viewerTrackType,
   })
 
   const canEditCurrentScope =
@@ -97,7 +102,7 @@ export default function PreguntasPage() {
           <p className="text-gray-600 text-xs mt-0.5">
             {readOnly && isAgencia
               ? 'Solo lectura — las preguntas de ascenso las gestiona Simulacros.pe'
-              : `${q.scopedQuestions.length} preguntas en vista · ${q.categories.length} categorías · balotario: ${trackLabel(q.activeTrackType)}`}
+              : `${q.totalCount || q.scopedQuestions.length} preguntas en vista · ${q.categories.length} categorías · balotario: ${trackLabel(isSuperAdminMode ? q.activeTrackType : viewerTrackType)}`}
           </p>
         </div>
         {!readOnly && (
@@ -166,7 +171,7 @@ export default function PreguntasPage() {
             {s.label}
           </button>
         ))}
-        <span className="text-xs text-gray-600 self-center ml-auto">{q.scopedQuestions.length} en esta vista</span>
+        <span className="text-xs text-gray-600 self-center ml-auto">{q.totalCount || q.scopedQuestions.length} en esta vista</span>
       </div>
 
       {isSuperAdminMode && !readOnly && (
@@ -198,6 +203,20 @@ export default function PreguntasPage() {
         withoutExplanation={q.explanationCoverage.withoutExplanation}
         needsReview={q.explanationCoverage.needsReview}
       />
+
+      {q.uncategorizedCount > 0 && (
+        <div
+          className="mb-4 px-4 py-3 rounded-xl text-sm"
+          style={{
+            backgroundColor: 'rgba(245,158,11,0.08)',
+            border: '1px solid rgba(245,158,11,0.25)',
+            color: '#fbbf24',
+          }}
+        >
+          ⚠️ {q.uncategorizedCount} preguntas del balotario {trackLabel(q.activeTrackType)} no coinciden
+          con ninguna categoría activa. Revisa el CSV o elimínalas con &quot;Eliminar todo&quot;.
+        </div>
+      )}
 
       {q.showAddForm && !readOnly && (
         <QuestionAddForm

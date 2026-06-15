@@ -51,12 +51,13 @@ export default function ExamsPage() {
   const backHref = isSuperAdmin(user?.role) ? '/superadmin?tab=inicio' : '/admin'
   const { exams, isLoading: examsLoading, error: examsError } = useExamList()
   const { categories, isLoading: catsLoading, error: catsError } = useCategories()
+  const userTrack = user?.activeTrackType ?? 'AscensosSuboficiales'
   const {
     total: totalQuestions,
     byCategory: questionCounts,
     isLoading: countsLoading,
     error: countsError,
-  } = useQuestionCounts()
+  } = useQuestionCounts(userTrack)
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)

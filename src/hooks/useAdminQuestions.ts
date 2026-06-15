@@ -4,14 +4,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
 import apiClient from '@/lib/api/client'
 import { ADMIN_QUESTIONS_PAGE_SIZE } from '@/lib/constants/questions'
-import { DEFAULT_QUESTION_TRACK, trackLabel } from '@/lib/constants/trackTypes'
+import { DEFAULT_QUESTION_TRACK, QUESTION_TRACK_OPTIONS, trackLabel } from '@/lib/constants/trackTypes'
 import {
   hasUsableExplanation,
   matchesExplanationFilter,
   needsExplanationReview,
   type ExplanationFilter,
 } from '@/lib/utils/explanation'
-import type { EditableQuestion } from '@/components/admin/preguntas/QuestionEditModal'
+import { parseQuestionsResponse } from '@/lib/utils/normalizeQuestion'
+import { categoryMatches } from '@/lib/utils/questionCategory'
 import {
   EMPTY_QUESTION_FORM,
   PRESET_COLORS,
@@ -23,9 +24,17 @@ import {
 interface UseAdminQuestionsOptions {
   isSuperAdminMode: boolean
   enabled: boolean
+  viewerTrackType?: number
 }
 
-export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestionsOptions) {
+function questionMatchesTrack(q: Question, trackValue: number): boolean {
+  const expected = QUESTION_TRACK_OPTIONS.find((t) => t.value === trackValue)?.key
+  if (!expected) return true
+  if (!q.trackType) return false
+  return q.trackType === expected
+}
+
+export function useAdminQuestions({ isSuperAdminMode, enabled, viewerTrackType }: UseAdminQuestionsOptions) {
   const [questions, setQuestions] = useState<Question[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [exams, setExams] = useState<{ id: string; title: string }[]>([])
@@ -48,16 +57,21 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
+  const resolvedTrackType = isSuperAdminMode
+    ? activeTrackType
+    : (viewerTrackType ?? DEFAULT_QUESTION_TRACK)
+
   const loadAll = useCallback(async () => {
     setLoading(true)
+    setQuestions([])
     try {
-      const trackQuery = isSuperAdminMode ? `&trackType=${activeTrackType}` : ''
+      const trackQuery = `&trackType=${resolvedTrackType}`
       const [qRes, eRes, cRes] = await Promise.all([
         apiClient.get(`/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}${trackQuery}`),
         apiClient.get('/exams/list'),
         apiClient.get('/categories'),
       ])
-      const qs = Array.isArray(qRes.data) ? qRes.data : qRes.data?.items || []
+      const qs = parseQuestionsResponse(qRes.data)
       const cats = Array.isArray(cRes.data) ? cRes.data : []
       setQuestions(qs)
       setExams(Array.isArray(eRes.data) ? eRes.data : [])
@@ -72,11 +86,11 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
     } finally {
       setLoading(false)
     }
-  }, [activeTrackType, isSuperAdminMode])
+  }, [resolvedTrackType])
 
   useEffect(() => {
     if (enabled) void loadAll()
-  }, [enabled, loadAll, activeTrackType])
+  }, [enabled, loadAll, resolvedTrackType])
 
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const file = e.target.files?.[0]
@@ -87,7 +101,7 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
       const formData = new FormData()
       formData.append('file', file)
       const res = await apiClient.post(
-        `/admin/import/questions?categoria=${encodeURIComponent(category)}&trackType=${activeTrackType}&forOwnTenant=${questionScope === 'own'}`,
+        `/admin/import/questions?categoria=${encodeURIComponent(category)}&trackType=${resolvedTrackType}&forOwnTenant=${questionScope === 'own'}`,
         formData
       )
       const imported = res.data.imported ?? 0
@@ -209,7 +223,7 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
         yearValuation: qForm.yearValuation,
         orderIndex: qForm.orderIndex,
         explanation: qForm.explanation,
-        trackType: activeTrackType,
+        trackType: resolvedTrackType,
         answerOptions: qForm.options,
       })
       setMsg({ text: '✅ Pregunta creada', ok: true })
@@ -285,9 +299,9 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
     }
   }
 
-  const scopedQuestions = questions.filter((q) =>
-    questionScope === 'base' ? !q.tenantId : Boolean(q.tenantId)
-  )
+  const scopedQuestions = questions
+    .filter((q) => (questionScope === 'base' ? !q.tenantId : Boolean(q.tenantId)))
+    .filter((q) => questionMatchesTrack(q, resolvedTrackType))
 
   const explanationCoverage = {
     total: scopedQuestions.length,
@@ -299,7 +313,7 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
   }
 
   const filtered = scopedQuestions.filter((q) => {
-    const matchCat = q.category === selectedCategory
+    const matchCat = categoryMatches(q.category, selectedCategory)
     const matchSearch = search === '' || q.questionText.toLowerCase().includes(search.toLowerCase())
     const matchExplanation = matchesExplanationFilter(q.explanation, explanationFilter)
     return matchCat && matchSearch && matchExplanation
@@ -307,7 +321,7 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
 
   const counts = categories.reduce(
     (acc, cat) => {
-      const catQuestions = scopedQuestions.filter((q) => q.category === cat.name)
+      const catQuestions = scopedQuestions.filter((q) => categoryMatches(q.category, cat.name))
       acc[cat.name] = catQuestions.length
       return acc
     },
@@ -316,14 +330,16 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
 
   const missingExplanationByCategory = categories.reduce(
     (acc, cat) => {
-      const catQuestions = scopedQuestions.filter((q) => q.category === cat.name)
+      const catQuestions = scopedQuestions.filter((q) => categoryMatches(q.category, cat.name))
       acc[cat.name] = catQuestions.filter((q) => !hasUsableExplanation(q.explanation)).length
       return acc
     },
     {} as Record<string, number>
   )
 
-  const selectedCategoryQuestions = scopedQuestions.filter((q) => q.category === selectedCategory)
+  const selectedCategoryQuestions = scopedQuestions.filter((q) =>
+    categoryMatches(q.category, selectedCategory)
+  )
   const categoryExplanationCoverage = {
     withoutExplanation: selectedCategoryQuestions.filter(
       (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
@@ -368,6 +384,7 @@ export function useAdminQuestions({ isSuperAdminMode, enabled }: UseAdminQuestio
     setQForm,
     fileRefs,
     scopedQuestions,
+    totalCount,
     filtered,
     counts,
     loadAll,
