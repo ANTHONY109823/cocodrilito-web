@@ -11,6 +11,7 @@ import {
   needsExplanationReview,
   type ExplanationFilter,
 } from '@/lib/utils/explanation'
+import type { EditableQuestion } from '@/components/admin/preguntas/QuestionEditModal'
 import { parseQuestionsResponse } from '@/lib/utils/normalizeQuestion'
 import { categoryMatches } from '@/lib/utils/questionCategory'
 import {
@@ -303,13 +304,19 @@ export function useAdminQuestions({ isSuperAdminMode, enabled, viewerTrackType }
     .filter((q) => (questionScope === 'base' ? !q.tenantId : Boolean(q.tenantId)))
     .filter((q) => questionMatchesTrack(q, resolvedTrackType))
 
+  const categorizedQuestions = scopedQuestions.filter((q) =>
+    categories.some((cat) => categoryMatches(q.category, cat.name))
+  )
+
+  const uncategorizedCount = scopedQuestions.length - categorizedQuestions.length
+
   const explanationCoverage = {
-    total: scopedQuestions.length,
-    withExplanation: scopedQuestions.filter((q) => hasUsableExplanation(q.explanation)).length,
-    withoutExplanation: scopedQuestions.filter(
+    total: categorizedQuestions.length,
+    withExplanation: categorizedQuestions.filter((q) => hasUsableExplanation(q.explanation)).length,
+    withoutExplanation: categorizedQuestions.filter(
       (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
     ).length,
-    needsReview: scopedQuestions.filter((q) => needsExplanationReview(q.explanation)).length,
+    needsReview: categorizedQuestions.filter((q) => needsExplanationReview(q.explanation)).length,
   }
 
   const filtered = scopedQuestions.filter((q) => {
@@ -384,7 +391,8 @@ export function useAdminQuestions({ isSuperAdminMode, enabled, viewerTrackType }
     setQForm,
     fileRefs,
     scopedQuestions,
-    totalCount,
+    categorizedCount: categorizedQuestions.length,
+    uncategorizedCount,
     filtered,
     counts,
     loadAll,
