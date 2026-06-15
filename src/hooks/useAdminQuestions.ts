@@ -83,6 +83,10 @@ export function useAdminQuestions({
   const {
     total: remoteTotal,
     byCategory: remoteCounts,
+    missingByCategory: remoteMissingByCategory,
+    withExplanation: remoteWithExplanation,
+    withoutExplanation: remoteWithoutExplanation,
+    needsReview: remoteNeedsReview,
     isLoading: countsLoading,
     refresh: refreshCounts,
   } = useQuestionCounts(browseMode ? trackKey : null)
@@ -468,20 +472,34 @@ export function useAdminQuestions({
       ).length
 
   const explanationCoverage = useMemo(() => {
-    const source = browseMode
-      ? scopedQuestions
-      : scopedQuestions.filter((q) =>
-          categories.some((cat) => categoryMatches(q.category, cat.name))
-        )
+    if (browseMode) {
+      return {
+        total: categorizedCount,
+        withExplanation: remoteWithExplanation,
+        withoutExplanation: remoteWithoutExplanation,
+        needsReview: remoteNeedsReview,
+      }
+    }
+    const source = scopedQuestions.filter((q) =>
+      categories.some((cat) => categoryMatches(q.category, cat.name))
+    )
     return {
-      total: browseMode ? categorizedCount : source.length,
+      total: source.length,
       withExplanation: source.filter((q) => hasUsableExplanation(q.explanation)).length,
       withoutExplanation: source.filter(
         (q) => !hasUsableExplanation(q.explanation) && !needsExplanationReview(q.explanation)
       ).length,
       needsReview: source.filter((q) => needsExplanationReview(q.explanation)).length,
     }
-  }, [browseMode, categorizedCount, categories, scopedQuestions])
+  }, [
+    browseMode,
+    categorizedCount,
+    remoteWithExplanation,
+    remoteWithoutExplanation,
+    remoteNeedsReview,
+    categories,
+    scopedQuestions,
+  ])
 
   const filtered = useMemo(
     () =>
@@ -495,18 +513,34 @@ export function useAdminQuestions({
     [scopedQuestions, selectedCategory, search, explanationFilter]
   )
 
-  const missingExplanationByCategory = useMemo(
-    () =>
-      categories.reduce(
-        (acc, cat) => {
-          const catQuestions = scopedQuestions.filter((q) => categoryMatches(q.category, cat.name))
-          acc[cat.name] = catQuestions.filter((q) => !hasUsableExplanation(q.explanation)).length
-          return acc
-        },
-        {} as Record<string, number>
-      ),
-    [categories, scopedQuestions]
-  )
+  const missingExplanationByCategory = useMemo(() => {
+    if (browseMode) {
+      const merged: Record<string, number> = {}
+      for (const cat of categories) {
+        const fromApi = remoteMissingByCategory[cat.name]
+        if (fromApi != null) {
+          merged[cat.name] = fromApi
+          continue
+        }
+        for (const [key, value] of Object.entries(remoteMissingByCategory)) {
+          if (categoryMatches(key, cat.name)) {
+            merged[cat.name] = value
+            break
+          }
+        }
+        if (merged[cat.name] == null) merged[cat.name] = 0
+      }
+      return merged
+    }
+    return categories.reduce(
+      (acc, cat) => {
+        const catQuestions = scopedQuestions.filter((q) => categoryMatches(q.category, cat.name))
+        acc[cat.name] = catQuestions.filter((q) => !hasUsableExplanation(q.explanation)).length
+        return acc
+      },
+      {} as Record<string, number>
+    )
+  }, [browseMode, categories, remoteMissingByCategory, scopedQuestions])
 
   const selectedCategoryQuestions = useMemo(
     () => scopedQuestions.filter((q) => categoryMatches(q.category, selectedCategory)),

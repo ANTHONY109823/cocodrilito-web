@@ -6,7 +6,10 @@ import { swrFetcher } from '@/lib/swr/fetcher'
 export interface QuestionCountsData {
   total: number
   track?: string
-  byCategory: { category: string; count: number }[]
+  withExplanation?: number
+  withoutExplanation?: number
+  needsReview?: number
+  byCategory: { category: string; count: number; missingExplanation?: number }[]
 }
 
 export function useQuestionCounts(track?: string | null) {
@@ -26,13 +29,21 @@ export function useQuestionCounts(track?: string | null) {
   )
 
   const counts: Record<string, number> = {}
+  const missingByCategory: Record<string, number> = {}
   ;(data?.byCategory ?? []).forEach((row) => {
     counts[row.category] = row.count
+    if (row.missingExplanation != null) {
+      missingByCategory[row.category] = row.missingExplanation
+    }
   })
 
   return {
     total: data?.total ?? 0,
     byCategory: counts,
+    missingByCategory,
+    withExplanation: data?.withExplanation ?? 0,
+    withoutExplanation: data?.withoutExplanation ?? 0,
+    needsReview: data?.needsReview ?? 0,
     isLoading: isLoading && !data,
     isValidating,
     error,
