@@ -33,9 +33,18 @@ export function resolveTenantAssetUrl(url?: string | null): string | null {
   return `${origin}${path}`
 }
 
+function faviconHref(logoUrl: string): string {
+  const trimmed = logoUrl.trim()
+  // Si es URL absoluta la usamos directamente — el navegador puede fetcharla sin
+  // depender del rewrite same-origin de next.config.ts (que se evalúa en build time).
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  // Ruta relativa: la dejamos tal cual
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+}
+
 export function buildFaviconMetadata(logoUrl?: string | null) {
-  const href = resolveTenantAssetUrl(logoUrl)
-  if (!href) return undefined
+  if (!logoUrl?.trim()) return undefined
+  const href = faviconHref(logoUrl)
 
   const type = href.endsWith('.svg')
     ? 'image/svg+xml'

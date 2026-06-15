@@ -117,6 +117,12 @@ function LoginForm() {
     setIsRootLogin(isRootHost())
   }, [])
 
+  // Calienta el backend de Railway en cuanto aparece el formulario,
+  // evita cold-start al momento de hacer click en Ingresar.
+  useEffect(() => {
+    void fetch('/api/health', { method: 'GET', cache: 'no-store' }).catch(() => {})
+  }, [])
+
   const isPlatformLogin = isRootLogin && !tenantSlug
 
   const displayName = isPlatformLogin
