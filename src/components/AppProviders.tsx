@@ -12,6 +12,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         fetcher: swrFetcher,
         revalidateOnFocus: false,
         shouldRetryOnError: false,
+        dedupingInterval: 5_000,
+        keepPreviousData: true,
       }}
     >
       <TenantFaviconManager />

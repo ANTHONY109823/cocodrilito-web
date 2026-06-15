@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import apiClient from '@/lib/api/client'
@@ -200,6 +200,27 @@ export default function ExamPage() {
   const total = session?.totalQuestions || 1
   const progress = session ? ((currentIdx + 1) / total) * 100 : 0
 
+  const { categoryQuestions, positionInCategory, sortedOptions, currentQ } = useMemo(() => {
+    if (!session) {
+      return {
+        categoryQuestions: [] as SessionData['questions'],
+        positionInCategory: 0,
+        sortedOptions: [] as AnswerOption[],
+        currentQ: null as SessionData['questions'][number] | null,
+      }
+    }
+    const q = session.questions[currentIdx]
+    const cat = q?.category || ''
+    const catQs = cat ? session.questions.filter((item) => item.category === cat) : []
+    const pos = cat
+      ? session.questions.slice(0, currentIdx + 1).filter((item) => item.category === cat).length
+      : 0
+    const opts = q
+      ? [...q.options].sort((a, b) => a.optionIndex - b.optionIndex).slice(0, 4)
+      : []
+    return { categoryQuestions: catQs, positionInCategory: pos, sortedOptions: opts, currentQ: q ?? null }
+  }, [session, currentIdx])
+
   if (loading || !session) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -215,20 +236,10 @@ export default function ExamPage() {
     session.totalQuestions,
     session.questions.length
   )
-  const currentQ = session.questions[currentIdx]
   const answeredCount = Object.keys(answers).length
   const unansweredCount = Math.max(0, effectiveTotal - answeredCount)
   const allAnswered = answeredCount >= effectiveTotal
   const isLast = currentIdx === effectiveTotal - 1
-
-  // Indicador de categoría: posición de la pregunta actual dentro de su categoría.
-  const currentCategory = currentQ?.category || ''
-  const categoryQuestions = currentCategory
-    ? session.questions.filter((q) => q.category === currentCategory)
-    : []
-  const positionInCategory = currentCategory
-    ? session.questions.slice(0, currentIdx + 1).filter((q) => q.category === currentCategory).length
-    : 0
 
   const goPrev = () => {
     setCurrentIdx((prev) => prev - 1)
@@ -255,9 +266,9 @@ export default function ExamPage() {
         style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
         <div>
           <div className="text-white font-bold text-sm">{session.examTitle}</div>
-          {currentCategory ? (
+          {currentQ?.category ? (
             <div className="text-xs mt-0.5" style={{ color: NEON }}>
-              {currentCategory}
+              {currentQ.category}
               <span className="text-gray-500">
                 {' '}· Pregunta {positionInCategory} de {categoryQuestions.length} en esta categoría
               </span>
@@ -290,14 +301,11 @@ export default function ExamPage() {
           Pregunta {currentIdx + 1}
         </div>
         <p className="text-white text-base font-medium leading-relaxed mb-6">
-          {currentQ.questionText}
+          {currentQ?.questionText}
         </p>
 
         <div className="space-y-3">
-        {currentQ.options
-  .sort((a, b) => a.optionIndex - b.optionIndex)
-  .slice(0, 4)
-  .map((opt, i) => {
+        {sortedOptions.map((opt, i) => {
               const isSelected = selectedOption === opt.id
               const letters = ['A', 'B', 'C', 'D']
               return (

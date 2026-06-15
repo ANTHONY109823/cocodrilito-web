@@ -12,13 +12,12 @@ import {
   FileText,
   ShieldCheck,
 } from 'lucide-react'
-import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
+import { useAuthStore } from '@/lib/store/authStore'
 import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
 import { DEFAULT_QUESTION_TRACK, resolveUserTrackKey, trackKeyFromValue, trackLabel } from '@/lib/constants/trackTypes'
 import { TrackSwitchBar } from '@/components/admin/preguntas/TrackSwitchBar'
 import { prefetchAscensoQuestionCounts } from '@/lib/api/questionCounts'
 import { examsApi } from '@/lib/api/exams'
-import apiClient from '@/lib/api/client'
 import { saveExamSessionMeta } from '@/lib/examSession'
 import { useExamList } from '@/hooks/useExamList'
 import { useCategories } from '@/hooks/useCategories'
@@ -51,7 +50,7 @@ interface Exam {
 export default function ExamsPage() {
   const router = useRouter()
   const { mutate } = useSWRConfig()
-  const { user, setUser } = useAuthStore()
+  const { user } = useAuthStore()
   const previewMode = isTenantAdmin(user?.role) || isSuperAdmin(user?.role)
   const backHref = isSuperAdmin(user?.role) ? '/superadmin?tab=inicio' : '/admin'
   const [previewTrack, setPreviewTrack] = useState(DEFAULT_QUESTION_TRACK)
@@ -66,7 +65,6 @@ export default function ExamsPage() {
     byCategory: questionCounts,
     isLoading: countsLoading,
     error: countsError,
-    refresh: refreshCounts,
   } = useQuestionCounts(previewMode ? effectiveTrackKey : null)
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
@@ -80,25 +78,6 @@ export default function ExamsPage() {
     if (!previewMode) return
     prefetchAscensoQuestionCounts(mutate)
   }, [previewMode, mutate])
-
-  useEffect(() => {
-    if (previewMode || !user) return
-    let cancelled = false
-    void apiClient
-      .get('/Auth/me')
-      .then((res) => {
-        if (cancelled) return
-        const profile = (res.data as { profile?: Record<string, unknown> }).profile ?? res.data
-        if (profile && typeof profile === 'object') {
-          setUser(normalizeUser(profile as Record<string, unknown>))
-          void refreshCounts()
-        }
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [previewMode, user?.id, setUser, refreshCounts])
 
   useEffect(() => {
     const err = examsError || catsError || countsError

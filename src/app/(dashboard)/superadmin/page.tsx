@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
@@ -83,6 +83,7 @@ function SuperAdminPageContent() {
   const [suspendReason, setSuspendReason] = useState('')
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const tenantsCacheRef = useRef<TenantSummary[]>([])
 
   useEffect(() => { loadFromStorage() }, [loadFromStorage])
 
@@ -93,30 +94,45 @@ function SuperAdminPageContent() {
   }, [user, router])
 
   const loadTabData = useCallback(async () => {
+    if (['agencias', 'academias'].includes(tab) && tenantsCacheRef.current.length > 0) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       if (tab === 'inicio') {
         const [dashRes, tenantsRes] = await Promise.all([
           superadminApi.getDashboard(),
-          superadminApi.getTenants(),
+          tenantsCacheRef.current.length > 0
+            ? Promise.resolve({ data: tenantsCacheRef.current })
+            : superadminApi.getTenants(),
         ])
         setDashboard(dashRes.data)
-        setTenants(tenantsRes.data)
+        if (tenantsCacheRef.current.length === 0) {
+          setTenants(tenantsRes.data)
+          tenantsCacheRef.current = tenantsRes.data
+        }
       }
-      if (['agencias', 'academias'].includes(tab)) {
+      if (['agencias', 'academias'].includes(tab) && tenantsCacheRef.current.length === 0) {
         const res = await superadminApi.getTenants()
         setTenants(res.data)
+        tenantsCacheRef.current = res.data
       }
       if (tab === 'audit') {
         const res = await superadminApi.getAuditLog()
         setAuditLogs((res.data as { logs: AuditLogEntry[] }).logs ?? [])
       }
-    } catch {
-      toast('Error al cargar datos', 'error')
+    } catch (err) {
+      toast(getApiErrorMessage(err, 'Error al cargar datos'), 'error')
     } finally {
       setLoading(false)
     }
   }, [tab])
+
+  const refreshTabData = useCallback(() => {
+    tenantsCacheRef.current = []
+    void loadTabData()
+  }, [loadTabData])
 
   useEffect(() => {
     if (!user || !isSuperAdmin(user.role)) return
@@ -165,7 +181,7 @@ function SuperAdminPageContent() {
       toast('Institución y administrador creados correctamente', 'success')
       const targetTab = data.tenantType === 'Academia' ? 'academias' : 'agencias'
       router.push(`/superadmin?tab=${targetTab}`)
-      loadTabData()
+      refreshTabData()
     } catch (err: unknown) {
       const msg = getApiErrorMessage(err, 'Error al crear tenant')
       toast(msg, 'error')
@@ -212,7 +228,7 @@ function SuperAdminPageContent() {
     try {
       await superadminApi.reactivateTenant(tenant.id)
       toast(`${tenant.name} reactivada`, 'success')
-      loadTabData()
+      refreshTabData()
     } catch {
       toast('No se pudo reactivar', 'error')
     }
@@ -233,7 +249,7 @@ function SuperAdminPageContent() {
       setPendingAction(null)
       setSuspendReason('')
       setDeleteConfirmText('')
-      loadTabData()
+      refreshTabData()
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } }
       toast(ax.response?.data?.message || 'No se pudo completar la acción', 'error')
@@ -247,8 +263,8 @@ function SuperAdminPageContent() {
     setShowCreate(true)
   }
 
-  const agencias = tenants.filter((t) => t.tenantType === 'Agencia')
-  const academias = tenants.filter((t) => t.tenantType === 'Academia')
+  const agencias = useMemo(() => tenants.filter((t) => t.tenantType === 'Agencia'), [tenants])
+  const academias = useMemo(() => tenants.filter((t) => t.tenantType === 'Academia'), [tenants])
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'inicio', label: '🏠 Inicio' },

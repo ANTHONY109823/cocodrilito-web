@@ -36,10 +36,20 @@ export function DashboardClientLayout({ children }: { children: React.ReactNode 
   // Mantiene el backend de Railway caliente: evita cold-starts que causan
   // lentitud de varios minutos al primer uso tras período de inactividad.
   useEffect(() => {
-    const ping = () => void fetch('/api/health', { method: 'GET', cache: 'no-store' }).catch(() => {})
+    const ping = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      void fetch('/api/health', { method: 'GET', cache: 'no-store' }).catch(() => {})
+    }
     ping()
-    const id = setInterval(ping, 4 * 60 * 1000) // cada 4 min
-    return () => clearInterval(id)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') ping()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    const id = setInterval(ping, 8 * 60 * 1000)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   useSessionSync()
