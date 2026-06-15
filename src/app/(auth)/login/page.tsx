@@ -146,7 +146,7 @@ function LoginForm() {
   const loginRootClass = isPlatformLogin || !tenantSlug
     ? 'loginRoot loginRoot--platform'
     : 'loginRoot loginRoot--tenant'
-  const longBrandName = displayName.length > 14
+  const longBrandName = displayName.length > 10
 
   const { particlesRef, loginBtnRef } = useLoginDecorEffects(showLoginContent)
 
