@@ -1,8 +1,7 @@
 ﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useClientSearchString } from '@/hooks/useClientSearch'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
@@ -50,8 +49,8 @@ interface AuditLogEntry {
 
 export default function SuperAdminPage() {
   const router = useRouter()
-  const search = useClientSearchString()
-  const tabParam = new URLSearchParams(search).get('tab') as TabKey | null
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab') as TabKey | null
   const tab: TabKey = tabParam && ['inicio', 'agencias', 'academias', 'usuarios', 'audit'].includes(tabParam)
     ? tabParam
     : 'inicio'

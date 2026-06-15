@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
-import { useRouter } from 'next/navigation'
-import { useClientSearchString } from '@/hooks/useClientSearch'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
@@ -63,8 +62,7 @@ type UserSubTab = 'activos' | 'inactivos' | 'crear'
 export default function AdminPage() {
   const { user, loadFromStorage } = useAuthStore()
   const router = useRouter()
-  const search = useClientSearchString()
-  const searchParams = new URLSearchParams(search)
+  const searchParams = useSearchParams()
   const rawTab = searchParams.get('tab')
   const rawSub = searchParams.get('sub')
 

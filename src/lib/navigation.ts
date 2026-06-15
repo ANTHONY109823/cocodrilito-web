@@ -138,6 +138,12 @@ export function isNavActive(pathname: string, href: string, search?: string): bo
     const params = new URLSearchParams(query)
     const tab = params.get('tab')
     const sub = params.get('sub')
+
+    if (tab && path === '/superadmin' && pathname === '/superadmin') {
+      const currentTab = currentParams.get('tab') ?? 'inicio'
+      return currentTab === tab && (sub ? currentParams.get('sub') === sub : true)
+    }
+
     if (tab && pathname.startsWith('/admin')) {
       const currentTab = currentParams.get('tab')
       if (tab === 'users') {

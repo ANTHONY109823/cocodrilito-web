@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { LogOut, LucideIcon } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { useAuthStore } from '@/lib/store/authStore'
@@ -20,7 +20,6 @@ import { cn } from '@/lib/utils/cn'
 import { BRAND_APP, BRAND_PLATFORM } from '@/lib/constants/brand'
 import { redirectToLogin } from '@/lib/auth/logoutRedirect'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
-import { useClientSearchString } from '@/hooks/useClientSearch'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -60,7 +59,8 @@ function SidebarNavItem({
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const search = useClientSearchString()
+  const searchParams = useSearchParams()
+  const search = searchParams.toString() ? `?${searchParams.toString()}` : ''
   const { user, logout } = useAuthStore()
   const { active: impersonating, stopImpersonation } = useImpersonationStore()
 
