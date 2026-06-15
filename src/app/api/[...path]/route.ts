@@ -41,6 +41,15 @@ function isCacheablePublicGet(pathSegments: string[]): boolean {
   )
 }
 
+function resolveClientIp(request: NextRequest): string | null {
+  return (
+    request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip')?.trim() ||
+    null
+  )
+}
+
 async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
   const targetUrl = `${getApiBase()}/${pathSegments.join('/')}${request.nextUrl.search}`
   const cacheableGet = request.method === 'GET' && isCacheablePublicGet(pathSegments)
@@ -52,6 +61,11 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
       headers.set(key, value)
     }
   })
+
+  const clientIp = resolveClientIp(request)
+  if (clientIp) {
+    headers.set('x-forwarded-for', clientIp)
+  }
 
   const method = request.method.toUpperCase()
   const hasBody = !['GET', 'HEAD'].includes(method)

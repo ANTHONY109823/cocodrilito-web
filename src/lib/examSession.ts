@@ -4,6 +4,86 @@ export interface ExamSessionMeta {
   examTitle: string
 }
 
+export interface CachedExamSession {
+  sessionId: string
+  examTitle: string
+  practiceCategory: string | null
+  totalQuestions: number
+  timeLimitSeconds: number
+  startedAt: string
+  status?: string
+  questions: {
+    id: string
+    questionText: string
+    orderIndex: number
+    category: string
+    options: { id: string; optionText: string; optionIndex: number }[]
+  }[]
+}
+
+function mapQuestionsFromPayload(data: Record<string, unknown>) {
+  const raw = (data.questions ?? data.Questions) as Array<{
+    id: string
+    questionText: string
+    orderIndex: number
+    categoryName?: string
+    category?: string
+    options?: { id: string; optionText: string; optionIndex: number }[]
+    answerOptions?: { id: string; optionText: string; optionIndex: number }[]
+  }> | undefined
+
+  return (raw ?? []).map((q) => ({
+    id: q.id,
+    questionText: q.questionText,
+    orderIndex: q.orderIndex,
+    category: q.categoryName || q.category || '',
+    options: (q.options || q.answerOptions || []).map((o) => ({
+      id: o.id,
+      optionText: o.optionText,
+      optionIndex: o.optionIndex,
+    })),
+  }))
+}
+
+export function saveExamSessionCache(sessionId: string, data: Record<string, unknown>) {
+  const questions = mapQuestionsFromPayload(data)
+  if (questions.length === 0) return
+
+  const meta = normalizeExamSessionPayload(data)
+  const cache: CachedExamSession = {
+    sessionId,
+    examTitle: meta.examTitle,
+    practiceCategory: meta.practiceCategory ?? null,
+    totalQuestions: meta.totalQuestions,
+    timeLimitSeconds:
+      (data.timeLimitSeconds as number | undefined) ??
+      (data.TimeLimitSeconds as number | undefined) ??
+      3600,
+    startedAt:
+      (data.startedAt as string | undefined) ??
+      (data.StartedAt as string | undefined) ??
+      new Date().toISOString(),
+    status: (data.status as string | undefined) ?? (data.Status as string | undefined),
+    questions,
+  }
+
+  try {
+    sessionStorage.setItem(`exam_cache_${sessionId}`, JSON.stringify(cache))
+  } catch {
+    /* ignore quota */
+  }
+}
+
+export function loadExamSessionCache(sessionId: string): CachedExamSession | null {
+  try {
+    const raw = sessionStorage.getItem(`exam_cache_${sessionId}`)
+    if (!raw) return null
+    return JSON.parse(raw) as CachedExamSession
+  } catch {
+    return null
+  }
+}
+
 export function saveExamSessionMeta(sessionId: string, data: Record<string, unknown>, category?: string) {
   const practiceCategory =
     (data.practiceCategory as string | undefined) ??
@@ -31,6 +111,8 @@ export function saveExamSessionMeta(sessionId: string, data: Record<string, unkn
   } catch {
     /* ignore quota */
   }
+
+  saveExamSessionCache(sessionId, data)
 }
 
 export function loadExamSessionMeta(sessionId: string): ExamSessionMeta | null {

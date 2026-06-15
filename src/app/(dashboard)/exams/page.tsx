@@ -296,7 +296,11 @@ export default function ExamsPage() {
                       <div className="mb-2 text-2xl">{categoryIcon(cat.name)}</div>
                       <div className="text-[13px] font-semibold text-white">{cat.name}</div>
                       <div className="mb-2 text-[11px] text-[#6B8A75]">
-                        {count === 0 ? 'Sin preguntas' : `${count} preguntas`}
+                        {count === 0
+                          ? 'Sin preguntas'
+                          : count > 100
+                            ? `${count} preguntas · repaso de 100`
+                            : `${count} preguntas`}
                       </div>
                       <ProgressBar
                         value={progress}

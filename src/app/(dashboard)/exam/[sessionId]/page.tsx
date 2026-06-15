@@ -6,8 +6,10 @@ import { examsApi } from '@/lib/api/exams'
 import apiClient from '@/lib/api/client'
 import {
   getEffectiveQuestionCount,
+  loadExamSessionCache,
   loadExamSessionMeta,
   normalizeExamSessionPayload,
+  saveExamSessionCache,
 } from '@/lib/examSession'
 
 import { NEON } from '@/lib/constants/theme'
@@ -66,78 +68,83 @@ export default function ExamPage() {
     router.push(`/result/${sessionId}`)
   }, [finishing, sessionId, router])
 
+  const applySessionPayload = useCallback((data: Record<string, unknown>, fallbackId: string) => {
+    const meta = normalizeExamSessionPayload(data)
+    const cached = loadExamSessionMeta(fallbackId)
+    const practiceCategory = meta.practiceCategory ?? cached?.practiceCategory ?? null
+    const questionList = ((data.questions || data.Questions) as Array<{
+      id: string
+      questionText: string
+      orderIndex: number
+      categoryName?: string
+      category?: string
+      options?: AnswerOption[]
+      answerOptions?: AnswerOption[]
+    }> | undefined)?.map((q) => ({
+      id: q.id,
+      questionText: q.questionText,
+      orderIndex: q.orderIndex,
+      category: q.categoryName || q.category || '',
+      options: (q.options || q.answerOptions || []).map((o: AnswerOption) => ({
+        id: o.id,
+        optionText: o.optionText,
+        optionIndex: o.optionIndex,
+      })),
+    })) ?? []
+
+    const totalQuestions =
+      meta.totalQuestions > 0
+        ? meta.totalQuestions
+        : cached?.totalQuestions ?? questionList.length
+
+    const examTitle =
+      practiceCategory ??
+      (meta.examTitle || cached?.examTitle || 'Simulacro')
+
+    setSession({
+      sessionId: (data.sessionId as string | undefined) ?? (data.SessionId as string | undefined) ?? fallbackId,
+      examTitle,
+      practiceCategory,
+      totalQuestions,
+      timeLimitSeconds: (data.timeLimitSeconds as number | undefined) ?? (data.TimeLimitSeconds as number | undefined) ?? 3600,
+      questions: questionList,
+    })
+
+    const startedAt = new Date(
+      (data.startedAt as string | undefined) ?? (data.StartedAt as string | undefined) ?? Date.now()
+    ).getTime()
+    const elapsed = Math.floor((Date.now() - startedAt) / 1000)
+    const limit = (data.timeLimitSeconds as number | undefined) ?? (data.TimeLimitSeconds as number | undefined) ?? 3600
+    setTimeLeft(Math.max(0, limit - elapsed))
+  }, [])
+
   const loadSession = useCallback(async () => {
-    const [resultOutcome, sessionOutcome] = await Promise.allSettled([
-      examsApi.getResult(sessionId),
-      apiClient.get(`/exams/sessions/${sessionId}`),
-    ])
-
-    if (resultOutcome.status === 'fulfilled' && resultOutcome.value.data?.status === 'Completed') {
-      router.replace(`/result/${sessionId}`)
-      return
-    }
-
-    if (sessionOutcome.status !== 'fulfilled') {
-      router.push('/exams')
+    const cached = loadExamSessionCache(sessionId)
+    if (cached?.questions.length) {
+      applySessionPayload(cached as unknown as Record<string, unknown>, sessionId)
       setLoading(false)
-      return
     }
 
     try {
-      const res = sessionOutcome.value
-      const data = res.data
-      const meta = normalizeExamSessionPayload(data)
-      const cached = loadExamSessionMeta(sessionId)
+      const res = await apiClient.get(`/exams/sessions/${sessionId}`)
+      const data = res.data as Record<string, unknown>
+      const status = (data.status as string | undefined) ?? (data.Status as string | undefined)
 
-      const practiceCategory = meta.practiceCategory ?? cached?.practiceCategory ?? null
-      const questionList = (data.questions || data.Questions || []).map((q: {
-        id: string
-        questionText: string
-        orderIndex: number
-        categoryName?: string
-        category?: string
-        options?: AnswerOption[]
-        answerOptions?: AnswerOption[]
-      }) => ({
-        id: q.id,
-        questionText: q.questionText,
-        orderIndex: q.orderIndex,
-        category: q.categoryName || q.category || '',
-        options: (q.options || q.answerOptions || []).map((o: AnswerOption) => ({
-          id: o.id,
-          optionText: o.optionText,
-          optionIndex: o.optionIndex,
-        })),
-      }))
+      if (status === 'Completed') {
+        router.replace(`/result/${sessionId}`)
+        return
+      }
 
-      const totalQuestions =
-        meta.totalQuestions > 0
-          ? meta.totalQuestions
-          : cached?.totalQuestions ?? questionList.length
-
-      const examTitle =
-        practiceCategory ??
-        (meta.examTitle || cached?.examTitle || 'Simulacro')
-
-      setSession({
-        sessionId: data.sessionId ?? data.SessionId ?? sessionId,
-        examTitle,
-        practiceCategory,
-        totalQuestions,
-        timeLimitSeconds: data.timeLimitSeconds ?? data.TimeLimitSeconds ?? 3600,
-        questions: questionList,
-      })
-      const startedAt = new Date(data.startedAt ?? data.StartedAt).getTime()
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000)
-      const limit = data.timeLimitSeconds ?? data.TimeLimitSeconds ?? 3600
-      const remaining = Math.max(0, limit - elapsed)
-      setTimeLeft(remaining)
+      applySessionPayload(data, sessionId)
+      saveExamSessionCache(sessionId, data)
     } catch {
-      router.push('/exams')
+      if (!cached?.questions.length) {
+        router.push('/exams')
+      }
     } finally {
       setLoading(false)
     }
-  }, [sessionId, router])
+  }, [sessionId, router, applySessionPayload])
 
   useEffect(() => {
     void loadSession()
