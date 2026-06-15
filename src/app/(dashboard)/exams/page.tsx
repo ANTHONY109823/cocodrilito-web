@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useSWRConfig } from 'swr'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import axios from 'axios'
@@ -70,6 +70,7 @@ export default function ExamsPage() {
   const [blocked, setBlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedCount, setSelectedCount] = useState<25 | 50 | 100>(100)
+  const startingRef = useRef(false)
 
   const loading = examsLoading && exams.length === 0 && countsLoading && totalQuestions === 0
 
@@ -99,10 +100,8 @@ export default function ExamsPage() {
     label: string,
     options?: { mode?: string; category?: string; questionCount?: number }
   ) => {
-    if (!examId) {
-      setError('No hay examen configurado en el servidor.')
-      return
-    }
+    if (startingRef.current || !examId) return
+    startingRef.current = true
     setStarting(label)
     setError(null)
     try {
@@ -131,6 +130,7 @@ export default function ExamsPage() {
       }
       setError(status ? `[${status}] ${msg}` : msg)
     } finally {
+      startingRef.current = false
       setStarting(null)
     }
   }

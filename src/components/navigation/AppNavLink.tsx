@@ -2,16 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { useNavigationStore } from '@/lib/store/navigationStore'
 
 export function AppNavLink({
   href,
   className,
+  style,
   children,
 }: {
   href: string
   className?: string
+  style?: CSSProperties
   children: ReactNode
   trackQuery?: boolean
 }) {
@@ -30,6 +32,7 @@ export function AppNavLink({
       href={href}
       prefetch={true}
       className={className}
+      style={style}
       onClick={() => {
         // Same-path navigation (only query params change): pathname won't change so the
         // clearing effect never fires — skip pendingHref entirely for these transitions.

@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import { AppNavLink } from '@/components/navigation/AppNavLink'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin, isAdminAgencia, getPostLoginPath } from '@/lib/auth/roles'
@@ -114,6 +114,7 @@ function AdminPageContent() {
   const [resetPasswordValue, setResetPasswordValue] = useState('')
   const [studentCredentials, setStudentCredentials] = useState<AdminCredentials | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
+  const [createConfirmOpen, setCreateConfirmOpen] = useState(false)
   const [createdUser, setCreatedUser] = useState<{
     fullName: string; email: string; dni: string; planDays: number; expiresAt?: string
   } | null>(null)
@@ -131,8 +132,9 @@ function AdminPageContent() {
     else if (rawTab === 'subscriptions' || rawTab === 'ventas' || rawTab === 'plans') router.replace('/admin')
   }, [rawTab, router])
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
+  const loadData = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false
+    if (!silent) setLoading(true)
     try {
       if (tab === 'dashboard') {
         const [dashRes, profileRes, subsRes] = await Promise.all([
@@ -147,8 +149,8 @@ function AdminPageContent() {
         const res = await apiClient.get('/admin/users')
         setUsers(res.data)
       }
-    } catch { /* ignore */ } finally { setLoading(false) }
-  }, [tab, user])
+    } catch { /* ignore */ } finally { if (!silent) setLoading(false) }
+  }, [tab])
 
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -189,16 +191,22 @@ function AdminPageContent() {
       router.replace(getPostLoginPath(user.role))
       return
     }
-    void loadData()
+    const hasCachedData = tab === 'dashboard' ? Boolean(dashData) : users.length > 0
+    void loadData({ silent: hasCachedData })
   }, [user, loadData, router, tab])
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
     const pwdError = validatePassword(form.password)
     if (pwdError) {
       setMsg({ text: pwdError, ok: false })
       return
     }
+    setCreateConfirmOpen(true)
+  }
+
+  const confirmCreateUser = async () => {
+    setCreateConfirmOpen(false)
     setSaving(true)
     setMsg(null)
     try {
@@ -564,7 +572,7 @@ function AdminPageContent() {
         <div className="fade-in space-y-4">
           <div className="flex gap-2 flex-wrap border-b border-white/10 pb-3">
             {userSubTabs.map((st) => (
-              <Link key={st.key} href={st.href}
+              <AppNavLink key={st.key} href={st.href}
                 className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
                 style={{
                   backgroundColor: userSub === st.key ? (st.key === 'inactivos' ? RED : NEON) : 'rgba(0,10,5,0.8)',
@@ -578,7 +586,7 @@ function AdminPageContent() {
                     {st.count}
                   </span>
                 )}
-              </Link>
+              </AppNavLink>
             ))}
           </div>
 
@@ -1082,6 +1090,34 @@ function AdminPageContent() {
         title="🔑 Credenciales del alumno"
         description="Entrega estas credenciales al alumno. En su próximo ingreso deberá definir una contraseña nueva."
       />
+
+      <Modal
+        open={createConfirmOpen}
+        onClose={() => { if (!saving) setCreateConfirmOpen(false) }}
+        title="Confirmar creación de usuario"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" disabled={saving} onClick={() => setCreateConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button size="sm" loading={saving} onClick={() => void confirmCreateUser()}>
+              Crear usuario
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-2 text-sm">
+          <p>¿Crear acceso inmediato para este alumno?</p>
+          <div className="rounded-lg border border-white/10 bg-black/30 p-3 space-y-1">
+            <div><span className="text-gray-500">Nombre: </span><strong className="text-white">{form.fullName}</strong></div>
+            <div><span className="text-gray-500">Email: </span><strong className="text-white">{form.email}</strong></div>
+            <div><span className="text-gray-500">DNI: </span><strong className="text-white">{form.dni}</strong></div>
+            <div><span className="text-gray-500">Plan: </span><strong style={{ color: NEON }}>{form.planDays} días</strong></div>
+            <div><span className="text-gray-500">Balotario: </span><strong className="text-white">{trackLabel(form.trackType)}</strong></div>
+          </div>
+          <p className="text-xs text-gray-500">El alumno deberá cambiar su contraseña al primer ingreso.</p>
+        </div>
+      </Modal>
 
       <Modal
         open={deleteTarget != null}

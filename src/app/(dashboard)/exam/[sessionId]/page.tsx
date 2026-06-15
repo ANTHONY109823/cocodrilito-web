@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import apiClient from '@/lib/api/client'
@@ -53,6 +53,7 @@ export default function ExamPage() {
   const [finishing, setFinishing] = useState(false)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [showFinishModal, setShowFinishModal] = useState(false)
+  const answeringRef = useRef(false)
 
   const handleFinish = useCallback(async () => {
     if (finishing) return
@@ -66,17 +67,24 @@ export default function ExamPage() {
   }, [finishing, sessionId, router])
 
   const loadSession = useCallback(async () => {
-    try {
-      // Verificar si ya está completada
-      const resultRes = await examsApi.getResult(sessionId)
-      if (resultRes.data?.status === 'Completed') {
-        router.replace(`/result/${sessionId}`)
-        return
-      }
-    } catch { }
+    const [resultOutcome, sessionOutcome] = await Promise.allSettled([
+      examsApi.getResult(sessionId),
+      apiClient.get(`/exams/sessions/${sessionId}`),
+    ])
+
+    if (resultOutcome.status === 'fulfilled' && resultOutcome.value.data?.status === 'Completed') {
+      router.replace(`/result/${sessionId}`)
+      return
+    }
+
+    if (sessionOutcome.status !== 'fulfilled') {
+      router.push('/exams')
+      setLoading(false)
+      return
+    }
 
     try {
-      const res = await apiClient.get(`/exams/sessions/${sessionId}`)
+      const res = sessionOutcome.value
       const data = res.data
       const meta = normalizeExamSessionPayload(data)
       const cached = loadExamSessionMeta(sessionId)
@@ -147,26 +155,32 @@ export default function ExamPage() {
     return () => clearInterval(t)
   }, [session, handleFinish])
 
-  const handleAnswer = async (optionId: string) => {
-    if (!session) return
-    setSelectedOption(optionId)
+  const handleAnswer = (optionId: string) => {
+    if (!session || answeringRef.current || selectedOption) return
+    answeringRef.current = true
+
     const q = session.questions[currentIdx]
-    setAnswers(prev => ({ ...prev, [q.id]: optionId }))
-    try {
-      await examsApi.submitAnswer(sessionId, {
-        questionId: q.id,
-        selectedOptionId: optionId,
-        timeSpentMs: questionTime
-      })
-    } catch { }
-    setTimeout(() => {
-      const total = getEffectiveQuestionCount(session.totalQuestions, session.questions.length)
-      if (currentIdx < total - 1) {
-        setCurrentIdx(prev => prev + 1)
-        setSelectedOption(null)
+    const spentMs = questionTime
+    setSelectedOption(optionId)
+    setAnswers((prev) => ({ ...prev, [q.id]: optionId }))
+
+    void examsApi.submitAnswer(sessionId, {
+      questionId: q.id,
+      selectedOptionId: optionId,
+      timeSpentMs: spentMs,
+    }).catch(() => {})
+
+    const total = getEffectiveQuestionCount(session.totalQuestions, session.questions.length)
+    const isLast = currentIdx >= total - 1
+
+    window.setTimeout(() => {
+      if (!isLast) {
+        setCurrentIdx((prev) => prev + 1)
         setQuestionTime(0)
       }
-    }, 600)
+      setSelectedOption(null)
+      answeringRef.current = false
+    }, 220)
   }
 
   const formatTime = (s: number) => {
