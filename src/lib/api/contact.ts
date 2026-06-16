@@ -5,7 +5,7 @@ export interface JoinRequestPayload {
   email: string
   institutionName: string
   phone?: string
-  tenantType?: 'Agencia' | 'Academia'
+  tenantType?: 'Agencia'
   message?: string
 }
 

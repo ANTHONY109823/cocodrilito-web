@@ -27,7 +27,7 @@ const ROLE_OPTIONS = [
   { value: '', label: 'Todos los roles' },
   { value: 'Student', label: 'Alumnos' },
   { value: 'AdminAgencia', label: 'Admin agencia' },
-  { value: 'AdminAcademia', label: 'Admin academia' },
+  { value: 'AdminAcademia', label: 'Admin agencia (legacy)' },
   { value: 'SuperAdmin', label: 'SuperAdmin' },
 ]
 
@@ -35,7 +35,7 @@ function roleLabel(role: string): string {
   switch (role) {
     case 'Student': return 'Alumno'
     case 'AdminAgencia': return 'Admin agencia'
-    case 'AdminAcademia': return 'Admin academia'
+    case 'AdminAcademia': return 'Admin agencia'
     case 'SuperAdmin': return 'SuperAdmin'
     default: return role
   }

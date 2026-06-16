@@ -2,7 +2,6 @@ import { BRAND_APP } from '@/lib/constants/brand'
 import {
   Building2,
   FileText,
-  GraduationCap,
   History,
   Home,
   Library,
@@ -33,7 +32,6 @@ export const STUDENT_NAV: NavItem[] = [
 export const SUPERADMIN_NAV: NavItem[] = [
   { href: '/superadmin?tab=inicio', label: 'Inicio', icon: Home },
   { href: '/superadmin?tab=agencias', label: 'Agencias', icon: Building2 },
-  { href: '/superadmin?tab=academias', label: 'Academias', icon: GraduationCap },
   { href: '/superadmin/preguntas', label: 'Banco de Preguntas', icon: Library },
   { href: '/superadmin?tab=audit', label: 'Audit Log', icon: ScrollText },
 ]
@@ -82,7 +80,7 @@ export function pageTitleForPath(pathname: string, search?: string, role?: strin
     const map: Record<string, string> = {
       inicio: 'Inicio',
       agencias: 'Agencias',
-      academias: 'Academias',
+      academias: 'Agencias',
       audit: 'Audit Log',
     }
     return map[tab ?? ''] ?? 'Inicio'

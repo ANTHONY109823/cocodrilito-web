@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
-import { isSuperAdmin } from '@/lib/auth/roles'
+import { isSuperAdmin, displayInstitutionType } from '@/lib/auth/roles'
 import {
   superadminApi,
   type DashboardStats,
@@ -31,7 +31,6 @@ import {
 type TabKey =
   | 'inicio'
   | 'agencias'
-  | 'academias'
   | 'usuarios'
   | 'audit'
 
@@ -61,10 +60,13 @@ export default function SuperAdminPage() {
 function SuperAdminPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const tabParam = searchParams.get('tab') as TabKey | null
-  const tab: TabKey = tabParam && ['inicio', 'agencias', 'academias', 'usuarios', 'audit'].includes(tabParam)
-    ? tabParam
-    : 'inicio'
+  const tabParam = searchParams.get('tab') as TabKey | 'academias' | null
+  const tab: TabKey =
+    tabParam === 'academias' || tabParam === 'agencias'
+      ? 'agencias'
+      : tabParam && ['inicio', 'usuarios', 'audit'].includes(tabParam)
+        ? tabParam
+        : 'inicio'
 
   const { user, loadFromStorage, setUser } = useAuthStore()
   const { startImpersonation } = useImpersonationStore()
@@ -74,7 +76,6 @@ function SuperAdminPageContent() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [createType, setCreateType] = useState<'Agencia' | 'Academia'>('Agencia')
   const [creating, setCreating] = useState(false)
   const [createdCredentials, setCreatedCredentials] = useState<AdminCredentials | null>(null)
   const [pendingAction, setPendingAction] = useState<
@@ -94,7 +95,7 @@ function SuperAdminPageContent() {
   }, [user, router])
 
   const loadTabData = useCallback(async () => {
-    if (['agencias', 'academias'].includes(tab) && tenantsCacheRef.current.length > 0) {
+    if (tab === 'agencias' && tenantsCacheRef.current.length > 0) {
       setLoading(false)
       return
     }
@@ -113,7 +114,7 @@ function SuperAdminPageContent() {
           tenantsCacheRef.current = tenantsRes.data
         }
       }
-      if (['agencias', 'academias'].includes(tab) && tenantsCacheRef.current.length === 0) {
+      if (tab === 'agencias' && tenantsCacheRef.current.length === 0) {
         const res = await superadminApi.getTenants()
         setTenants(res.data)
         tenantsCacheRef.current = res.data
@@ -179,8 +180,7 @@ function SuperAdminPageContent() {
         })
       }
       toast('Institución y administrador creados correctamente', 'success')
-      const targetTab = data.tenantType === 'Academia' ? 'academias' : 'agencias'
-      router.push(`/superadmin?tab=${targetTab}`)
+      router.push('/superadmin?tab=agencias')
       refreshTabData()
     } catch (err: unknown) {
       const msg = getApiErrorMessage(err, 'Error al crear tenant')
@@ -258,18 +258,24 @@ function SuperAdminPageContent() {
     }
   }
 
-  const openCreate = (type: 'Agencia' | 'Academia') => {
-    setCreateType(type)
+  const openCreate = () => {
     setShowCreate(true)
   }
 
-  const agencias = useMemo(() => tenants.filter((t) => t.tenantType === 'Agencia'), [tenants])
-  const academias = useMemo(() => tenants.filter((t) => t.tenantType === 'Academia'), [tenants])
+  const agencias = useMemo(() => tenants, [tenants])
+
+  const institutionStats = useMemo(() => {
+    if (!dashboard) return null
+    return {
+      total: dashboard.agencias.total + dashboard.academias.total,
+      active: dashboard.agencias.active + dashboard.academias.active,
+      students: dashboard.agencias.students + dashboard.academias.students,
+    }
+  }, [dashboard])
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'inicio', label: '🏠 Inicio' },
     { key: 'agencias', label: '🏢 Agencias' },
-    { key: 'academias', label: '🎓 Academias' },
     { key: 'usuarios', label: '👥 Usuarios' },
     { key: 'audit', label: '📋 Audit Log' },
   ]
@@ -320,7 +326,7 @@ function SuperAdminPageContent() {
                 <span className="text-white font-semibold">{t.name}</span>
                 <span className="text-xs px-2 py-0.5 rounded-full"
                   style={{ backgroundColor: policeGreenRgba(0.15), color: NEON }}>
-                  {t.tenantType}
+                  {displayInstitutionType(t.tenantType)}
                 </span>
                 {!t.isActive || t.suspended ? (
                   <span className="text-xs px-2 py-0.5 rounded-full"
@@ -401,15 +407,10 @@ function SuperAdminPageContent() {
           <p className="text-gray-500 text-sm mt-0.5">Métricas globales y registro de instituciones</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button type="button" onClick={() => openCreate('Agencia')}
+          <button type="button" onClick={openCreate}
             className="px-4 py-2 rounded-xl text-xs font-bold"
             style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
             ➕ Registrar agencia
-          </button>
-          <button type="button" onClick={() => openCreate('Academia')}
-            className="px-4 py-2 rounded-xl text-xs font-bold"
-            style={{ background: 'rgba(79,195,247,0.15)', color: INFO, border: `1px solid ${INFO}40` }}>
-            ➕ Registrar academia
           </button>
         </div>
       </div>
@@ -417,7 +418,6 @@ function SuperAdminPageContent() {
       <CreateTenantPanel
         open={showCreate}
         loading={creating}
-        defaultTenantType={createType}
         onClose={() => setShowCreate(false)}
         onSubmit={handleCreateTenant}
       />
@@ -473,14 +473,12 @@ function SuperAdminPageContent() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {kpiCard('Activas', dashboard.activeTenants, { icon: '✅', color: INFO })}
               {kpiCard('Ingreso mensual est.', `S/. ${dashboard.monthlyRevenue}`, { icon: '💰', color: WARNING })}
-              {kpiCard('Agencias', `${dashboard.agencias.active}/${dashboard.agencias.total}`, { icon: '🏢' })}
-              {kpiCard('Academias', `${dashboard.academias.active}/${dashboard.academias.total}`, { icon: '🎓', color: INFO })}
+              {kpiCard('Agencias', institutionStats ? `${institutionStats.active}/${institutionStats.total}` : '—', { icon: '🏢' })}
+              {kpiCard('Alumnos PNP', institutionStats?.students ?? 0, { icon: '👥', color: INFO })}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {kpiCard('Exámenes hoy', dashboard.totalExamsToday, { icon: '📝', color: INFO })}
               {kpiCard('Exámenes del mes', dashboard.totalExamsThisMonth, { icon: '📊', color: INFO })}
-              {kpiCard('Alumnos agencias', dashboard.agencias.students, { icon: '👥' })}
-              {kpiCard('Alumnos academias', dashboard.academias.students, { icon: '👥', color: INFO })}
             </div>
             {dashboard.pendingPayments > 0 && (
               <div className="rounded-2xl p-4 text-sm"
@@ -514,26 +512,13 @@ function SuperAdminPageContent() {
       {tab === 'agencias' && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <button type="button" onClick={() => openCreate('Agencia')}
+            <button type="button" onClick={openCreate}
               className="px-4 py-2 rounded-xl text-sm font-bold"
               style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
               ➕ Nueva agencia
             </button>
           </div>
           {tenantList(agencias)}
-        </div>
-      )}
-
-      {tab === 'academias' && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <button type="button" onClick={() => openCreate('Academia')}
-              className="px-4 py-2 rounded-xl text-sm font-bold"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
-              ➕ Nueva academia
-            </button>
-          </div>
-          {tenantList(academias)}
         </div>
       )}
 

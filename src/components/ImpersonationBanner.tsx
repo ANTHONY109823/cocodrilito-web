@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { authApi } from '@/lib/api/auth'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
+import { displayInstitutionType } from '@/lib/auth/roles'
 import { WARNING } from '@/lib/constants/theme'
 
 export function ImpersonationBanner() {
@@ -38,7 +39,7 @@ export function ImpersonationBanner() {
         <span>🎭</span>
         <span>
           Ingresando como <strong>{tenantName}</strong>
-          {tenantType ? ` (${tenantType})` : ''}
+          {tenantType ? ` (${displayInstitutionType(tenantType)})` : ''}
         </span>
       </div>
       <button

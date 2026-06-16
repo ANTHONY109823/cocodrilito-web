@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
-import { isSuperAdmin } from '@/lib/auth/roles'
+import { displayInstitutionType, isSuperAdmin } from '@/lib/auth/roles'
 import { superadminApi, type TenantAdminInfo, type TenantDetail } from '@/lib/api/superadmin'
 import { Skeleton, SkeletonCard } from '@/components/Skeleton'
 import { toast } from '@/components/Toast'
@@ -384,7 +384,7 @@ export default function TenantDetailPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">{tenant.name}</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {tenant.slug} · {tenant.tenantType} · {tenant.contactEmail}
+            {tenant.slug} · {displayInstitutionType(tenant.tenantType)} · {tenant.contactEmail}
           </p>
           {tenant.suspendedAt && (
             <p className="text-sm mt-2" style={{ color: DANGER }}>
@@ -443,7 +443,7 @@ export default function TenantDetailPage() {
           <div>
             <h3 className="text-white font-semibold">Vigencia de acceso</h3>
             <p className="text-xs text-gray-500 mt-1">
-              Registra desde qué fecha la {tenant.tenantType.toLowerCase()} tiene acceso y por cuántos días pagó.
+              Registra desde qué fecha la agencia tiene acceso y por cuántos días pagó.
               La fecha de expiración se calcula automáticamente.
             </p>
           </div>
@@ -506,7 +506,7 @@ export default function TenantDetailPage() {
           <div>
             <h3 className="text-white font-semibold">Administrador del tenant</h3>
             <p className="text-xs text-gray-500 mt-1">
-              SuperAdmin gestiona la cuenta de acceso del Admin {tenant.tenantType}.
+              SuperAdmin gestiona la cuenta de acceso del administrador de la agencia.
             </p>
           </div>
           {hasAdmin && tenantAdmin && (

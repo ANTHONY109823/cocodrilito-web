@@ -45,7 +45,7 @@ function normalizeTrackKey(value: string): string | null {
   return byKey?.key ?? null
 }
 
-/** Balotario por defecto al crear alumno según lo habilitado en la agencia/academia. */
+/** Balotario por defecto al crear alumno según lo habilitado en la agencia. */
 export function resolveDefaultStudentTrack(
   user?: { allowedTrackTypes?: string[] } | null
 ): number {

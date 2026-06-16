@@ -9,7 +9,7 @@ export const SUPERADMIN_LOGIN_BRANDING: TenantLoginBranding = {
   description:
     'Este acceso es solo para el equipo de plataforma.\nAgencias y alumnos deben ingresar desde su URL: nombre-de-agencia.simulacros.pe',
   features: [
-    'Gestión de agencias y academias',
+    'Gestión de agencias PNP',
     'Banco de preguntas global',
     'Configuración de planes y accesos',
   ],

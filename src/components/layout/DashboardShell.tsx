@@ -30,8 +30,9 @@ import { useDashboardRoutePrefetch } from '@/hooks/useDashboardRoutePrefetch'
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
   if (isSuperAdmin(role)) return 'SuperAdmin'
-  if (role.includes('Academia') || role === 'AdminAcademia') return 'Admin Academia'
-  if (role.includes('Agencia') || role === 'AdminAgencia') return 'Admin Agencia'
+  if (role.includes('Agencia') || role === 'AdminAgencia' || role.includes('Academia') || role === 'AdminAcademia') {
+    return 'Admin Agencia'
+  }
   return 'Estudiante'
 }
 

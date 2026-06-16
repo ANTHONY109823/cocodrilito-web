@@ -96,13 +96,7 @@ export default function PreguntasPage() {
           ← {isSuperAdminMode ? 'SuperAdmin' : 'Panel Admin'}
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-semibold text-white">
-            {isSuperAdminMode
-              ? 'Banco de Preguntas de Ascenso'
-              : isAcademia
-                ? 'Banco de Preguntas (Academia)'
-                : 'Banco de Preguntas de Ascenso'}
-          </h1>
+          <h1 className="text-xl font-semibold text-white">Banco de Preguntas de Ascenso</h1>
           <p className="text-gray-600 text-xs mt-0.5">
             {readOnly && isAgencia
               ? `${q.categorizedCount} preguntas en vista · balotario: ${trackLabel(q.activeTrackType)}`
@@ -154,7 +148,7 @@ export default function PreguntasPage() {
         {[
           { key: 'base' as const, label: '📚 Banco de ascenso', hint: 'Preguntas compartidas de la plataforma' },
           ...(showOwnScope
-            ? [{ key: 'own' as const, label: '🏷️ Propias de academia', hint: 'Preguntas de tu institución' }]
+            ? [{ key: 'own' as const, label: '🏷️ Propias de agencia', hint: 'Preguntas de tu institución' }]
             : []),
         ].map((s) => (
           <button

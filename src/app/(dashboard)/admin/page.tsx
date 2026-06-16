@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { AppNavLink } from '@/components/navigation/AppNavLink'
 import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { isTenantAdmin, isAdminAgencia, getPostLoginPath } from '@/lib/auth/roles'
+import { isTenantAdmin, getPostLoginPath } from '@/lib/auth/roles'
 import { tenantAdminApi, type AdminDashboardData, type TenantProfile } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
 import { NEON } from '@/lib/constants/theme'
@@ -454,11 +454,7 @@ function AdminPageContent() {
           <h1 className="text-2xl font-bold text-white">
             {user?.tenantName ? `${user.tenantName}` : 'Panel Admin'} 🛡️
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">
-            {isAdminAgencia(user?.role, user?.tenantType)
-              ? 'Gestión de tu agencia'
-              : 'Gestión de tu academia'}
-          </p>
+          <p className="text-gray-500 text-sm mt-0.5">Gestión de tu agencia</p>
         </div>
         <div className="flex gap-4 text-right text-sm">
           <div><span className="font-bold" style={{ color: NEON }}>{activeUsers.length}</span> <span className="text-gray-500">activos</span></div>

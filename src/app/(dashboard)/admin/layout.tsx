@@ -2,11 +2,11 @@
 
 import { useAuthStore } from '@/lib/store/authStore'
 import { getTenantBadge } from '@/lib/auth/roles'
-import { INFO, WARNING } from '@/lib/constants/theme'
+import { INFO } from '@/lib/constants/theme'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
-  const badge = getTenantBadge(user?.role, user?.tenantType)
+  const badge = getTenantBadge(user?.role)
 
   return (
     <div>
@@ -16,9 +16,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span
               className="text-xs font-bold px-3 py-1 rounded-full tracking-wide"
               style={{
-                backgroundColor: badge === 'AGENCIA' ? `${INFO}20` : `${WARNING}20`,
-                color: badge === 'AGENCIA' ? INFO : WARNING,
-                border: `1px solid ${badge === 'AGENCIA' ? INFO : WARNING}40`,
+                backgroundColor: `${INFO}20`,
+                color: INFO,
+                border: `1px solid ${INFO}40`,
               }}
             >
               {badge}

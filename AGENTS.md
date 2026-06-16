@@ -9,7 +9,7 @@
 Cocodrilito es una plataforma **SaaS multi-tenant** de simulacros para el ascenso PNP.
 Cada agencia/academia es un *tenant* con su propio subdominio (`{slug}.simulacros.pe`),
 su marca (logo, textos de login) y sus propios alumnos. Hay tres roles:
-**Estudiante**, **Admin de tenant** (Agencia/Academia) y **SuperAdmin**.
+**Estudiante**, **Admin de agencia** y **SuperAdmin**.
 
 - **Backend** (`cocodrilito-backend`): .NET 9, Clean Architecture, EF Core 9, PostgreSQL,
   Redis (opcional), JWT Bearer + BCrypt, SendGrid, ClosedXML + CsvHelper.

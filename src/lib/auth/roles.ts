@@ -32,14 +32,15 @@ export function getNavContext(
   return 'student'
 }
 
-export type TenantBadge = 'AGENCIA' | 'ACADEMIA'
+export type TenantBadge = 'AGENCIA'
 
-export function getTenantBadge(
-  role?: string | null,
-  tenantType?: string | null
-): TenantBadge | null {
-  if (isAdminAgencia(role, tenantType)) return 'AGENCIA'
-  if (isAdminAcademia(role, tenantType)) return 'ACADEMIA'
+/** Etiqueta pública; Academia legacy se muestra como Agencia. */
+export function displayInstitutionType(_tenantType?: string | null): string {
+  return 'Agencia'
+}
+
+export function getTenantBadge(role?: string | null): TenantBadge | null {
+  if (isTenantAdmin(role)) return 'AGENCIA'
   return null
 }
 
