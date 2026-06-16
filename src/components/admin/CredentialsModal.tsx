@@ -5,7 +5,8 @@ import { NEON, GOLD } from '@/lib/constants/theme'
 
 export interface AdminCredentials {
   fullName: string
-  email: string
+  email?: string
+  loginUsername?: string
   dni?: string
   role?: string
   temporaryPassword: string
@@ -33,7 +34,8 @@ export function CredentialsModal({
     const text = [
       credentials.tenantName ? `Institución: ${credentials.tenantName}` : null,
       `Nombre: ${credentials.fullName}`,
-      `Email: ${credentials.email}`,
+      credentials.loginUsername ? `Usuario de acceso: ${credentials.loginUsername}` : null,
+      credentials.email ? `Email (contacto): ${credentials.email}` : null,
       credentials.dni ? `DNI: ${credentials.dni}` : null,
       credentials.role ? `Rol: ${credentials.role}` : null,
       `Contraseña temporal: ${credentials.temporaryPassword}`,
@@ -70,7 +72,8 @@ export function CredentialsModal({
         )}
         {[
           { label: 'Nombre', value: credentials.fullName },
-          { label: 'Email de acceso', value: credentials.email },
+          { label: 'Usuario de acceso', value: credentials.loginUsername },
+          { label: 'Email (contacto)', value: credentials.email },
           { label: 'DNI', value: credentials.dni },
           { label: 'Rol', value: credentials.role },
         ].filter((item) => item.value).map((item) => (

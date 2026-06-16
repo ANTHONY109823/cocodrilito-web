@@ -108,7 +108,7 @@ function LoginForm() {
   const tenantSlug = useTenantSlug()
   const [isRootLogin, setIsRootLogin] = useState(false)
   const { config, loading: configLoading, error: tenantConfigError } = useTenantConfig()
-  const [email, setEmail] = useState('')
+  const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -117,8 +117,6 @@ function LoginForm() {
     setIsRootLogin(isRootHost())
   }, [])
 
-  // Calienta el backend de Railway en cuanto aparece el formulario,
-  // evita cold-start al momento de hacer click en Ingresar.
   useEffect(() => {
     void fetch('/api/health', { method: 'GET', cache: 'no-store' }).catch(() => {})
   }, [])
@@ -177,7 +175,7 @@ function LoginForm() {
     setLoading(true)
     try {
       const res = await authApi.login({
-        email: email.trim(),
+        email: loginId.trim(),
         password,
         tenantSlug: tenantSlug ?? undefined,
       })
@@ -201,11 +199,19 @@ function LoginForm() {
         )
         return
       }
-      setError(getApiErrorMessage(err, 'Credenciales incorrectas. Verifica tu email y contraseña.'))
+      setError(getApiErrorMessage(err, 'Credenciales incorrectas. Verifica tu usuario y contraseña.'))
     } finally {
       setLoading(false)
     }
   }
+
+  const loginFieldLabel = isPlatformLogin ? 'Correo electrónico' : 'Usuario o correo'
+  const loginFieldPlaceholder = isPlatformLogin
+    ? 'admin@simulacros.pe'
+    : 'ACCAYO o correo de administrador'
+  const loginFieldHint = isPlatformLogin
+    ? 'Acceso exclusivo SuperAdmin'
+    : 'Alumnos: usuario (ej. ACCAYO). Administradores: correo electrónico.'
 
   return (
     <ThemeProvider config={config}>
@@ -356,8 +362,8 @@ function LoginForm() {
               <form onSubmit={handleSubmit}>
                 <div className="field-group">
                   <div className="field">
-                    <label className="field-label" htmlFor="login-email">
-                      Correo electrónico
+                    <label className="field-label" htmlFor="login-id">
+                      {loginFieldLabel}
                     </label>
                     <div className="field-wrap">
                       <svg
@@ -370,21 +376,35 @@ function LoginForm() {
                         strokeLinejoin="round"
                         aria-hidden
                       >
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                        <polyline points="22,6 12,13 2,6" />
+                        {isPlatformLogin ? (
+                          <>
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
+                          </>
+                        ) : (
+                          <>
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </>
+                        )}
                       </svg>
                       <input
-                        id="login-email"
+                        id="login-id"
                         className="login-input"
-                        type="email"
-                        placeholder="tu@correo.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        autoComplete="email"
+                        type={isPlatformLogin ? 'email' : 'text'}
+                        placeholder={loginFieldPlaceholder}
+                        value={loginId}
+                        onChange={(e) => setLoginId(e.target.value)}
+                        autoComplete="username"
                         disabled={loading}
                         required
+                        spellCheck={false}
+                        autoCapitalize="characters"
                       />
                     </div>
+                    {!isPlatformLogin && (
+                      <p className="text-[10px] text-gray-500 mt-1.5 leading-snug">{loginFieldHint}</p>
+                    )}
                   </div>
                   <div className="field">
                     <label className="field-label" htmlFor="login-password">

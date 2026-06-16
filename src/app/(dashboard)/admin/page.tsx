@@ -21,10 +21,12 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
+import { generateStudentLoginUsername } from '@/lib/utils/studentLoginUsername'
 interface User {
   id: string
   fullName: string
   email: string
+  loginUsername?: string | null
   dni: string
   rank: string
   unit: string
@@ -116,7 +118,7 @@ function AdminPageContent() {
   const [modalLoading, setModalLoading] = useState(false)
   const [createConfirmOpen, setCreateConfirmOpen] = useState(false)
   const [createdUser, setCreatedUser] = useState<{
-    fullName: string; email: string; dni: string; planDays: number; expiresAt?: string
+    fullName: string; email: string; loginUsername?: string; dni: string; planDays: number; expiresAt?: string
   } | null>(null)
 
   const [form, setForm] = useState({
@@ -228,10 +230,17 @@ function AdminPageContent() {
         trackType: savedForm.trackType,
         startsAt: savedForm.activationDate,
       })
-      const data = res.data as { fullName?: string; email?: string; expiresAt?: string; planDays?: number }
+      const data = res.data as {
+        fullName?: string
+        email?: string
+        loginUsername?: string
+        expiresAt?: string
+        planDays?: number
+      }
       setCreatedUser({
         fullName: data.fullName ?? savedForm.fullName,
         email: data.email ?? savedForm.email,
+        loginUsername: data.loginUsername ?? generateStudentLoginUsername(savedForm.fullName) ?? undefined,
         dni: savedForm.dni,
         planDays: data.planDays ?? savedForm.planDays,
         expiresAt: data.expiresAt,
@@ -337,6 +346,7 @@ function AdminPageContent() {
       const creds = res.data.credentials as {
         fullName: string
         email: string
+        loginUsername?: string
         dni: string
         role: string
         temporaryPassword: string
@@ -346,6 +356,7 @@ function AdminPageContent() {
       setStudentCredentials({
         fullName: creds.fullName,
         email: creds.email,
+        loginUsername: creds.loginUsername ?? resetPasswordTarget.loginUsername ?? generateStudentLoginUsername(creds.fullName) ?? undefined,
         dni: creds.dni,
         role: creds.role,
         temporaryPassword: creds.temporaryPassword,
@@ -431,6 +442,8 @@ function AdminPageContent() {
     d.setDate(d.getDate() + Number(form.planDays))
     return d
   })()
+
+  const previewLoginUsername = generateStudentLoginUsername(form.fullName)
 
   const userSubTabs: { key: UserSubTab; label: string; count: number | null; href: string }[] = [
     { key: 'activos', label: 'Activos', count: activeUsers.length, href: '/admin?tab=users&sub=activos' },
@@ -602,7 +615,9 @@ function AdminPageContent() {
                   <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
                     <span className="text-gray-500">Nombre</span>
                     <span className="text-white font-medium">{createdUser.fullName}</span>
-                    <span className="text-gray-500">Email</span>
+                    <span className="text-gray-500">Usuario de acceso</span>
+                    <span className="text-white font-bold tracking-wide">{createdUser.loginUsername ?? '—'}</span>
+                    <span className="text-gray-500">Email (contacto)</span>
                     <span className="text-white">{createdUser.email}</span>
                     <span className="text-gray-500">DNI</span>
                     <span className="text-white">{createdUser.dni}</span>
@@ -616,7 +631,7 @@ function AdminPageContent() {
                     )}
                   </div>
                   <p className="text-xs mt-2" style={{ color: '#6B8A75' }}>
-                    El alumno debe cambiar su contraseña al ingresar por primera vez.
+                    El alumno ingresa con su usuario y contraseña en la URL de la agencia.
                   </p>
                 </div>
                 <button type="button" onClick={() => setCreatedUser(null)}
@@ -668,7 +683,8 @@ function AdminPageContent() {
                         )}
                       </div>
                       <div className="text-gray-500 text-xs mt-1">
-                        {u.email} · DNI {u.dni} · {u.rank} · {u.unit}
+                        Usuario <span className="text-white font-medium">{u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'}</span>
+                        {' · '}{u.email} · DNI {u.dni} · {u.rank} · {u.unit}
                       </div>
                       {u.subscription && (
                         <div className="text-xs mt-1.5 font-medium"
@@ -833,7 +849,7 @@ function AdminPageContent() {
               {[
                 { label: 'Nombre completo *', key: 'fullName', placeholder: 'Juan Pérez Torres' },
                 { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '12345678' },
-                { label: 'Email (Gmail) *', key: 'email', placeholder: 'juan@gmail.com', type: 'email' },
+                { label: 'Email (contacto) *', key: 'email', placeholder: 'juan@gmail.com', type: 'email' },
                 { label: 'Contraseña temporal *', key: 'password', placeholder: 'Mínimo 8 caracteres', type: 'password' },
                 { label: 'Grado *', key: 'rank', placeholder: 'Suboficial de 3ra' },
                 { label: 'Unidad *', key: 'unit', placeholder: 'Comisaría Lima Norte' },
@@ -849,6 +865,16 @@ function AdminPageContent() {
                 </div>
               )})}
             </div>
+            {previewLoginUsername ? (
+              <div className="rounded-xl px-4 py-3 text-sm"
+                style={{ background: 'rgba(49,143,72,0.1)', border: `1px solid ${NEON}35` }}>
+                <span className="text-gray-500 text-xs">Usuario de acceso generado: </span>
+                <strong className="text-white tracking-widest">{previewLoginUsername}</strong>
+                <p className="text-[10px] text-gray-600 mt-1">Inicial del nombre + apellido paterno (ej. Anthony Ccayo → ACCAYO)</p>
+              </div>
+            ) : form.fullName.trim() ? (
+              <p className="text-xs text-amber-500">Indica nombre y apellido para generar el usuario de acceso.</p>
+            ) : null}
             <div>
               <label className="block text-xs text-gray-500 mb-2">Balotario de preguntas *</label>
               <div className="grid md:grid-cols-2 gap-3">
@@ -1112,6 +1138,7 @@ function AdminPageContent() {
           <p>¿Crear acceso inmediato para este alumno?</p>
           <div className="rounded-lg border border-white/10 bg-black/30 p-3 space-y-1">
             <div><span className="text-gray-500">Nombre: </span><strong className="text-white">{form.fullName}</strong></div>
+            <div><span className="text-gray-500">Usuario: </span><strong className="text-white tracking-wide">{previewLoginUsername ?? '—'}</strong></div>
             <div><span className="text-gray-500">Email: </span><strong className="text-white">{form.email}</strong></div>
             <div><span className="text-gray-500">DNI: </span><strong className="text-white">{form.dni}</strong></div>
             <div><span className="text-gray-500">Plan: </span><strong style={{ color: NEON }}>{form.planDays} días</strong></div>
