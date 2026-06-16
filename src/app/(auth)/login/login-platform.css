@@ -1069,3 +1069,65 @@
     animation: none;
   }
 }
+
+/* ═══ TEMA CLARO (login) ═══ */
+[data-theme='light'] .loginRoot {
+  background: #e6efe8;
+}
+
+[data-theme='light'] .bg-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(230, 239, 232, 0.82) 45%,
+    rgba(220, 235, 224, 0.92) 100%
+  ) !important;
+}
+
+[data-theme='light'] .bg-overlay--tenant-photo {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.72) 0%,
+    rgba(230, 239, 232, 0.88) 100%
+  ) !important;
+}
+
+[data-theme='light'] .card {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(26, 92, 46, 0.2) !important;
+  box-shadow: 0 12px 40px rgba(26, 92, 46, 0.12);
+}
+
+[data-theme='light'] .left {
+  border-right-color: rgba(26, 92, 46, 0.12) !important;
+}
+
+[data-theme='light'] .login-title,
+[data-theme='light'] .brand-name,
+[data-theme='light'] .hl-normal,
+[data-theme='light'] .logo-name,
+[data-theme='light'] .feat {
+  color: #0d1a10 !important;
+}
+
+[data-theme='light'] .login-sub,
+[data-theme='light'] .desc,
+[data-theme='light'] .brand-sub,
+[data-theme='light'] .field-label {
+  color: #3d5c47 !important;
+}
+
+[data-theme='light'] .login-input {
+  background: #fff !important;
+  border-color: rgba(26, 92, 46, 0.22) !important;
+  color: #0d1a10 !important;
+}
+
+[data-theme='light'] .login-input::placeholder {
+  color: #7a9485 !important;
+}
+
+[data-theme='light'] .login-error {
+  background: rgba(192, 57, 43, 0.08);
+  color: #8b2919;
+}

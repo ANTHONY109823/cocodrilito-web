@@ -26,6 +26,7 @@ import {
 } from '@/components/navigation/DashboardNav'
 import { NavigationProgressBar } from '@/components/navigation/NavigationProgressBar'
 import { useDashboardRoutePrefetch } from '@/hooks/useDashboardRoutePrefetch'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -85,12 +86,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#080E0A]">
+    <div className="min-h-screen flex flex-col bg-[var(--color-surface)]">
       <NavigationProgressBar />
       <ImpersonationBanner />
 
       <div className="flex flex-1 min-h-0">
-        <aside className="hidden lg:flex w-[220px] shrink-0 flex-col border-r border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-3.5 py-5">
+        <aside className="hidden lg:flex w-[220px] shrink-0 flex-col border-r border-[var(--color-surface-border)] bg-[var(--color-surface-elevated)] px-3.5 py-5">
           <div className="mb-3 flex items-center gap-2 px-2.5 py-2">
             {brandLogo ? (
               <Image
@@ -107,10 +108,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
             )}
             <div className="min-w-0">
-              <div className="truncate text-sm font-bold text-[#BDFFDF] leading-tight">
+              <div className="truncate text-sm font-bold text-[var(--color-text-accent)] leading-tight">
                 {brandName}
               </div>
-              <span className="inline-block rounded-full border border-[rgba(49,143,72,0.3)] bg-[rgba(49,143,72,0.15)] px-1.5 py-0.5 text-[10px] text-[#BDFFDF]">
+              <span className="inline-block rounded-full border border-[var(--color-surface-border)] bg-[var(--color-primary-bg)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-accent)]">
                 {roleLabel(user?.role)}
               </span>
             </div>
@@ -123,10 +124,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
             {navContext === 'superadmin' && (
               <>
-                <div className="my-2 h-px bg-[rgba(189,255,223,0.12)]" />
+                <div className="my-2 h-px bg-[var(--color-surface-border)]" />
                 <AppNavLink
                   href="/exams"
-                  className="px-2.5 py-1.5 text-[10px] text-[#6B8A75] hover:text-[#A8BFB0] transition-colors"
+                  className="px-2.5 py-1.5 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
                 >
                   Modo prueba examen
                 </AppNavLink>
@@ -135,19 +136,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="mt-auto space-y-2 pt-4">
-            <div className="flex items-center gap-2 rounded-[10px] border border-[rgba(189,255,223,0.12)] bg-[#080E0A] p-2.5">
-              <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[#1A5C2E] text-[11px] font-bold text-[#BDFFDF]">
+            <ThemeToggle className="w-full justify-center" />
+            <div className="flex items-center gap-2 rounded-[10px] border border-[var(--color-surface-border)] bg-[var(--color-surface)] p-2.5">
+              <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-dark)] text-[11px] font-bold text-[var(--color-text-accent)]">
                 {initials}
               </div>
               <div className="min-w-0">
-                <div className="truncate text-xs font-semibold text-white">{user?.fullName}</div>
-                <div className="text-[10px] text-[#BDFFDF]">{roleLabel(user?.role)}</div>
+                <div className="truncate text-xs font-semibold text-[var(--color-text-primary)]">{user?.fullName}</div>
+                <div className="text-[10px] text-[var(--color-text-accent)]">{roleLabel(user?.role)}</div>
               </div>
             </div>
             <button
               type="button"
               onClick={() => void handleLogout()}
-              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-[#A8BFB0] transition-colors hover:bg-[rgba(49,143,72,0.07)] hover:text-white"
+              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-primary-bg)] hover:text-[var(--color-text-primary)]"
             >
               <LogOut className="h-4 w-4" />
               Cerrar sesión
@@ -156,7 +158,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="flex flex-1 flex-col min-w-0">
-          <header className="hidden lg:flex items-center justify-between border-b border-[rgba(189,255,223,0.12)] bg-[#080E0A] px-8 py-4">
+          <header className="hidden lg:flex items-center justify-between border-b border-[var(--color-surface-border)] bg-[var(--color-surface)] px-8 py-4">
             <div className="flex items-center gap-3">
               {brandLogo && (
                 <Image
@@ -169,10 +171,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 />
               )}
               <div>
-                <p className="text-xs text-[#6B8A75]">
+                <p className="text-xs text-[var(--color-text-muted)]">
                   {navContext === 'superadmin' ? BRAND_PLATFORM : brandName}
                 </p>
-                <h1 className="text-lg font-bold text-white">
+                <h1 className="text-lg font-bold text-[var(--color-text-primary)]">
                   <Suspense>
                     <DashboardPageTitle
                       useQuery={useQueryNav}
@@ -183,7 +185,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </h1>
               </div>
             </div>
-            {navContext === 'tenant-admin' ? (
+            <div className="flex items-center gap-3">
+              <ThemeToggle compact />
+              {navContext === 'tenant-admin' ? (
               <AppNavLink
                 href="/admin/configuracion"
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
@@ -198,6 +202,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 {initials}
               </AppNavLink>
             ) : null}
+            </div>
           </header>
 
           <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">
@@ -208,7 +213,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <nav
         className={cn(
-          'lg:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-2 py-2 safe-area-pb',
+          'lg:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-[var(--color-surface-border)] bg-[var(--color-surface-elevated)] px-2 py-2 safe-area-pb',
           hideMobileNav && 'hidden'
         )}
       >
