@@ -158,6 +158,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="flex flex-1 flex-col min-w-0">
+          <header className="lg:hidden sticky top-0 z-30 flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-surface-border)] bg-[var(--color-surface-elevated)] px-4 py-3">
+            <h1 className="min-w-0 truncate text-base font-bold text-[var(--color-text-primary)]">
+              <Suspense>
+                <DashboardPageTitle
+                  useQuery={useQueryNav}
+                  pathname={pathname}
+                  role={user?.role}
+                />
+              </Suspense>
+            </h1>
+            <ThemeToggle compact showLabel={false} />
+          </header>
+
           <header className="hidden lg:flex items-center justify-between border-b border-[var(--color-surface-border)] bg-[var(--color-surface)] px-8 py-4">
             <div className="flex items-center gap-3">
               {brandLogo && (

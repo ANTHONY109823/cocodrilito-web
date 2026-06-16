@@ -194,6 +194,20 @@ h3 {
   border-color: var(--color-surface-border) !important;
 }
 
+.theme-toggle {
+  border: 2px solid var(--color-primary) !important;
+  background: var(--color-surface-elevated) !important;
+  color: var(--color-text-accent) !important;
+  box-shadow: 0 4px 20px var(--color-shadow);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: var(--color-primary-bg) !important;
+  border-color: var(--color-primary-light) !important;
+  color: var(--color-text-primary) !important;
+}
+
 [data-theme='light'] .theme-toggle {
   box-shadow: 0 2px 12px var(--color-shadow);
 }

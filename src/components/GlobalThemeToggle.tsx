@@ -1,25 +1,19 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
-const AUTH_ROUTES = new Set(['/login', '/register', '/cambiar-clave'])
-
-/** Botón flotante visible en login y en móvil dentro del dashboard */
+/** Botón flotante siempre visible (esquina superior izquierda, lejos del WhatsApp) */
 export function GlobalThemeToggle() {
-  const pathname = usePathname()
-  const isAuthRoute = AUTH_ROUTES.has(pathname)
-
   return (
     <div
-      className={`fixed z-[70] pointer-events-none ${isAuthRoute ? '' : 'lg:hidden'}`}
+      className="fixed z-[10000] pointer-events-none"
       style={{
         top: 'max(0.75rem, env(safe-area-inset-top))',
-        right: 'max(0.75rem, env(safe-area-inset-right))',
+        left: 'max(0.75rem, env(safe-area-inset-left))',
       }}
     >
       <div className="pointer-events-auto">
-        <ThemeToggle compact className="shadow-lg backdrop-blur-md" />
+        <ThemeToggle compact className="shadow-xl" />
       </div>
     </div>
   )

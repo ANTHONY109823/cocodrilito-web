@@ -12,6 +12,7 @@ import { navigateAfterLogin } from '@/lib/auth/navigateAfterLogin'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { useTenantSlug } from '@/hooks/useTenantSlug'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { LoginBrandedSkeleton } from '@/components/auth/LoginBrandedSkeleton'
 import { buildLoginThemeStyle } from '@/lib/utils/loginTheme'
 import Image from 'next/image'
@@ -340,9 +341,12 @@ function LoginForm() {
             </div>
 
             <div className="right">
-              <h2 className="login-title">
-                {isPlatformLogin ? 'Panel SuperAdmin' : 'Iniciar sesión'}
-              </h2>
+              <div className="login-title-row">
+                <h2 className="login-title">
+                  {isPlatformLogin ? 'Panel SuperAdmin' : 'Iniciar sesión'}
+                </h2>
+                <ThemeToggle compact showLabel={false} className="login-theme-toggle shrink-0" />
+              </div>
               <p className="login-sub">
                 {!showLoginContent
                   ? 'Preparando tu portal...'

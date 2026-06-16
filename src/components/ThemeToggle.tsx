@@ -26,10 +26,7 @@ export function ThemeToggle({ className, compact = false, showLabel = true }: Th
       aria-label={label}
       title={label}
       className={cn(
-        'theme-toggle inline-flex items-center justify-center gap-2 rounded-full border font-medium transition-all',
-        'border-[var(--color-surface-border)] bg-[var(--color-surface-card)]',
-        'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
-        'hover:border-[var(--color-primary)] hover:shadow-[0_0_0_2px_var(--color-primary-bg)]',
+        'theme-toggle inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all',
         compact && !showLabel ? 'h-10 w-10 p-0' : 'h-10 px-3.5 text-xs',
         className
       )}
