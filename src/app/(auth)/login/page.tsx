@@ -209,10 +209,7 @@ function LoginForm() {
   const loginFieldLabel = isPlatformLogin ? 'Correo electrónico' : 'Usuario o correo'
   const loginFieldPlaceholder = isPlatformLogin
     ? 'admin@simulacros.pe'
-    : 'ACCAYO o correo de administrador'
-  const loginFieldHint = isPlatformLogin
-    ? 'Acceso exclusivo SuperAdmin'
-    : 'Alumnos: usuario (ej. ACCAYO). Administradores: correo electrónico.'
+    : 'Usuario o correo'
 
   return (
     <ThemeProvider config={config}>
@@ -406,9 +403,6 @@ function LoginForm() {
                         autoCapitalize="characters"
                       />
                     </div>
-                    {!isPlatformLogin && (
-                      <p className="text-[10px] text-gray-500 mt-1.5 leading-snug">{loginFieldHint}</p>
-                    )}
                   </div>
                   <div className="field">
                     <label className="field-label" htmlFor="login-password">

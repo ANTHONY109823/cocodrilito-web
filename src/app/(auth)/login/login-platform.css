@@ -237,9 +237,9 @@
 }
 
 .brand-name {
-  font-family: 'Cinzel Decorative', serif;
+  font-family: 'Cinzel', serif;
   font-size: clamp(34px, 6vw, 54px);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: clamp(6px, 1.6vw, 14px);
   text-indent: clamp(6px, 1.6vw, 14px);
   color: var(--gold);
@@ -386,9 +386,9 @@
   border-radius: 10px;
   background: linear-gradient(135deg, var(--green-v) 0%, #0f4a18 100%);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Cinzel Decorative', serif;
+  font-family: 'Cinzel', serif;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--gold);
   text-shadow: 0 0 10px rgba(245,200,66,0.5);
   flex-shrink: 0;
@@ -913,11 +913,18 @@
 }
 .loginRoot--tenant .field-wrap:focus-within .field-icon { color: var(--login-secondary); }
 .loginRoot--tenant .brand-name {
-  color: var(--login-secondary);
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: #141414;
   text-shadow:
-    0 0 120px color-mix(in srgb, var(--login-secondary) 90%, transparent),
-    0 0 60px color-mix(in srgb, var(--login-secondary) 70%, transparent),
-    0 5px 0 rgba(0, 0, 0, 0.95);
+    0 2px 4px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.loginRoot--tenant .logo-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: #141414;
+  letter-spacing: 2.5px;
 }
 .loginRoot--tenant .hl-accent,
 .loginRoot--tenant .tagline,
@@ -1119,7 +1126,24 @@
 }
 
 [data-theme='light'] .left {
+  background: #EFFAF3 !important;
   border-right-color: #C8EDD6 !important;
+}
+
+[data-theme='light'] .right {
+  background: #FFFFFF !important;
+}
+
+[data-theme='light'] .loginRoot--tenant .brand-name,
+[data-theme='light'] .loginRoot--tenant .logo-name {
+  color: #1A1A1A !important;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme='dark'] .loginRoot--tenant .brand-name,
+[data-theme='dark'] .loginRoot--tenant .logo-name {
+  color: #F2F2F2;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.65);
 }
 
 [data-theme='light'] .login-title,
