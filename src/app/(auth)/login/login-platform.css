@@ -1086,64 +1086,90 @@
   }
 }
 
-/* ═══ TEMA CLARO (login) ═══ */
+/* ═══ TEMA CLARO (login) — plomo sólido + esmeralda bebé ═══ */
 [data-theme='light'] .loginRoot {
-  background: #e6efe8;
+  --white: #1A1A1A;
+  --white-dim: #404040;
+  --white-faint: rgba(26, 26, 26, 0.22);
+  --green-hi: #1F6B45;
+  background: #E3F5EA;
 }
 
 [data-theme='light'] .bg-overlay {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.55) 0%,
-    rgba(230, 239, 232, 0.82) 45%,
-    rgba(220, 235, 224, 0.92) 100%
+    rgba(239, 250, 243, 0.72) 0%,
+    rgba(221, 243, 230, 0.88) 45%,
+    rgba(200, 237, 214, 0.94) 100%
   ) !important;
 }
 
 [data-theme='light'] .bg-overlay--tenant-photo {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.72) 0%,
-    rgba(230, 239, 232, 0.88) 100%
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(221, 243, 230, 0.9) 100%
   ) !important;
 }
 
 [data-theme='light'] .card {
-  background: rgba(255, 255, 255, 0.94) !important;
-  border-color: rgba(26, 92, 46, 0.2) !important;
-  box-shadow: 0 12px 40px rgba(26, 92, 46, 0.12);
+  background: #FFFFFF !important;
+  border-color: #B5E0C5 !important;
+  box-shadow: 0 12px 40px rgba(45, 145, 96, 0.1);
 }
 
 [data-theme='light'] .left {
-  border-right-color: rgba(26, 92, 46, 0.12) !important;
+  border-right-color: #C8EDD6 !important;
 }
 
 [data-theme='light'] .login-title,
 [data-theme='light'] .brand-name,
 [data-theme='light'] .hl-normal,
 [data-theme='light'] .logo-name,
-[data-theme='light'] .feat {
-  color: #0d1a10 !important;
+[data-theme='light'] .feat,
+[data-theme='light'] .stat-num,
+[data-theme='light'] .login-input,
+[data-theme='light'] .field-wrap input {
+  color: #1A1A1A !important;
 }
 
 [data-theme='light'] .login-sub,
 [data-theme='light'] .desc,
 [data-theme='light'] .brand-sub,
-[data-theme='light'] .field-label {
-  color: #3d5c47 !important;
+[data-theme='light'] .field-label,
+[data-theme='light'] .feat-sub,
+[data-theme='light'] .stat-lbl,
+[data-theme='light'] .register-link,
+[data-theme='light'] .copyright,
+[data-theme='light'] .footer-note,
+[data-theme='light'] .register-hint,
+[data-theme='light'] .forgot,
+[data-theme='light'] .divider,
+[data-theme='light'] .field-icon {
+  color: #404040 !important;
 }
 
 [data-theme='light'] .login-input {
-  background: #fff !important;
-  border-color: rgba(26, 92, 46, 0.22) !important;
-  color: #0d1a10 !important;
+  background: #FFFFFF !important;
+  border-color: #B5E0C5 !important;
 }
 
 [data-theme='light'] .login-input::placeholder {
-  color: #7a9485 !important;
+  color: #5C5C5C !important;
 }
 
 [data-theme='light'] .login-error {
   background: rgba(192, 57, 43, 0.08);
-  color: #8b2919;
+  color: #8B2919;
+}
+
+[data-theme='light'] .loginRoot .social-link,
+[data-theme='light'] .loginRoot .join-request-btn,
+[data-theme='light'] .login-skeleton-text {
+  color: #5C5C5C !important;
+}
+
+[data-theme='light'] .loginRoot .hl-gold,
+[data-theme='light'] .loginRoot .brand-tagline {
+  color: #1F6B45 !important;
 }
