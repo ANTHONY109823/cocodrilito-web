@@ -6,13 +6,13 @@ import { cn } from '@/lib/utils/cn'
 
 const variants = {
   primary:
-    'bg-[#318F48] text-white hover:bg-[#1A5C2E] focus-visible:ring-[#318F48]/50',
+    'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)] focus-visible:ring-[var(--color-primary)]/50 disabled:!bg-[#8FBFA0] disabled:!text-[#141414] disabled:!opacity-100',
   secondary:
-    'bg-[rgba(49,143,72,0.15)] text-white hover:bg-[#1A5C2E] focus-visible:ring-[#318F48]/30',
+    'bg-[var(--color-primary-bg)] text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] focus-visible:ring-[var(--color-primary)]/30',
   outline:
-    'border border-[#318F48] bg-transparent text-[#318F48] hover:bg-[rgba(49,143,72,0.12)] focus-visible:ring-[#318F48]/30',
+    'border border-[var(--color-primary)] bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-primary-bg)] focus-visible:ring-[var(--color-primary)]/30 disabled:!border-[#8FBFA0] disabled:!text-[#3D4A42]',
   ghost:
-    'bg-transparent text-[#A8BFB0] hover:bg-[rgba(49,143,72,0.07)] hover:text-white focus-visible:ring-[#318F48]/30',
+    'bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-primary-bg)] hover:text-[var(--color-text-primary)] focus-visible:ring-[var(--color-primary)]/30',
   danger:
     'bg-[#C0392B] text-white hover:bg-[#962d22] focus-visible:ring-[#C0392B]/50',
 } as const

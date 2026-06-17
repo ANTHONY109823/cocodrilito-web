@@ -3,11 +3,29 @@
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
-/** Botón flotante siempre visible (esquina superior izquierda, lejos del WhatsApp) */
+const SHELL_ROUTES = [
+  '/dashboard',
+  '/admin',
+  '/exams',
+  '/superadmin',
+  '/profile',
+  '/ranking',
+  '/history',
+  '/premium',
+  '/exam/',
+  '/result/',
+  '/review/',
+  '/cambiar-clave',
+  '/login',
+  '/register',
+]
+
+/** Botón flotante solo en páginas sin shell propio */
 export function GlobalThemeToggle() {
   const pathname = usePathname()
-  // El login ya incluye su propio toggle junto al formulario
-  if (pathname === '/login') return null
+  if (SHELL_ROUTES.some((route) => pathname === route || pathname.startsWith(route))) {
+    return null
+  }
 
   return (
     <div

@@ -26,6 +26,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Badge } from '@/components/ui'
+import { cn } from '@/lib/utils/cn'
 
 const CATEGORY_EMOJI: Record<string, string> = {
   'Ley PNP': '⚖️',
@@ -156,18 +157,16 @@ export default function ExamsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       {previewMode && (
-        <div
-          className="rounded-xl border border-[#318F48]/40 bg-[#318F48]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3"
-        >
+        <div className="rounded-xl border border-[var(--color-primary)]/50 bg-[var(--color-primary-bg)] px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-[#BDFFDF]">Modo prueba examen</p>
-            <p className="text-xs text-[#6B8A75] mt-0.5">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">Modo prueba examen</p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
               Prueba simulacros y repasos sin afectar métricas de alumnos ni ranking.
             </p>
           </div>
           <Link
             href={backHref}
-            className="text-xs font-medium text-[#BDFFDF] hover:underline shrink-0"
+            className="text-xs font-semibold text-[var(--color-text-accent)] hover:underline shrink-0"
           >
             ← Volver al panel
           </Link>
@@ -184,10 +183,10 @@ export default function ExamsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-extrabold text-white md:text-2xl">
+          <h1 className="text-xl font-extrabold text-[var(--color-text-primary)] md:text-2xl">
             {previewMode ? 'Modo prueba examen' : 'Centro de Exámenes'}
           </h1>
-          <p className="mt-1 text-[13px] text-[#6B8A75]">
+          <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">
             {previewMode
               ? 'Simulacro general y repaso por categoría — igual que lo ven tus alumnos'
               : 'Elige tu modalidad de práctica'}
@@ -209,39 +208,39 @@ export default function ExamsPage() {
       )}
 
       {loading ? (
-        <p className="py-12 text-center text-[#6B8A75]">Cargando...</p>
+        <p className="py-12 text-center text-[var(--color-text-muted)]">Cargando...</p>
       ) : !mainExam?.id ? (
-        <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] py-16 text-center">
-          <p className="text-sm text-[#6B8A75]">No hay examen activo en la base de datos.</p>
+        <div className="rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] py-16 text-center">
+          <p className="text-sm text-[var(--color-text-muted)]">No hay examen activo en la base de datos.</p>
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-5 rounded-[14px] border border-[#318F48] bg-[#0D1A10] p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-5 rounded-[14px] border border-[var(--color-primary)] bg-[var(--color-surface-card)] p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-2">
-              <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-xl bg-[#318F48]/20">
-                <ShieldCheck className="h-7 w-7 text-[#318F48]" />
+              <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary-bg)]">
+                <ShieldCheck className="h-7 w-7 text-[var(--color-primary)]" />
               </div>
-              <h2 className="text-[17px] font-bold text-white">Simulacro General</h2>
-              <p className="text-[13px] text-[#6B8A75]">
+              <h2 className="text-[17px] font-bold text-[var(--color-text-primary)]">Simulacro General</h2>
+              <p className="text-[13px] text-[var(--color-text-muted)]">
                 Examen completo con todas las categorías del balotario oficial
               </p>
-              <div className="mt-1 flex flex-wrap gap-4 text-xs text-[#A8BFB0]">
+              <div className="mt-1 flex flex-wrap gap-4 text-xs text-[var(--color-text-secondary)]">
                 <span className="flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5 text-[#318F48]" />
+                  <FileText className="h-3.5 w-3.5 text-[var(--color-primary)]" />
                   {simulacroCount} preguntas
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-[#318F48]" />
+                  <Clock className="h-3.5 w-3.5 text-[var(--color-primary)]" />
                   {DURATIONS[selectedCount]}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <BarChart3 className="h-3.5 w-3.5 text-[#318F48]" />
+                  <BarChart3 className="h-3.5 w-3.5 text-[var(--color-primary)]" />
                   Nota mín. {mainExam.passingScore || 65} pts
                 </span>
               </div>
 
               <div className="mt-3">
-                <p className="mb-1.5 text-[12px] font-semibold text-[#A8BFB0]">
+                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-text-secondary)]">
                   ¿Cuántas preguntas quieres practicar?
                 </p>
                 <div className="flex gap-2">
@@ -250,19 +249,19 @@ export default function ExamsPage() {
                       key={n}
                       type="button"
                       onClick={() => setSelectedCount(n)}
-                      className="rounded-lg border px-4 py-2 text-sm font-bold transition-all"
-                      style={{
-                        borderColor: selectedCount === n ? '#318F48' : 'rgba(189,255,223,0.15)',
-                        background: selectedCount === n ? '#318F48' : 'transparent',
-                        color: selectedCount === n ? '#fff' : '#A8BFB0',
-                      }}
+                      className={cn(
+                        'rounded-lg border px-4 py-2 text-sm font-bold transition-all',
+                        selectedCount === n
+                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                          : 'border-[var(--color-surface-border)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'
+                      )}
                     >
                       {n}
                     </button>
                   ))}
                 </div>
                 {!countsLoading && totalQuestions === 0 && (
-                  <p className="mt-2 text-[11px] text-[#C9943A]">
+                  <p className="mt-2 text-[11px] font-semibold text-[var(--color-warning)]">
                     ⚠ No hay preguntas para tu balotario ({trackLabel(studentTrackKey)}). Contacta a tu administrador.
                   </p>
                 )}
@@ -281,7 +280,7 @@ export default function ExamsPage() {
 
           {categories.length > 0 && (
             <>
-              <p className="text-[13px] font-semibold text-[#A8BFB0]">
+              <p className="text-[13px] font-semibold text-[var(--color-text-secondary)]">
                 Repaso por categoría
               </p>
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -291,11 +290,11 @@ export default function ExamsPage() {
                   return (
                     <div
                       key={cat.id}
-                      className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-3.5 transition-all duration-150 hover:-translate-y-0.5 hover:border-[#318F48]"
+                      className="rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-3.5 transition-all duration-150 hover:-translate-y-0.5 hover:border-[var(--color-primary)]"
                     >
                       <div className="mb-2 text-2xl">{categoryIcon(cat.name)}</div>
-                      <div className="text-[13px] font-semibold text-white">{cat.name}</div>
-                      <div className="mb-2 text-[11px] text-[#6B8A75]">
+                      <div className="text-[13px] font-semibold text-[var(--color-text-primary)]">{cat.name}</div>
+                      <div className="mb-2 text-[11px] text-[var(--color-text-muted)]">
                         {count === 0
                           ? 'Sin preguntas'
                           : count > 100

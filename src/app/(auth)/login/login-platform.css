@@ -329,8 +329,15 @@
     0 24px 60px rgba(0,0,0,0.45),
     0  0px 32px rgba(0,0,0,0.28);
   position: relative;
-  flex-shrink: 1;
+  flex-shrink: 0;
   min-height: 0;
+}
+
+.login-theme-corner {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
 }
 
 @keyframes cardUp {
@@ -536,7 +543,7 @@
 
 /* ─── LADO DERECHO: LOGIN ─── */
 .right {
-  padding: 22px 20px 18px;
+  padding: 48px 20px 18px;
   background:
     linear-gradient(160deg,
       rgba(8,18,9,0.75) 0%,
@@ -567,18 +574,20 @@
 
 .login-title {
   font-family: 'Cinzel', serif;
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--white);
   letter-spacing: 1px;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  padding-right: 44px;
 }
 .login-sub {
-  font-size: 11px;
-  font-weight: 300;
+  font-size: 13px;
+  font-weight: 400;
   color: var(--white-dim);
-  margin-bottom: 14px;
-  letter-spacing: .3px;
+  margin-bottom: 18px;
+  letter-spacing: .2px;
+  line-height: 1.45;
 }
 
 .field-group { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
@@ -589,10 +598,10 @@
   gap: 6px;
 }
 .field-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  color: rgba(255,255,255,0.55);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.7);
   text-transform: uppercase;
 }
 .field-wrap { position: relative; }
@@ -608,11 +617,11 @@
 .login-input {
   width: 100%;
   background: rgba(0,0,0,0.45);
-  border: 0.5px solid rgba(74,170,84,0.35);
-  border-radius: 9px;
-  padding: 12px 14px 12px 38px;
+  border: 1px solid rgba(74,170,84,0.4);
+  border-radius: 11px;
+  padding: 14px 16px 14px 42px;
   font-family: 'Raleway', sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--white);
   outline: none;
   transition: border-color .25s, background .25s, box-shadow .25s;
@@ -723,25 +732,25 @@
 
 .social-btns {
   display: grid;
-  grid-template-columns: repeat(3,1fr);
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 .soc-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 9px 8px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.08);
-  font-size: 11px;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.1);
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255,255,255,0.82);
+  color: rgba(255,255,255,0.9);
   text-decoration: none;
   cursor: pointer;
   transition: all .22s;
-  letter-spacing: .3px;
+  letter-spacing: .2px;
 }
 .soc-btn svg { width:14px; height:14px; flex-shrink:0; }
 .soc-btn:hover {
@@ -849,179 +858,156 @@
     max-height: none;
     min-height: 100dvh;
     min-height: 100vh;
-    justify-content: flex-start;
+    justify-content: center;
+    align-items: center;
     padding:
-      max(6px, env(safe-area-inset-top))
-      max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
       max(12px, env(safe-area-inset-bottom))
-      max(8px, env(safe-area-inset-left));
-    gap: 6px;
+      max(12px, env(safe-area-inset-left));
+    gap: 8px;
   }
 
   .brand {
-    margin-bottom: 4px;
-    padding-inline: 2px;
+    margin-bottom: 8px;
+    padding-inline: 4px;
+    width: 100%;
+    max-width: min(440px, 100%);
   }
 
   .brand-logo {
-    width: 40px;
-    height: 40px;
-    margin-bottom: 4px;
-    padding: 3px;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 6px;
   }
 
   .brand-name {
-    font-size: clamp(18px, 5.5vw, 26px);
-    letter-spacing: clamp(3px, 1vw, 6px);
-    text-indent: clamp(3px, 1vw, 6px);
-    line-height: 1.08;
+    font-size: clamp(24px, 7vw, 32px);
+    letter-spacing: clamp(4px, 1.2vw, 8px);
+    text-indent: clamp(4px, 1.2vw, 8px);
+    line-height: 1.1;
   }
 
   .brand-name--long {
-    font-size: clamp(16px, 5vw, 22px);
-    letter-spacing: 2px;
-    text-indent: 2px;
+    font-size: clamp(20px, 6vw, 28px);
+    letter-spacing: 3px;
+    text-indent: 3px;
   }
 
   .brand-tagline {
-    font-size: 8px;
-    letter-spacing: 2.5px;
-    margin-top: 3px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    margin-top: 4px;
   }
 
-  .brand-ornament {
-    display: none;
-  }
-
+  .brand-ornament,
   .brand-sub {
     display: none;
+  }
+
+  /* Solo formulario de login en móvil — estilo app nativa */
+  .login-promo-panel {
+    display: none !important;
   }
 
   .card {
     grid-template-columns: 1fr;
     overflow: visible;
     flex-shrink: 0;
-    min-height: auto;
     width: 100%;
-    max-width: 100%;
-    border-radius: 12px;
+    max-width: min(440px, 100%);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
   }
 
-  .left {
-    border-right: none;
-    border-bottom: 0.5px solid rgba(74,170,84, 0.18);
-    padding: 10px 12px 8px;
-    gap: 6px;
-    min-height: auto;
+  .login-form-panel {
+    padding: 52px 24px 24px;
+    text-align: center;
+    border-radius: 20px;
   }
 
-  .right {
-    padding: 12px 12px 14px;
-    min-height: auto;
+  .login-theme-corner {
+    top: 14px;
+    right: 14px;
   }
 
   .login-title {
-    font-size: 16px;
-  }
-
-  .login-title-row {
-    margin-bottom: 2px;
+    font-size: 24px;
+    margin-bottom: 4px;
+    text-align: center;
+    width: 100%;
   }
 
   .login-sub {
-    font-size: 10px;
-    margin-bottom: 8px;
-  }
-
-  .stats {
-    display: none;
-  }
-
-  .left .logo-pill {
-    display: none;
-  }
-
-  .left .headline,
-  .left .desc {
-    display: none;
-  }
-
-  .features {
-    gap: 4px;
-  }
-
-  .features .feat:nth-child(n+5) {
-    display: none;
-  }
-
-  .feat {
-    font-size: 10px;
-    align-items: flex-start;
-    line-height: 1.35;
-    gap: 6px;
-  }
-
-  .feat-icon {
-    width: 18px;
-    height: 18px;
-    margin-top: 0;
-  }
-
-  .feat-icon svg {
-    width: 9px;
-    height: 9px;
-  }
-
-  .tagline {
-    display: none;
+    font-size: 14px;
+    margin-bottom: 20px;
+    text-align: center;
+    line-height: 1.45;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.75);
   }
 
   .field-group {
-    gap: 7px;
-    margin-bottom: 8px;
+    gap: 14px;
+    margin-bottom: 16px;
+    text-align: left;
   }
 
   .field-label {
-    font-size: 9px;
+    font-size: 12px;
     letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 700;
   }
 
   .login-input {
-    padding: 9px 12px 9px 34px;
-    font-size: 12px;
+    padding: 15px 16px 15px 44px;
+    font-size: 16px;
+    border-radius: 12px;
+    border-width: 1.5px;
+  }
+
+  .login-input::placeholder {
+    font-size: 15px;
+  }
+
+  .field-icon {
+    width: 18px;
+    height: 18px;
+    left: 15px;
   }
 
   .login-btn {
-    padding: 11px;
-    font-size: 12px;
+    padding: 16px;
+    font-size: 16px;
     letter-spacing: 4px;
-    margin-bottom: 10px;
+    border-radius: 12px;
+    margin-bottom: 16px;
   }
 
   .divider {
-    margin-bottom: 8px;
-    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .div-text {
-    font-size: 9px;
+    font-size: 11px;
+    font-weight: 600;
   }
 
   .social-btns {
-    gap: 6px;
+    gap: 10px;
   }
 
   .soc-btn {
-    padding: 9px 6px;
-    font-size: 10px;
-    font-weight: 600;
-    gap: 5px;
-    border-width: 1px;
+    padding: 14px 18px;
+    font-size: 15px;
+    border-radius: 12px;
+    justify-content: center;
   }
 
   .soc-btn svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
 
   .wa {
@@ -1029,7 +1015,6 @@
     right: max(8px, env(safe-area-inset-right));
     padding: 7px 10px 7px 8px;
     font-size: 9px;
-    gap: 5px;
   }
 
   .wa svg {
@@ -1040,27 +1025,11 @@
 
 @media (max-width: 480px) {
   .brand-name {
-    font-size: clamp(17px, 5.5vw, 22px);
-    letter-spacing: 3px;
-    text-indent: 3px;
+    font-size: clamp(22px, 6.5vw, 28px);
   }
 
-  .brand-name--long {
-    font-size: clamp(15px, 4.8vw, 20px);
-    letter-spacing: 1.5px;
-    text-indent: 1.5px;
-  }
-
-  .features .feat:nth-child(n+4) {
-    display: none;
-  }
-
-  .left {
-    padding: 8px 10px 6px;
-  }
-
-  .right {
-    padding: 10px 10px 12px;
+  .login-form-panel {
+    padding: 48px 20px 20px;
   }
 }
 
@@ -1428,13 +1397,63 @@
 }
 
 [data-theme='light'] .card .login-sub,
-[data-theme='light'] .card .desc,
-[data-theme='light'] .card .field-label,
-[data-theme='light'] .card .stat-lbl,
-[data-theme='light'] .card .register-link,
-[data-theme='light'] .card .forgot,
+[data-theme='light'] .card .field-label {
+  color: #3D4A42 !important;
+  font-weight: 600;
+}
+
+[data-theme='light'] .card .login-title {
+  color: #141414 !important;
+  font-size: 22px;
+}
+
+@media (max-width: 760px) {
+  [data-theme='light'] .login-form-panel {
+    background: #FFFFFF !important;
+  }
+
+  [data-theme='light'] .card .login-title {
+    font-size: 24px !important;
+  }
+
+  [data-theme='light'] .card .login-sub {
+    color: #3D4A42 !important;
+    font-size: 14px !important;
+  }
+
+  [data-theme='light'] .card .field-label {
+    color: #2A2A2A !important;
+    font-size: 12px !important;
+  }
+
+  [data-theme='light'] .card .login-input {
+    background: #FAFFFC !important;
+    border-color: #6BAF88 !important;
+    color: #141414 !important;
+    font-size: 16px !important;
+  }
+
+  [data-theme='light'] .card .soc-btn {
+    background: #EEF8F2 !important;
+    border: 1.5px solid #6BAF88 !important;
+    color: #141414 !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+  }
+}
+
+[data-theme='light'] .card .stat {
+  background: #E8F7EE !important;
+}
+
 [data-theme='light'] .card .field-icon {
-  color: #4A4A4A !important;
+  color: #1F6B45 !important;
+}
+
+[data-theme='light'] .card .desc,
+[data-theme='light'] .card .stat-lbl,
+[data-theme='light'] .card .forgot {
+  color: #3D4A42 !important;
   text-shadow: none !important;
 }
 
