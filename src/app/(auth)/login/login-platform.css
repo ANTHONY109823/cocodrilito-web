@@ -844,18 +844,192 @@
   border-radius: 10px;
 }
 
-@media(max-width:760px) {
-  .card { grid-template-columns:1fr; }
-  .left { border-right:none; border-bottom:.5px solid rgba(74,170,84,0.18); }
-  .stats { grid-template-columns:repeat(3,1fr); }
-  .brand-name { font-size: clamp(28px, 8vw, 36px); letter-spacing: 8px; text-indent: 8px; }
-  .brand-name--long { font-size: clamp(22px, 6.5vw, 30px); letter-spacing: 5px; text-indent: 5px; }
-  .brand-logo { width:64px; height:64px; }
-  .page { padding:10px 10px 8px; }
+@media (max-width: 760px) {
+  .page {
+    max-height: none;
+    min-height: 100dvh;
+    min-height: 100vh;
+    justify-content: flex-start;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      max(20px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+    gap: 10px;
+  }
+
+  .brand {
+    margin-bottom: 6px;
+    padding-inline: 4px;
+  }
+
+  .brand-logo {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 6px;
+  }
+
+  .brand-name {
+    font-size: clamp(22px, 7vw, 32px);
+    letter-spacing: clamp(4px, 1.2vw, 8px);
+    text-indent: clamp(4px, 1.2vw, 8px);
+    line-height: 1.1;
+  }
+
+  .brand-name--long {
+    font-size: clamp(18px, 5.5vw, 26px);
+    letter-spacing: clamp(2px, 0.8vw, 5px);
+    text-indent: clamp(2px, 0.8vw, 5px);
+  }
+
+  .brand-tagline {
+    font-size: 9px;
+    letter-spacing: 3px;
+    margin-top: 4px;
+  }
+
+  .brand-ornament {
+    margin-top: 4px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .card {
+    grid-template-columns: 1fr;
+    overflow: visible;
+    flex-shrink: 0;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .left {
+    border-right: none;
+    border-bottom: 0.5px solid rgba(74,170,84, 0.18);
+    padding: 16px 16px 14px;
+    gap: 10px;
+    min-height: auto;
+  }
+
+  .right {
+    padding: 18px 16px 20px;
+    min-height: auto;
+  }
+
+  .login-title-row {
+    margin-bottom: 4px;
+  }
+
+  .login-sub {
+    margin-bottom: 12px;
+  }
+
+  /* Evita que stats empujen contenido sobre la sección de login */
+  .stats {
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 10px;
+  }
+
+  /* Logo pill duplica la marca del encabezado en móvil */
+  .left .logo-pill {
+    display: none;
+  }
+
+  .feat {
+    font-size: 11px;
+    align-items: flex-start;
+    line-height: 1.4;
+  }
+
+  .feat-icon {
+    margin-top: 1px;
+  }
+
+  .tagline {
+    font-size: 11px;
+    line-height: 1.45;
+    margin-top: 2px;
+    padding-top: 8px;
+    border-top: 0.5px solid rgba(74, 170, 84, 0.15);
+  }
+
+  .hl-normal {
+    font-size: clamp(15px, 4vw, 18px);
+  }
+
+  .hl-accent {
+    font-size: clamp(17px, 4.5vw, 22px);
+  }
+
+  .desc {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .wa {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+    padding: 8px 12px 8px 10px;
+    font-size: 10px;
+    gap: 6px;
+  }
+
+  .wa svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
-/* Pantallas con poca altura (100% zoom en laptops) */
-@media (max-height: 900px) {
+@media (max-width: 480px) {
+  .brand-name {
+    font-size: clamp(20px, 6.5vw, 28px);
+    letter-spacing: 4px;
+    text-indent: 4px;
+  }
+
+  .brand-name--long {
+    font-size: clamp(17px, 5vw, 24px);
+    letter-spacing: 2px;
+    text-indent: 2px;
+  }
+
+  .left .headline,
+  .left .desc {
+    display: none;
+  }
+
+  .stats {
+    display: none;
+  }
+
+  .features {
+    gap: 6px;
+  }
+
+  .left {
+    padding: 14px 14px 12px;
+  }
+
+  .right {
+    padding: 16px 14px 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .card {
+    grid-template-columns: 1fr;
+  }
+
+  .left {
+    border-right: none;
+    border-bottom: 0.5px solid rgba(74, 170, 84, 0.18);
+  }
+}
+
+/* Pantallas con poca altura en escritorio (no aplicar en móvil) */
+@media (max-height: 900px) and (min-width: 761px) {
   .brand { margin-bottom: 8px; }
   .brand-logo { width: 58px; height: 58px; margin-bottom: 6px; }
   .brand-name { font-size: clamp(28px, 5vw, 44px); }
@@ -870,7 +1044,7 @@
   .login-sub { margin-bottom: 10px; }
 }
 
-@media (max-height: 760px) {
+@media (max-height: 760px) and (min-width: 761px) {
   .brand-ornament { margin-top: 4px; }
   .brand-sub { display: none; }
   .desc { font-size: 12px; line-height: 1.5; }
@@ -1128,6 +1302,12 @@
 [data-theme='light'] .left {
   background: #EFFAF3 !important;
   border-right-color: #C8EDD6 !important;
+}
+
+@media (max-width: 900px) {
+  [data-theme='light'] .left {
+    border-bottom-color: #C8EDD6 !important;
+  }
 }
 
 [data-theme='light'] .right {
