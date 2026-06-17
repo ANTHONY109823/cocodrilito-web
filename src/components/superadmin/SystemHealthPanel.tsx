@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { superadminApi } from '@/lib/api/superadmin'
-import { DANGER, INFO, NEON, SURFACE_BORDER, WARNING } from '@/lib/constants/theme'
+import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 
 interface HealthCheck {
   name: string
@@ -47,7 +47,7 @@ export function SystemHealthPanel() {
 
   if (error) {
     return (
-      <div className="rounded-2xl p-4 text-sm" style={{ color: DANGER, border: `1px solid ${DANGER}40` }}>
+      <div className="rounded-2xl p-4 text-sm" style={{ color: DANGER, border: `1px solid ${dangerMix(40)}` }}>
         {error}
       </div>
     )
@@ -61,10 +61,10 @@ export function SystemHealthPanel() {
     <div className="rounded-2xl p-4"
       style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-        <h3 className="text-white font-semibold">Estado del sistema</h3>
+        <h3 className="text-[var(--color-text-primary)] font-semibold">Estado del sistema</h3>
         <span className="text-xs px-2 py-1 rounded-full font-medium"
           style={{
-            background: data.status === 'ready' ? `${NEON}20` : `${WARNING}20`,
+            background: data.status === 'ready' ? `${primaryMix(20)}` : `${warningMix(20)}`,
             color: data.status === 'ready' ? NEON : WARNING,
           }}>
           {data.status === 'ready' ? 'Listo para onboarding' : 'Requiere atención'}

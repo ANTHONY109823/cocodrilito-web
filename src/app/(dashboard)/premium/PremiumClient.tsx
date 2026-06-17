@@ -220,7 +220,7 @@ export default function PremiumPage() {
                   className={cn(
                     'relative cursor-pointer rounded-xl transition-transform hover:scale-[1.02]',
                     isSelected
-                      ? 'border-2 border-[#318F48] bg-[var(--color-primary-bg)] shadow-[0_0_25px_rgba(49,143,72,0.2)]'
+                      ? 'border-2 border-[var(--color-primary)] bg-[var(--color-primary-bg)] shadow-[0_0_25px_color-mix(in_srgb,var(--color-primary)_20%,transparent)]'
                       : plan.isPopular
                         ? 'border-2 border-[#C9943A]/40'
                         : 'border border-[rgba(189,255,223,0.12)]'

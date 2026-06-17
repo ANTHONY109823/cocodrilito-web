@@ -11,7 +11,7 @@ import {
   isAdminAcademia,
 } from '@/lib/auth/roles'
 import { trackLabel, QUESTION_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK } from '@/lib/constants/trackTypes'
-import { NEON } from '@/lib/constants/theme'
+import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 import { useAdminQuestions } from '@/hooks/useAdminQuestions'
 import { QuestionEditModal } from '@/components/admin/preguntas/QuestionEditModal'
 import { QuestionAddForm, TrackSelector, NEON2 } from '@/components/admin/preguntas/QuestionAddForm'
@@ -122,7 +122,7 @@ export default function PreguntasPage() {
               style={{
                 backgroundColor: q.showAddForm ? 'rgba(255,255,255,0.05)' : 'rgba(74,124,89,0.12)',
                 color: q.showAddForm ? '#6B7280' : NEON,
-                border: `1px solid ${q.showAddForm ? 'rgba(255,255,255,0.08)' : 'rgba(74,124,89,0.25)'}`,
+                border: `1px solid ${q.showAddForm ? 'var(--color-surface-border)' : 'rgba(74,124,89,0.25)'}`,
               }}
             >
               {q.showAddForm ? '✕ Cancelar' : '+ Nueva pregunta'}
@@ -161,9 +161,9 @@ export default function PreguntasPage() {
             className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
             title={s.hint}
             style={{
-              backgroundColor: q.questionScope === s.key ? `${NEON}20` : 'rgba(0,5,2,0.5)',
-              color: q.questionScope === s.key ? NEON : '#6B7280',
-              border: `1px solid ${q.questionScope === s.key ? NEON : '#ffffff10'}`,
+              backgroundColor: q.questionScope === s.key ? primaryMix(20) : SURFACE,
+              color: q.questionScope === s.key ? NEON : TEXT_MUTED,
+              border: `1px solid ${q.questionScope === s.key ? NEON : 'var(--color-surface-border)'}`,
             }}
           >
             {s.label}

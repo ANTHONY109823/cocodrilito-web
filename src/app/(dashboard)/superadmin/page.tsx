@@ -20,14 +20,7 @@ import { CreateTenantPanel, type CreateTenantFormState } from '@/components/supe
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { SystemHealthPanel } from '@/components/superadmin/SystemHealthPanel'
 import { SuperAdminUsersPanel } from '@/components/superadmin/SuperAdminUsersPanel'
-import {
-  NEON,
-  INFO,
-  WARNING,
-  DANGER,
-  SURFACE_BORDER,
-  policeGreenRgba,
-} from '@/lib/constants/theme'
+import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, policeGreenRgba, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 type TabKey =
   | 'inicio'
   | 'agencias'
@@ -323,20 +316,20 @@ function SuperAdminPageContent() {
             style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${policeGreenRgba(0.2)}` }}>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-white font-semibold">{t.name}</span>
+                <span className="text-[var(--color-text-primary)] font-semibold">{t.name}</span>
                 <span className="text-xs px-2 py-0.5 rounded-full"
                   style={{ backgroundColor: policeGreenRgba(0.15), color: NEON }}>
                   {displayInstitutionType(t.tenantType)}
                 </span>
                 {!t.isActive || t.suspended ? (
                   <span className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: `${DANGER}20`, color: DANGER }}>
+                    style={{ backgroundColor: `${dangerMix(20)}`, color: DANGER }}>
                     {t.suspended ? 'SUSPENDIDO' : 'Inactivo'}
                   </span>
                 ) : null}
                 {t.isExpired ? (
                   <span className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: `${DANGER}20`, color: DANGER }}>
+                    style={{ backgroundColor: `${dangerMix(20)}`, color: DANGER }}>
                     EXPIRADO
                   </span>
                 ) : t.accessExpiresAt ? (
@@ -353,7 +346,7 @@ function SuperAdminPageContent() {
                 {t.monthlyFee > 0 ? ` · S/. ${t.monthlyFee}/mes` : ''}
               </div>
               {t.accessExpiresAt ? (
-                <div className="text-xs mt-0.5" style={{ color: t.isExpired ? DANGER : '#6B8A75' }}>
+                <div className="text-xs mt-0.5" style={{ color: t.isExpired ? DANGER : TEXT_MUTED }}>
                   Vigencia: {t.accessStartsAt ? new Date(t.accessStartsAt).toLocaleDateString('es-PE') : '—'}
                   {' → '}
                   {new Date(t.accessExpiresAt).toLocaleDateString('es-PE')}
@@ -370,7 +363,7 @@ function SuperAdminPageContent() {
               </Link>
               <button type="button" onClick={() => handleImpersonate(t)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                style={{ backgroundColor: `${WARNING}15`, color: WARNING, border: `1px solid ${WARNING}30` }}>
+                style={{ backgroundColor: `${warningMix(15)}`, color: WARNING, border: `1px solid ${warningMix(30)}` }}>
                 Ingresar
               </button>
               {t.suspended || !t.isActive ? (
@@ -382,13 +375,13 @@ function SuperAdminPageContent() {
               ) : (
                 <button type="button" onClick={() => { setSuspendReason(''); setPendingAction({ tenant: t, kind: 'suspend' }) }}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                  style={{ backgroundColor: `${WARNING}12`, color: WARNING, border: `1px solid ${WARNING}25` }}>
+                  style={{ backgroundColor: `${warningMix(12)}`, color: WARNING, border: `1px solid ${warningMix(25)}` }}>
                   Suspender
                 </button>
               )}
               <button type="button" onClick={() => { setDeleteConfirmText(''); setPendingAction({ tenant: t, kind: 'delete' }) }}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                style={{ backgroundColor: `${DANGER}12`, color: DANGER, border: `1px solid ${DANGER}25` }}>
+                style={{ backgroundColor: `${dangerMix(12)}`, color: DANGER, border: `1px solid ${dangerMix(25)}` }}>
                 Eliminar
               </button>
             </div>
@@ -403,13 +396,13 @@ function SuperAdminPageContent() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600 mb-1">Powered by Simulacros.pe</p>
-          <h1 className="text-2xl font-bold text-white">Panel SuperAdmin</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Panel SuperAdmin</h1>
           <p className="text-gray-500 text-sm mt-0.5">Métricas globales y registro de instituciones</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <button type="button" onClick={openCreate}
             className="px-4 py-2 rounded-xl text-xs font-bold"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)' }}>
             ➕ Registrar agencia
           </button>
         </div>
@@ -433,9 +426,9 @@ function SuperAdminPageContent() {
           <Link key={t.key} href={`/superadmin?tab=${t.key}`}
             className="px-3 py-2 rounded-xl text-xs md:text-sm font-medium transition-all"
             style={{
-              backgroundColor: tab === t.key ? NEON : 'rgba(0,10,5,0.8)',
+              backgroundColor: tab === t.key ? NEON : SURFACE_CARD,
               color: tab === t.key ? '#000' : '#9CA3AF',
-              border: `1px solid ${tab === t.key ? NEON : '#ffffff10'}`,
+              border: `1px solid ${tab === t.key ? NEON : 'var(--color-surface-border)'}`,
             }}>
             {t.label}
           </Link>
@@ -448,8 +441,8 @@ function SuperAdminPageContent() {
             <SystemHealthPanel />
 
             <div className="rounded-2xl p-4"
-              style={{ background: 'var(--color-surface-card)', border: `1px solid ${WARNING}35` }}>
-              <h3 className="text-white font-semibold text-sm mb-1">Registro de cuentas</h3>
+              style={{ background: 'var(--color-surface-card)', border: `1px solid ${warningMix(35)}` }}>
+              <h3 className="text-[var(--color-text-primary)] font-semibold text-sm mb-1">Registro de cuentas</h3>
               <p className="text-xs text-gray-500 mb-3">
                 Crea instituciones con logo y fondo personalizado para su página de login.
               </p>
@@ -482,13 +475,13 @@ function SuperAdminPageContent() {
             </div>
             {dashboard.pendingPayments > 0 && (
               <div className="rounded-2xl p-4 text-sm"
-                style={{ background: `${DANGER}10`, border: `1px solid ${DANGER}30`, color: DANGER }}>
+                style={{ background: `${dangerMix(10)}`, border: `1px solid ${dangerMix(30)}`, color: DANGER }}>
                 ⚠️ {dashboard.pendingPayments} pago(s) de instituciones pendiente(s) de regularizar.
               </div>
             )}
             <div className="rounded-2xl p-4"
               style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
-              <h3 className="text-white font-semibold mb-3">Instituciones más activas</h3>
+              <h3 className="text-[var(--color-text-primary)] font-semibold mb-3">Instituciones más activas</h3>
               {dashboard.topTenantsByActivity.length === 0 ? (
                 <p className="text-gray-500 text-sm">Aún no hay actividad registrada.</p>
               ) : (
@@ -514,7 +507,7 @@ function SuperAdminPageContent() {
           <div className="flex justify-end">
             <button type="button" onClick={openCreate}
               className="px-4 py-2 rounded-xl text-sm font-bold"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)' }}>
               ➕ Nueva agencia
             </button>
           </div>
@@ -574,10 +567,10 @@ function SuperAdminPageContent() {
         {pendingAction?.kind === 'delete' ? (
           <div className="space-y-3">
             <p>
-              ¿Seguro que deseas eliminar <strong className="text-white">{pendingAction?.tenant.name}</strong>?
+              ¿Seguro que deseas eliminar <strong className="text-[var(--color-text-primary)]">{pendingAction?.tenant.name}</strong>?
               Se cancelarán las suscripciones activas y sus usuarios quedarán bloqueados.
             </p>
-            <div className="rounded-lg px-3 py-2 text-xs" style={{ background: `${DANGER}10`, color: DANGER }}>
+            <div className="rounded-lg px-3 py-2 text-xs" style={{ background: `${dangerMix(10)}`, color: DANGER }}>
               Verificación de seguridad: escribe el nombre exacto de la institución para confirmar.
             </div>
             <div>
@@ -586,7 +579,7 @@ function SuperAdminPageContent() {
               </label>
               <input
                 className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'var(--color-input-bg)', border: `1px solid ${DANGER}40` }}
+                style={{ background: 'var(--color-input-bg)', border: `1px solid ${dangerMix(40)}` }}
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder={pendingAction?.tenant.name}
@@ -597,7 +590,7 @@ function SuperAdminPageContent() {
         ) : (
           <div className="space-y-3">
             <p>
-              Al suspender <strong className="text-white">{pendingAction?.tenant.name}</strong>, todos sus usuarios
+              Al suspender <strong className="text-[var(--color-text-primary)]">{pendingAction?.tenant.name}</strong>, todos sus usuarios
               quedarán bloqueados hasta que la reactives.
             </p>
             <div>

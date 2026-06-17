@@ -103,7 +103,7 @@ export function TenantLoginBrandingFields({ value, onChange }: TenantLoginBrandi
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-3 pt-2" style={{ borderTop: '1px solid #ffffff10' }}>
+      <div className="grid md:grid-cols-2 gap-3 pt-2" style={{ borderTop: '1px solid var(--color-surface-border)' }}>
         <div className="md:col-span-2">
           <label className="block text-xs text-gray-500 mb-1">URL de WhatsApp (botón superior)</label>
           <input className={inputClass} style={inputStyle} placeholder="https://wa.me/51..."

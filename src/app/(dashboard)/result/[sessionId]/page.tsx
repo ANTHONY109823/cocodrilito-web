@@ -6,10 +6,21 @@ import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 import { ExplanationBlock } from '@/components/exam/ExplanationBlock'
 
-import { NEON } from '@/lib/constants/theme'
-const RED = '#FF5252'
-const BLUE = '#4FC3F7'
-const GOLD = '#FFD700'
+import {
+  NEON,
+  RED_BRIGHT as RED,
+  GOLD_BRIGHT as GOLD,
+  SKY as BLUE,
+  POLICE_GREEN_DARK,
+  primaryMix,
+  dangerMix,
+  infoMix,
+  redBrightMix,
+  goldBrightMix,
+  skyMix,
+  SURFACE_CARD,
+  TEXT_MUTED,
+} from '@/lib/constants/theme'
 
 interface ResultData {
   sessionId: string
@@ -83,13 +94,6 @@ export default function ResultPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes countUp { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
-        .fade-in { animation: fadeIn 0.4s ease forwards; }
-        .count-up { animation: countUp 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
-      `}</style>
-
       {/* BOTÓN VOLVER */}
       <Link href="/exams"
         className="inline-flex items-center gap-1 text-gray-500 hover:text-[var(--color-text-primary)] text-sm mb-6 transition-colors">
@@ -99,9 +103,9 @@ export default function ResultPage() {
       {/* RESULTADO PRINCIPAL */}
       <div className="rounded-2xl p-8 text-center mb-4 fade-in"
         style={{
-          background: result.passed ? 'rgba(74,124,89,0.06)' : 'rgba(255,82,82,0.06)',
-          border: `1px solid ${scoreColor}25`,
-          boxShadow: `0 0 40px ${scoreColor}15`
+          background: result.passed ? primaryMix(6) : dangerMix(6),
+          border: `1px solid ${result.passed ? primaryMix(25) : redBrightMix(25)}`,
+          boxShadow: `0 0 40px ${result.passed ? primaryMix(15) : redBrightMix(15)}`,
         }}>
         <div className="text-6xl mb-4 count-up">{scoreEmoji}</div>
         <div className="text-7xl font-bold mb-2 count-up"
@@ -123,10 +127,10 @@ export default function ResultPage() {
       {/* STATS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 fade-in">
         {[
-          { label: '✅ Correctas', value: result.correctAnswers, color: NEON, bg: 'rgba(74,124,89,0.06)', border: 'rgba(74,124,89,0.15)' },
-          { label: '❌ Incorrectas', value: incorrect, color: RED, bg: 'rgba(255,82,82,0.06)', border: 'rgba(255,82,82,0.15)' },
-          { label: '⬜ Sin responder', value: unanswered, color: GOLD, bg: 'rgba(255,215,0,0.06)', border: 'rgba(255,215,0,0.15)' },
-          { label: '📋 Total', value: result.totalQuestions, color: BLUE, bg: 'rgba(79,195,247,0.06)', border: 'rgba(79,195,247,0.15)' },
+          { label: '✅ Correctas', value: result.correctAnswers, color: NEON, bg: primaryMix(6), border: primaryMix(15) },
+          { label: '❌ Incorrectas', value: incorrect, color: RED, bg: dangerMix(6), border: redBrightMix(15) },
+          { label: '⬜ Sin responder', value: unanswered, color: GOLD, bg: goldBrightMix(6), border: goldBrightMix(15) },
+          { label: '📋 Total', value: result.totalQuestions, color: BLUE, bg: skyMix(6), border: skyMix(15) },
         ].map((item, i) => (
           <div key={i} className="rounded-2xl p-4 text-center"
             style={{ backgroundColor: item.bg, border: `1px solid ${item.border}` }}>
@@ -142,7 +146,7 @@ export default function ResultPage() {
 
       {unanswered > 0 && (
         <div className="rounded-xl px-4 py-2.5 text-xs mb-4 text-center"
-          style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', color: GOLD }}>
+          style={{ background: goldBrightMix(8), border: `1px solid ${goldBrightMix(20)}`, color: GOLD }}>
           Las preguntas sin responder cuentan como incorrectas.
         </div>
       )}
@@ -152,17 +156,17 @@ export default function ResultPage() {
         <button onClick={() => setShowAnswers(!showAnswers)}
           className="py-3 rounded-xl text-sm font-semibold transition-all"
           style={{
-            backgroundColor: showAnswers ? `${BLUE}15` : 'rgba(0,8,4,0.8)',
-            color: showAnswers ? BLUE : '#9CA3AF',
-            border: `1px solid ${showAnswers ? BLUE : '#ffffff10'}20`
+            backgroundColor: showAnswers ? infoMix(15) : 'var(--color-surface-elevated)',
+            color: showAnswers ? BLUE : TEXT_MUTED,
+            border: `1px solid ${showAnswers ? infoMix(20) : 'var(--color-surface-border)'}`,
           }}>
           {showAnswers ? 'Ocultar respuestas' : 'Ver respuestas'}
         </button>
         <Link href="/exams"
           className="py-3 rounded-xl text-sm font-bold text-center transition-all hover:scale-[1.02]"
           style={{
-            background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
-            color: '#000', boxShadow: `0 0 15px ${NEON}30`
+            background: `linear-gradient(135deg, ${NEON}, ${POLICE_GREEN_DARK})`,
+            color: 'var(--color-text-primary)', boxShadow: `0 0 15px ${primaryMix(30)}`,
           }}>
           Otro examen →
         </Link>
@@ -177,7 +181,7 @@ export default function ResultPage() {
       {/* REVISIÓN DE RESPUESTAS */}
       {showAnswers && (
         <div className="space-y-3 fade-in">
-          <h3 className="text-white font-bold text-base">Revisión de respuestas</h3>
+          <h3 className="text-[var(--color-text-primary)] font-bold text-base">Revisión de respuestas</h3>
           {answerList.length === 0 ? (
             <p className="text-gray-500 text-sm text-center py-6">
               No hay detalle de respuestas disponible para esta sesión.
@@ -187,12 +191,12 @@ export default function ResultPage() {
             return (
               <div key={ans.questionId} className="rounded-2xl p-4"
                 style={{
-                  background: 'rgba(0,5,2,0.9)',
-                  border: `1px solid ${ans.isCorrect ? NEON : RED}20`
+                  background: SURFACE_CARD,
+                  border: `1px solid ${ans.isCorrect ? primaryMix(20) : redBrightMix(20)}`,
                 }}>
                 <div className="flex items-start gap-2 mb-3">
                   <span className="text-lg shrink-0">{ans.isCorrect ? '✅' : '❌'}</span>
-                  <p className="text-white text-sm font-medium leading-relaxed">
+                  <p className="text-[var(--color-text-primary)] text-sm font-medium leading-relaxed">
                     {i + 1}. {ans.questionText}
                   </p>
                 </div>
@@ -207,12 +211,12 @@ export default function ResultPage() {
                         <div key={opt.id}
                           className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
                           style={{
-                            backgroundColor: isCorrect ? `${NEON}12` : isWrong ? `${RED}12` : 'transparent',
-                            border: `1px solid ${isCorrect ? `${NEON}30` : isWrong ? `${RED}30` : 'transparent'}`
+                            backgroundColor: isCorrect ? `${primaryMix(12)}` : isWrong ? `${redBrightMix(12)}` : 'transparent',
+                            border: `1px solid ${isCorrect ? `${primaryMix(30)}` : isWrong ? `${redBrightMix(30)}` : 'transparent'}`
                           }}>
                           <span className="w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold shrink-0"
                             style={{
-                              backgroundColor: isCorrect ? NEON : isWrong ? RED : '#ffffff10',
+                              backgroundColor: isCorrect ? NEON : isWrong ? RED : 'var(--color-surface-border)',
                               color: (isCorrect || isWrong) ? '#000' : '#6B7280'
                             }}>
                             {letters[j]}

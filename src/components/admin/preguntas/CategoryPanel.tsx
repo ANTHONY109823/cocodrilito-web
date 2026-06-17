@@ -71,7 +71,7 @@ export function CategoryPanel({
             style={{
               backgroundColor: showAddCategory ? 'rgba(255,255,255,0.05)' : 'rgba(74,124,89,0.1)',
               color: showAddCategory ? '#6B7280' : NEON,
-              border: `1px solid ${showAddCategory ? 'rgba(255,255,255,0.08)' : 'rgba(74,124,89,0.2)'}`,
+              border: `1px solid ${showAddCategory ? 'var(--color-surface-border)' : 'rgba(74,124,89,0.2)'}`,
             }}
           >
             {showAddCategory ? '✕ Cancelar' : '+ Agregar categoría'}
@@ -112,7 +112,7 @@ export function CategoryPanel({
               className="px-4 py-2 rounded-lg text-xs font-semibold shrink-0 transition-opacity"
               style={{
                 background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
-                color: '#000',
+                color: 'var(--color-text-primary)',
                 opacity: saving || !newCatName.trim() ? 0.5 : 1,
               }}
             >

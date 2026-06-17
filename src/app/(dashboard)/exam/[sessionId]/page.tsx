@@ -12,10 +12,19 @@ import {
   saveExamSessionCache,
 } from '@/lib/examSession'
 
-import { NEON } from '@/lib/constants/theme'
+import {
+  NEON,
+  POLICE_GREEN_DARK,
+  RED_BRIGHT as RED,
+  GOLD_BRIGHT as GOLD,
+  primaryMix,
+  SURFACE,
+  SURFACE_CARD,
+  TEXT_MUTED,
+  INPUT_BG,
+} from '@/lib/constants/theme'
 import { Modal, Button } from '@/components/ui'
-const RED = '#FF5252'
-const GOLD = '#FFD700'
+
 const ORANGE = '#FF8A3D'
 
 interface AnswerOption {
@@ -265,7 +274,7 @@ export default function ExamPage() {
       <div className="rounded-2xl p-4 mb-4 flex items-center justify-between"
         style={{ background: 'var(--color-surface-elevated)', border: '1px solid var(--color-surface-border)' }}>
         <div>
-          <div className="text-white font-bold text-sm">{session.examTitle}</div>
+          <div className="text-[var(--color-text-primary)] font-bold text-sm">{session.examTitle}</div>
           {currentQ?.category ? (
             <div className="text-xs mt-0.5" style={{ color: NEON }}>
               {currentQ.category}
@@ -289,18 +298,18 @@ export default function ExamPage() {
       </div>
 
       {/* BARRA DE PROGRESO */}
-      <div className="w-full h-1.5 rounded-full mb-4" style={{ backgroundColor: '#ffffff08' }}>
+      <div className="w-full h-1.5 rounded-full mb-4" style={{ backgroundColor: 'var(--color-primary-bg)' }}>
         <div className="h-1.5 rounded-full transition-all duration-500"
-          style={{ width: `${progress}%`, background: `linear-gradient(90deg, ${NEON}60, ${NEON})` }} />
+          style={{ width: `${progress}%`, background: `linear-gradient(90deg, ${primaryMix(60)}, ${NEON})` }} />
       </div>
 
       {/* PREGUNTA */}
       <div className="rounded-2xl p-5 mb-4 fade-in" key={currentIdx}
-        style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${NEON}15` }}>
+        style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${primaryMix(15)}` }}>
         <div className="text-xs text-gray-600 mb-3 uppercase tracking-wider">
           Pregunta {currentIdx + 1}
         </div>
-        <p className="text-white text-base font-medium leading-relaxed mb-6">
+        <p className="text-[var(--color-text-primary)] text-base font-medium leading-relaxed mb-6">
           {currentQ?.questionText}
         </p>
 
@@ -314,15 +323,15 @@ export default function ExamPage() {
                   disabled={!!selectedOption}
                   className="w-full text-left rounded-xl p-4 transition-all flex items-start gap-3"
                   style={{
-                    background: isSelected ? 'rgba(74,124,89,0.12)' : 'rgba(0,5,2,0.6)',
-                    border: `1px solid ${isSelected ? NEON : '#ffffff10'}`,
-                    boxShadow: isSelected ? `0 0 15px ${NEON}20` : 'none',
+                    background: isSelected ? primaryMix(12) : INPUT_BG,
+                    border: `1px solid ${isSelected ? NEON : 'var(--color-surface-border)'}`,
+                    boxShadow: isSelected ? `0 0 15px ${primaryMix(20)}` : 'none',
                     cursor: selectedOption ? 'default' : 'pointer',
                     transform: isSelected ? 'scale(1.01)' : 'scale(1)'
                   }}>
                   <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
                     style={{
-                      backgroundColor: isSelected ? NEON : '#ffffff10',
+                      backgroundColor: isSelected ? NEON : 'var(--color-surface-border)',
                       color: isSelected ? '#000' : '#9CA3AF'
                     }}>
                     {letters[i]}
@@ -345,7 +354,7 @@ export default function ExamPage() {
             disabled={currentIdx === 0}
             className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
             style={{
-              backgroundColor: currentIdx === 0 ? 'rgba(0,5,2,0.3)' : 'rgba(0,8,4,0.8)',
+              backgroundColor: currentIdx === 0 ? SURFACE : 'var(--color-surface-elevated)',
               color: currentIdx === 0 ? '#374151' : '#9CA3AF',
               border: '1px solid var(--color-surface-border)',
               cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
@@ -359,7 +368,7 @@ export default function ExamPage() {
             allAnswered ? (
               <button onClick={() => setShowFinishModal(true)}
                 className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
-                style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', boxShadow: `0 0 20px ${NEON}40` }}>
+                style={{ background: `linear-gradient(135deg, ${NEON}, ${POLICE_GREEN_DARK})`, color: 'var(--color-text-primary)', boxShadow: `0 0 20px ${primaryMix(40)}` }}>
                 Ver resultado →
               </button>
             ) : (
@@ -406,7 +415,7 @@ export default function ExamPage() {
           </p>
         ) : (
           <div className="space-y-2">
-            <div className="flex justify-between"><span>Respondidas:</span><strong className="text-white">{answeredCount} de {effectiveTotal}</strong></div>
+            <div className="flex justify-between"><span>Respondidas:</span><strong className="text-[var(--color-text-primary)]">{answeredCount} de {effectiveTotal}</strong></div>
             <div className="flex justify-between"><span>Sin responder:</span><strong style={{ color: ORANGE }}>{unansweredCount} preguntas</strong></div>
             <p className="pt-2 text-gray-400">
               Las preguntas sin responder contarán como incorrectas en tu resultado. ¿Estás seguro de que

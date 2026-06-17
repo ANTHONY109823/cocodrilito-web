@@ -6,7 +6,7 @@ import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 import { ExplanationBlock } from '@/components/exam/ExplanationBlock'
 
-import { NEON } from '@/lib/constants/theme'
+import { NEON, INPUT_BG, SURFACE, TEXT_MUTED, TEXT_SECONDARY, primaryMix } from '@/lib/constants/theme'
 
 interface ReviewQuestion {
   id: string
@@ -71,7 +71,7 @@ export default function ReviewPage() {
         <p className="text-gray-400 text-sm mb-6">Respondiste todo correctamente en este simulacro.</p>
         <Link href="/history"
           className="inline-flex px-6 py-3 rounded-xl font-bold text-sm"
-          style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+          style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)' }}>
           Volver al historial
         </Link>
       </div>
@@ -102,11 +102,11 @@ export default function ReviewPage() {
 
       {/* PROGRESO */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: '#ffffff08' }}>
+        <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-primary-bg)' }}>
           <div className="h-1.5 rounded-full transition-all duration-500"
             style={{
               width: `${((currentIdx + 1) / review.questions.length) * 100}%`,
-              background: `linear-gradient(90deg, ${NEON}60, ${NEON})`
+              background: `linear-gradient(90deg, ${primaryMix(60)}, ${NEON})`
             }} />
         </div>
         <span className="text-xs text-gray-500 shrink-0">
@@ -116,16 +116,16 @@ export default function ReviewPage() {
 
       {/* PREGUNTA */}
       <div className="rounded-2xl p-5 mb-4 fade-in" key={currentIdx}
-        style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${NEON}15` }}>
+        style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${primaryMix(15)}` }}>
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xs px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: `${NEON}15`, color: NEON }}>
+            style={{ backgroundColor: `${primaryMix(15)}`, color: NEON }}>
             {currentQ.category}
           </span>
           <span className="text-xs text-gray-600">Pregunta {currentIdx + 1}</span>
         </div>
 
-        <p className="text-white text-base font-medium leading-relaxed mb-5">
+        <p className="text-[var(--color-text-primary)] text-base font-medium leading-relaxed mb-5">
           {currentQ.questionText}
         </p>
 
@@ -134,15 +134,15 @@ export default function ReviewPage() {
             .sort((a, b) => a.optionIndex - b.optionIndex)
             .map((opt, i) => {
               const isCorrect = opt.isCorrect
-              let borderColor = '#ffffff10'
-              let bgColor = 'rgba(0,5,2,0.6)'
-              let textColor = '#D1D5DB'
+              let borderColor = 'var(--color-surface-border)'
+              let bgColor = INPUT_BG
+              let textColor = TEXT_SECONDARY
 
               if (revealed) {
                 if (isCorrect) {
                   borderColor = NEON
-                  bgColor = 'rgba(74,124,89,0.12)'
-                  textColor = '#fff'
+                  bgColor = primaryMix(12)
+                  textColor = 'var(--color-text-primary)'
                 }
               }
 
@@ -152,8 +152,8 @@ export default function ReviewPage() {
                   style={{ background: bgColor, border: `1px solid ${borderColor}` }}>
                   <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
                     style={{
-                      backgroundColor: revealed && isCorrect ? NEON : '#ffffff10',
-                      color: revealed && isCorrect ? '#000' : '#9CA3AF'
+                      backgroundColor: revealed && isCorrect ? NEON : 'var(--color-surface-border)',
+                      color: revealed && isCorrect ? '#000000' : TEXT_MUTED,
                     }}>
                     {letters[i]}
                   </span>
@@ -182,20 +182,20 @@ export default function ReviewPage() {
           <button
             onClick={() => setRevealed(true)}
             className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)' }}>
             Ver respuesta correcta
           </button>
         ) : isLast ? (
           <Link href="/history"
             className="flex-1 py-3 rounded-xl font-bold text-sm text-center transition-all hover:scale-[1.01]"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)' }}>
             ✅ Repaso completado
           </Link>
         ) : (
           <button
             onClick={() => { setCurrentIdx(prev => prev + 1); setRevealed(false) }}
             className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01]"
-            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+            style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)' }}>
             Siguiente pregunta →
           </button>
         )}
@@ -203,7 +203,7 @@ export default function ReviewPage() {
         {revealed && !isLast && (
           <Link href="/history"
             className="px-5 py-3 rounded-xl text-sm font-medium text-center"
-            style={{ backgroundColor: 'rgba(0,5,2,0.5)', color: 'var(--color-text-muted)', border: '1px solid var(--color-surface-border)' }}>
+            style={{ backgroundColor: SURFACE, color: 'var(--color-text-muted)', border: '1px solid var(--color-surface-border)' }}>
             Salir
           </Link>
         )}

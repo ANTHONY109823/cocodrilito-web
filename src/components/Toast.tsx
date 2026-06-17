@@ -1,12 +1,12 @@
 'use client'
 
 import { useToastStore, type ToastType } from '@/lib/store/toastStore'
-import { DANGER, INFO, NEON } from '@/lib/constants/theme'
+import { DANGER, INFO, NEON, dangerMix, infoMix, primaryMix } from '@/lib/constants/theme'
 
 const TYPE_STYLES: Record<ToastType, { bg: string; border: string; color: string }> = {
-  success: { bg: 'rgba(74,124,89,0.15)', border: `${NEON}50`, color: NEON },
-  error: { bg: 'rgba(192,57,43,0.15)', border: `${DANGER}50`, color: DANGER },
-  info: { bg: 'rgba(46,134,171,0.15)', border: `${INFO}50`, color: INFO },
+  success: { bg: primaryMix(15), border: primaryMix(50), color: NEON },
+  error: { bg: dangerMix(15), border: dangerMix(50), color: DANGER },
+  info: { bg: infoMix(15), border: infoMix(50), color: INFO },
 }
 
 export function ToastContainer() {

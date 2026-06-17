@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { superadminApi } from '@/lib/api/superadmin'
 import { SkeletonTable } from '@/components/Skeleton'
-import { DANGER, NEON, SURFACE_BORDER, WARNING, policeGreenRgba } from '@/lib/constants/theme'
+import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, policeGreenRgba, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 
 export interface SuperAdminUserRow {
   id: string
@@ -107,7 +107,7 @@ export function SuperAdminUsersPanel({ tenantId, tenantName, compact }: SuperAdm
       style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-white font-semibold">
+          <h3 className="text-[var(--color-text-primary)] font-semibold">
             {tenantName ? `Usuarios de ${tenantName}` : 'Todos los usuarios de la plataforma'}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
@@ -153,17 +153,17 @@ export function SuperAdminUsersPanel({ tenantId, tenantName, compact }: SuperAdm
         <div className="space-y-2">
           {users.map((u) => (
             <div key={u.id} className="rounded-xl px-4 py-3 flex flex-wrap items-start justify-between gap-3"
-              style={{ background: 'rgba(0,5,2,0.5)', border: `1px solid ${policeGreenRgba(0.12)}` }}>
+              style={{ background: SURFACE, border: `1px solid ${policeGreenRgba(0.12)}` }}>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-white font-medium text-sm">{u.fullName}</span>
+                  <span className="text-[var(--color-text-primary)] font-medium text-sm">{u.fullName}</span>
                   <span className="text-xs px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: `${roleColor(u.role)}18`, color: roleColor(u.role) }}>
                     {roleLabel(u.role)}
                   </span>
                   {!u.isActive && (
                     <span className="text-xs px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: `${DANGER}20`, color: DANGER }}>
+                      style={{ backgroundColor: `${dangerMix(20)}`, color: DANGER }}>
                       Inactivo
                     </span>
                   )}

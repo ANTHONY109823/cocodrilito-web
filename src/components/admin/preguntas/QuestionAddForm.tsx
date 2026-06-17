@@ -1,7 +1,7 @@
 'use client'
 
 import { QUESTION_TRACK_OPTIONS, trackLabel } from '@/lib/constants/trackTypes'
-import { NEON } from '@/lib/constants/theme'
+import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 import type { QuestionFormState } from '@/components/admin/preguntas/types'
 import { OPTION_LETTERS } from '@/components/admin/preguntas/types'
 
@@ -29,7 +29,7 @@ export function QuestionAddForm({
       className="rounded-xl p-5 mb-4 fade-in"
       style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
     >
-      <p className="text-white font-medium text-sm mb-4">Nueva pregunta manual</p>
+      <p className="text-[var(--color-text-primary)] font-medium text-sm mb-4">Nueva pregunta manual</p>
       <form onSubmit={onSubmit} className="space-y-3">
         <div>
           <label className="block text-xs text-gray-500 mb-1">Examen *</label>
@@ -139,7 +139,7 @@ export function QuestionAddForm({
           className="w-full py-2.5 rounded-xl font-semibold text-sm transition-opacity"
           style={{
             background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
-            color: '#000',
+            color: 'var(--color-text-primary)',
             opacity: saving ? 0.7 : 1,
           }}
         >
@@ -159,7 +159,7 @@ export function TrackSelector({ activeTrackType, onChange }: TrackSelectorProps)
   return (
     <div
       className="rounded-2xl p-4 mb-5 space-y-3"
-      style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}25` }}
+      style={{ background: 'var(--color-surface-card)', border: `1px solid ${primaryMix(25)}` }}
     >
       <div
         className="rounded-xl px-3 py-2 text-xs text-gray-400"
@@ -172,7 +172,7 @@ export function TrackSelector({ activeTrackType, onChange }: TrackSelectorProps)
       </div>
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="text-white font-semibold text-sm mb-1">Balotario de preguntas</div>
+          <div className="text-[var(--color-text-primary)] font-semibold text-sm mb-1">Balotario de preguntas</div>
           <p className="text-xs text-gray-500">
             Elige el balotario y verás o subirás preguntas del mismo. Capacidad hasta 3000 por balotario.
           </p>

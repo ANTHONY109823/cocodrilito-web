@@ -9,9 +9,10 @@ import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { getPostLoginPath } from '@/lib/auth/roles'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
+import { SURFACE_CARD, primaryMix } from '@/lib/constants/theme'
 
-const NEON = '#4A7C59'
-const GOLD = '#F5C842'
+const PAGE_NEON = '#4A7C59'
+const PAGE_GOLD = '#F5C842'
 
 export default function CambiarClavePage() {
   const router = useRouter()
@@ -84,7 +85,7 @@ export default function CambiarClavePage() {
     >
       <div
         className="w-full max-w-md rounded-2xl p-8"
-        style={{ background: 'rgba(8,18,9,0.85)', border: `1px solid ${NEON}40` }}
+        style={{ background: SURFACE_CARD, border: `1px solid ${primaryMix(40)}` }}
       >
         <div className="text-center mb-6">
           <div className="text-3xl mb-2">🔐</div>
@@ -145,7 +146,7 @@ export default function CambiarClavePage() {
             type="submit"
             disabled={loading}
             className="w-full py-2.5 rounded-lg text-sm font-bold transition-all"
-            style={{ background: GOLD, color: '#000', opacity: loading ? 0.7 : 1 }}
+            style={{ background: PAGE_GOLD, color: 'var(--color-text-primary)', opacity: loading ? 0.7 : 1 }}
           >
             {loading ? 'Guardando...' : 'Guardar y continuar'}
           </button>

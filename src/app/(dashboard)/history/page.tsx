@@ -109,7 +109,7 @@ export default function HistoryPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-white">{s.examTitle}</span>
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)]">{s.examTitle}</span>
                       <Badge color={s.passed ? 'green' : 'red'}>
                         {s.passed ? '✓ Aprobado' : '✗ No aprobado'}
                       </Badge>

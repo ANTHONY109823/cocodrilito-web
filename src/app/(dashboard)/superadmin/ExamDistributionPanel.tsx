@@ -8,7 +8,7 @@ import {
 import { toast } from '@/components/Toast'
 import { Button } from '@/components/ui'
 import { SkeletonTable } from '@/components/Skeleton'
-import { NEON, DANGER, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
+import { NEON, DANGER, SURFACE_BORDER, SURFACE_CARD, policeGreenRgba } from '@/lib/constants/theme'
 
 const TOTALS = [100, 50, 25] as const
 
@@ -98,9 +98,9 @@ export function ExamDistributionPanel() {
             onClick={() => setActiveTotal(t)}
             className="px-4 py-2 rounded-xl text-sm font-bold transition-all"
             style={{
-              backgroundColor: activeTotal === t ? NEON : 'rgba(0,10,5,0.8)',
+              backgroundColor: activeTotal === t ? NEON : SURFACE_CARD,
               color: activeTotal === t ? '#000' : '#9CA3AF',
-              border: `1px solid ${activeTotal === t ? NEON : '#ffffff10'}`,
+              border: `1px solid ${activeTotal === t ? NEON : 'var(--color-surface-border)'}`,
             }}
           >
             {t} preguntas

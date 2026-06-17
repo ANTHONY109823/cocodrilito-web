@@ -9,7 +9,23 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin, getPostLoginPath } from '@/lib/auth/roles'
 import { tenantAdminApi, type AdminDashboardData, type TenantProfile } from '@/lib/api/tenantAdmin'
 import { formatRelativeTime } from '@/lib/utils/relativeTime'
-import { NEON } from '@/lib/constants/theme'
+import {
+  NEON,
+  SKY as NEON2,
+  GOLD_BRIGHT as GOLD,
+  RED_BRIGHT as RED,
+  PURPLE_ACCENT as PURPLE,
+  POLICE_GREEN_DARK,
+  SURFACE_CARD,
+  SURFACE,
+  TEXT_MUTED,
+  primaryMix,
+  warningMix,
+  skyMix,
+  purpleMix,
+  redBrightMix,
+  goldBrightMix,
+} from '@/lib/constants/theme'
 import {
   SUBSCRIPTION_PLANS,
   formatPlanPrice,
@@ -51,11 +67,6 @@ interface Subscription {
   status: string
   createdAt: string
 }
-
-const NEON2 = '#4FC3F7'
-const GOLD = '#FFD700'
-const RED = '#FF5252'
-const PURPLE = '#A855F7'
 
 type AdminTab = 'dashboard' | 'users'
 type UserSubTab = 'activos' | 'inactivos' | 'crear'
@@ -532,36 +543,36 @@ function AdminPageContent() {
               </div>
 
               {dashData.pendingSubscriptions > 0 && (
-                <div className="rounded-2xl p-4 panel-card" style={{ border: `1px solid ${GOLD}20` }}>
+                <div className="rounded-2xl p-4 panel-card" style={{ border: `1px solid ${warningMix(20)}` }}>
                   <h3 className="text-[var(--color-text-primary)] font-semibold mb-3">Pagos por aprobar</h3>
                   <div className="space-y-3">
                     {subscriptions.map(sub => {
                       const days = inferDays(sub.amountPaid)
                       return (
                         <div key={sub.id} className="rounded-xl p-4 panel-elevated"
-                          style={{ border: `1px solid ${GOLD}15` }}>
+                          style={{ border: `1px solid ${warningMix(15)}` }}>
                           <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div>
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span className="text-sm font-bold" style={{ color: GOLD }}>S/. {sub.amountPaid}</span>
                                 <span className="text-xs px-2 py-0.5 rounded-full"
-                                  style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{sub.paymentMethod}</span>
+                                  style={{ backgroundColor: `${warningMix(15)}`, color: GOLD }}>{sub.paymentMethod}</span>
                                 <span className="text-xs px-2 py-0.5 rounded-full"
-                                  style={{ backgroundColor: `${NEON}10`, color: NEON }}>→ {days} días</span>
+                                  style={{ backgroundColor: `${primaryMix(10)}`, color: NEON }}>→ {days} días</span>
                               </div>
                               <div className="text-gray-400 text-xs">
-                                Ref: <span className="text-white">{sub.paymentReference || 'Sin referencia'}</span>
+                                Ref: <span className="text-[var(--color-text-primary)]">{sub.paymentReference || 'Sin referencia'}</span>
                               </div>
                             </div>
                             <div className="flex gap-2">
                               <button type="button" onClick={() => handleApprove(sub)}
                                 className="px-4 py-2 rounded-lg text-sm font-bold"
-                                style={{ backgroundColor: NEON, color: '#000' }}>
+                                style={{ backgroundColor: NEON, color: 'var(--color-text-primary)' }}>
                                 Aprobar {days}d
                               </button>
                               <button type="button" onClick={() => { setRejectReason(''); setRejectTarget(sub.id) }}
                                 className="px-4 py-2 rounded-lg text-sm font-medium"
-                                style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}30` }}>
+                                style={{ backgroundColor: `${redBrightMix(15)}`, color: RED, border: `1px solid ${redBrightMix(30)}` }}>
                                 Rechazar
                               </button>
                             </div>
@@ -584,9 +595,9 @@ function AdminPageContent() {
               <AppNavLink key={st.key} href={st.href}
                 className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
                 style={{
-                  backgroundColor: userSub === st.key ? (st.key === 'inactivos' ? RED : NEON) : 'rgba(0,10,5,0.8)',
-                  color: userSub === st.key ? '#000' : '#9CA3AF',
-                  border: `1px solid ${userSub === st.key ? (st.key === 'inactivos' ? RED : NEON) : '#ffffff10'}`,
+                  backgroundColor: userSub === st.key ? (st.key === 'inactivos' ? RED : NEON) : SURFACE_CARD,
+                  color: userSub === st.key ? '#000000' : TEXT_MUTED,
+                  border: `1px solid ${userSub === st.key ? (st.key === 'inactivos' ? RED : NEON) : 'var(--color-surface-border)'}`,
                 }}>
                 {st.label}
                 {st.count !== null && st.count > 0 && (
@@ -602,25 +613,25 @@ function AdminPageContent() {
       {userSub === 'activos' && (
         <div>
           {createdUser && (
-            <div className="rounded-2xl p-4 mb-4 fade-in" style={{ background: 'var(--color-primary-bg)', border: `2px solid ${NEON}50` }}>
+            <div className="rounded-2xl p-4 mb-4 fade-in" style={{ background: 'var(--color-primary-bg)', border: `2px solid ${primaryMix(50)}` }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold mb-2" style={{ color: NEON }}>✅ Usuario creado correctamente</p>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
                     <span className="text-gray-500">Nombre</span>
-                    <span className="text-white font-medium">{createdUser.fullName}</span>
+                    <span className="text-[var(--color-text-primary)] font-medium">{createdUser.fullName}</span>
                     <span className="text-gray-500">Usuario de acceso</span>
-                    <span className="text-white font-bold tracking-wide">{createdUser.loginUsername ?? '—'}</span>
+                    <span className="text-[var(--color-text-primary)] font-bold tracking-wide">{createdUser.loginUsername ?? '—'}</span>
                     <span className="text-gray-500">Email (contacto)</span>
-                    <span className="text-white">{createdUser.email}</span>
+                    <span className="text-[var(--color-text-primary)]">{createdUser.email}</span>
                     <span className="text-gray-500">DNI</span>
-                    <span className="text-white">{createdUser.dni}</span>
+                    <span className="text-[var(--color-text-primary)]">{createdUser.dni}</span>
                     <span className="text-gray-500">Plan</span>
                     <span style={{ color: NEON }}>{createdUser.planDays} días</span>
                     {createdUser.expiresAt && (
                       <>
                         <span className="text-gray-500">Vence</span>
-                        <span className="text-white">{new Date(createdUser.expiresAt).toLocaleDateString('es-PE')}</span>
+                        <span className="text-[var(--color-text-primary)]">{new Date(createdUser.expiresAt).toLocaleDateString('es-PE')}</span>
                       </>
                     )}
                   </div>
@@ -643,7 +654,7 @@ function AdminPageContent() {
               <div className="text-gray-500 text-center py-12">Cargando usuarios...</div>
             ) : activeUsers.length === 0 ? (
               <div className="text-center py-12 rounded-2xl"
-                style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}15` }}>
+                style={{ background: 'var(--color-surface-card)', border: `1px solid ${primaryMix(15)}` }}>
                 <div className="text-4xl mb-3">👥</div>
                 <p className="text-gray-500">No hay usuarios activos en esta categoría</p>
               </div>
@@ -654,30 +665,30 @@ function AdminPageContent() {
               const noSub = u.planType === 'Free' || !u.subscription
               return (
                 <div key={u.id} className="rounded-2xl p-4"
-                  style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${expired ? RED : warning ? GOLD : noSub ? `${GOLD}40` : NEON}15` }}>
+                  style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${expired ? redBrightMix(15) : warning ? goldBrightMix(15) : noSub ? goldBrightMix(40) : primaryMix(15)}` }}>
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-semibold">{u.fullName}</span>
+                        <span className="text-[var(--color-text-primary)] font-semibold">{u.fullName}</span>
                         <span className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: u.planType === 'Premium' ? `${NEON}20` : `${GOLD}15`, color: u.planType === 'Premium' ? NEON : GOLD }}>
+                          style={{ backgroundColor: u.planType === 'Premium' ? `${primaryMix(20)}` : `${warningMix(15)}`, color: u.planType === 'Premium' ? NEON : GOLD }}>
                           {u.planType}
                         </span>
                         <span className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${PURPLE}15`, color: PURPLE }}>
+                          style={{ backgroundColor: purpleMix(15), color: PURPLE }}>
                           📚 {trackLabel(u.activeTrackType)}
                         </span>
                         {!u.createdByAdmin && (
                           <span className="text-xs px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: `${NEON2}15`, color: NEON2 }}>🌐 Web</span>
+                            style={{ backgroundColor: `${skyMix(15)}`, color: NEON2 }}>🌐 Web</span>
                         )}
                         {noSub && (
                           <span className="text-xs px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>⏳ Sin pago</span>
+                            style={{ backgroundColor: `${warningMix(15)}`, color: GOLD }}>⏳ Sin pago</span>
                         )}
                       </div>
                       <div className="text-gray-500 text-xs mt-1">
-                        Usuario <span className="text-white font-medium">{u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'}</span>
+                        Usuario <span className="text-[var(--color-text-primary)] font-medium">{u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'}</span>
                         {' · '}{u.email} · DNI {u.dni} · {u.rank} · {u.unit}
                       </div>
                       {u.subscription && (
@@ -694,32 +705,32 @@ function AdminPageContent() {
                         <>
                           <button type="button" onClick={() => openEditUser(u)}
                             className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                            style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
+                            style={{ backgroundColor: `${skyMix(15)}`, color: NEON2, border: `1px solid ${skyMix(25)}` }}>
                             ✏️ Editar
                           </button>
                           <button type="button" onClick={() => { setResetPasswordTarget(u); setResetPasswordValue('') }}
                             className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                            style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}35` }}>
+                            style={{ backgroundColor: `${warningMix(15)}`, color: GOLD, border: `1px solid ${goldBrightMix(35)}` }}>
                             🔑 Restablecer clave
                           </button>
                         </>
                       )}
                       <button onClick={() => handleExtend(u.id, 30)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>+30d</button>
+                        style={{ backgroundColor: `${skyMix(15)}`, color: NEON2, border: `1px solid ${skyMix(25)}` }}>+30d</button>
                       <button onClick={() => handleExtend(u.id, 60)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${GOLD}15`, color: GOLD, border: `1px solid ${GOLD}25` }}>+60d</button>
+                        style={{ backgroundColor: `${warningMix(15)}`, color: GOLD, border: `1px solid ${goldBrightMix(25)}` }}>+60d</button>
                       <button onClick={() => handleExtend(u.id, 180)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${NEON}15`, color: NEON, border: `1px solid ${NEON}25` }}>+180d</button>
+                        style={{ backgroundColor: `${primaryMix(15)}`, color: NEON, border: `1px solid ${primaryMix(25)}` }}>+180d</button>
                       <button type="button" onClick={() => handleDeactivate(u.id)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${RED}15`, color: RED, border: `1px solid ${RED}25` }}>Desactivar</button>
+                        style={{ backgroundColor: `${redBrightMix(15)}`, color: RED, border: `1px solid ${redBrightMix(25)}` }}>Desactivar</button>
                       {u.role === 'Student' && (
                         <button type="button" onClick={() => setDeleteTarget({ id: u.id, name: u.fullName })}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                          style={{ backgroundColor: `${RED}12`, color: RED, border: `1px solid ${RED}25` }}>
+                          style={{ backgroundColor: `${redBrightMix(12)}`, color: RED, border: `1px solid ${redBrightMix(25)}` }}>
                           🗑️ Eliminar
                         </button>
                       )}
@@ -735,7 +746,7 @@ function AdminPageContent() {
       {userSub === 'inactivos' && (
         <div>
           <div className="rounded-2xl p-4 mb-5 flex items-center gap-3"
-            style={{ background: 'color-mix(in srgb, var(--color-danger) 6%, var(--color-surface-card))', border: `1px solid ${RED}25` }}>
+            style={{ background: 'color-mix(in srgb, var(--color-danger) 6%, var(--color-surface-card))', border: `1px solid ${redBrightMix(25)}` }}>
             <span className="text-2xl">🔴</span>
             <div>
               <p className="text-sm font-semibold" style={{ color: RED }}>Usuarios desactivados</p>
@@ -753,7 +764,7 @@ function AdminPageContent() {
               <div className="text-gray-500 text-center py-12">Cargando...</div>
             ) : inactiveUsers.length === 0 ? (
               <div className="text-center py-12 rounded-2xl"
-                style={{ background: 'var(--color-surface-card)', border: `1px solid ${RED}15` }}>
+                style={{ background: 'var(--color-surface-card)', border: `1px solid ${redBrightMix(15)}` }}>
                 <div className="text-4xl mb-3">✅</div>
                 <p className="text-gray-500">No hay usuarios inactivos en esta categoría</p>
               </div>
@@ -761,20 +772,20 @@ function AdminPageContent() {
               const days = daysLeft(u.subscription?.expiresAt)
               return (
                 <div key={u.id} className="rounded-2xl p-4"
-                  style={{ background: 'color-mix(in srgb, var(--color-danger) 10%, var(--color-surface-elevated))', border: `1px solid ${RED}15`, opacity: 0.85 }}>
+                  style={{ background: 'color-mix(in srgb, var(--color-danger) 10%, var(--color-surface-elevated))', border: `1px solid ${redBrightMix(15)}`, opacity: 0.85 }}>
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-gray-300 font-semibold">{u.fullName}</span>
                         <span className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${RED}20`, color: RED }}>Inactivo</span>
+                          style={{ backgroundColor: `${redBrightMix(20)}`, color: RED }}>Inactivo</span>
                         <span className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: u.planType === 'Premium' ? `${NEON}15` : `${GOLD}10`, color: u.planType === 'Premium' ? NEON : GOLD }}>
+                          style={{ backgroundColor: u.planType === 'Premium' ? `${primaryMix(15)}` : `${warningMix(10)}`, color: u.planType === 'Premium' ? NEON : GOLD }}>
                           {u.planType}
                         </span>
                         {!u.createdByAdmin && (
                           <span className="text-xs px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: `${NEON2}10`, color: NEON2 }}>🌐 Web</span>
+                            style={{ backgroundColor: `${skyMix(10)}`, color: NEON2 }}>🌐 Web</span>
                         )}
                       </div>
                       <div className="text-gray-600 text-xs mt-1">
@@ -796,28 +807,28 @@ function AdminPageContent() {
                         <>
                           <button type="button" onClick={() => openEditUser(u)}
                             className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                            style={{ backgroundColor: `${NEON2}10`, color: NEON2, border: `1px solid ${NEON2}20` }}>
+                            style={{ backgroundColor: `${skyMix(10)}`, color: NEON2, border: `1px solid ${skyMix(20)}` }}>
                             ✏️ Editar
                           </button>
                           <button type="button" onClick={() => { setResetPasswordTarget(u); setResetPasswordValue('') }}
                             className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                            style={{ backgroundColor: `${GOLD}12`, color: GOLD, border: `1px solid ${GOLD}30` }}>
+                            style={{ backgroundColor: `${warningMix(12)}`, color: GOLD, border: `1px solid ${goldBrightMix(30)}` }}>
                             🔑 Restablecer clave
                           </button>
                         </>
                       )}
                       <button onClick={() => handleExtend(u.id, 30)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${NEON2}10`, color: NEON2, border: `1px solid ${NEON2}20` }}>+30d</button>
+                        style={{ backgroundColor: `${skyMix(10)}`, color: NEON2, border: `1px solid ${skyMix(20)}` }}>+30d</button>
                       <button onClick={() => handleExtend(u.id, 60)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${GOLD}10`, color: GOLD, border: `1px solid ${GOLD}20` }}>+60d</button>
+                        style={{ backgroundColor: `${warningMix(10)}`, color: GOLD, border: `1px solid ${warningMix(20)}` }}>+60d</button>
                       <button onClick={() => handleExtend(u.id, 180)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${NEON}10`, color: NEON, border: `1px solid ${NEON}20` }}>+180d</button>
+                        style={{ backgroundColor: `${primaryMix(10)}`, color: NEON, border: `1px solid ${primaryMix(20)}` }}>+180d</button>
                       <button onClick={() => handleReactivate(u.id)}
                         className="px-4 py-1.5 rounded-lg text-xs font-bold"
-                        style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000' }}>
+                        style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)' }}>
                         ✅ Reactivar
                       </button>
                       <button onClick={() => setDeleteTarget({ id: u.id, name: u.fullName })}
@@ -835,7 +846,7 @@ function AdminPageContent() {
       )}
 
       {userSub === 'crear' && (
-        <div className="rounded-2xl p-6 panel-card" style={{ border: `1px solid ${NEON}20` }}>
+        <div className="rounded-2xl p-6 panel-card" style={{ border: `1px solid ${primaryMix(20)}` }}>
           <h2 className="text-[var(--color-text-primary)] font-bold text-lg mb-5">Crear usuario con acceso directo</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
@@ -860,7 +871,7 @@ function AdminPageContent() {
             </div>
             {previewLoginUsername ? (
               <div className="rounded-xl px-4 py-3 text-sm"
-                style={{ background: 'var(--color-primary-bg)', border: `1px solid ${NEON}35` }}>
+                style={{ background: 'var(--color-primary-bg)', border: `1px solid ${primaryMix(35)}` }}>
                 <span className="text-gray-500 text-xs">Usuario de acceso generado: </span>
                 <strong className="text-white tracking-widest">{previewLoginUsername}</strong>
                 <p className="text-[10px] text-gray-600 mt-1">Inicial del nombre + apellido paterno (ej. Anthony Ccayo → ACCAYO)</p>
@@ -876,8 +887,8 @@ function AdminPageContent() {
                     onClick={() => setForm({ ...form, trackType: track.value })}
                     className="p-4 rounded-xl text-left transition-all"
                     style={{
-                      border: `2px solid ${form.trackType === track.value ? NEON : '#ffffff10'}`,
-                      backgroundColor: form.trackType === track.value ? 'rgba(74,124,89,0.08)' : 'rgba(0,10,5,0.5)',
+                      border: `2px solid ${form.trackType === track.value ? NEON : 'var(--color-surface-border)'}`,
+                      backgroundColor: form.trackType === track.value ? 'var(--color-primary-bg)' : SURFACE,
                     }}>
                     <div className="font-bold text-white text-sm">{track.label}</div>
                     <div className="text-xs mt-0.5" style={{ color: form.trackType === track.value ? NEON : '#6B7280' }}>
@@ -894,7 +905,7 @@ function AdminPageContent() {
                   <button key={plan.days} type="button"
                     onClick={() => setForm({ ...form, planDays: plan.days })}
                     className="p-4 rounded-xl text-left transition-all"
-                    style={{ border: `2px solid ${form.planDays === plan.days ? NEON : '#ffffff10'}`, backgroundColor: form.planDays === plan.days ? 'rgba(74,124,89,0.08)' : 'rgba(0,10,5,0.5)' }}>
+                    style={{ border: `2px solid ${form.planDays === plan.days ? NEON : 'var(--color-surface-border)'}`, backgroundColor: form.planDays === plan.days ? 'var(--color-primary-bg)' : SURFACE }}>
                     <div className="font-bold text-white text-sm">{plan.label}</div>
                     <div className="text-xs mt-0.5" style={{ color: form.planDays === plan.days ? NEON : '#6B7280' }}>
                       {formatPlanPrice(plan.price)} · {plan.sub}
@@ -925,7 +936,7 @@ function AdminPageContent() {
             </div>
 
             {/* IMPORTAR DESDE EXCEL */}
-            <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${PURPLE}25` }}>
+            <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${purpleMix(25)}` }}>
               <h3 className="text-[var(--color-text-primary)] font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
               <p className="text-gray-500 text-xs mb-3">
                 Columnas: Nombre, DNI, Email, Contraseña, Grado, Unidad, Días (30/60/180), Balotario (opcional: Suboficiales/Oficiales).
@@ -934,7 +945,7 @@ function AdminPageContent() {
               <div className="flex gap-3 flex-wrap">
                 <button type="button" onClick={handleDownloadExcelTemplate}
                   className="px-4 py-2 rounded-xl text-sm font-medium"
-                  style={{ backgroundColor: `${NEON2}15`, color: NEON2, border: `1px solid ${NEON2}25` }}>
+                  style={{ backgroundColor: `${skyMix(15)}`, color: NEON2, border: `1px solid ${skyMix(25)}` }}>
                   ⬇️ Descargar plantilla Excel
                 </button>
                 <button type="button" onClick={() => excelInputRef.current?.click()} disabled={uploadingExcel}
@@ -948,7 +959,7 @@ function AdminPageContent() {
 
             <button type="submit" disabled={saving}
               className="w-full py-3 rounded-xl font-bold text-sm"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: '#000', opacity: saving ? 0.7 : 1 }}>
+              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Creando...' : '➕ Crear usuario con acceso inmediato'}
             </button>
           </form>
@@ -1008,7 +1019,7 @@ function AdminPageContent() {
                   onClick={() => setEditForm({ ...editForm, trackType: track.value })}
                   className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
                   style={{
-                    border: `1px solid ${editForm.trackType === track.value ? NEON : '#ffffff15'}`,
+                    border: `1px solid ${editForm.trackType === track.value ? NEON : 'var(--color-surface-border)'}`,
                     backgroundColor: editForm.trackType === track.value ? 'rgba(74,124,89,0.12)' : 'transparent',
                     color: editForm.trackType === track.value ? NEON : '#9CA3AF',
                   }}
@@ -1038,7 +1049,7 @@ function AdminPageContent() {
         }
       >
         <p>
-          ¿Desactivar a <strong className="text-white">{deactivateTarget?.name}</strong>?
+          ¿Desactivar a <strong className="text-[var(--color-text-primary)]">{deactivateTarget?.name}</strong>?
           Perderá acceso hasta que lo reactives.
         </p>
       </Modal>
@@ -1090,7 +1101,7 @@ function AdminPageContent() {
       >
         <p className="text-sm text-gray-400 mb-3">
           Nueva contraseña temporal para{' '}
-          <strong className="text-white">{resetPasswordTarget?.fullName}</strong>.
+          <strong className="text-[var(--color-text-primary)]">{resetPasswordTarget?.fullName}</strong>.
           El alumno deberá cambiarla en su próximo ingreso.
         </p>
         <input type="password" className="input-admin"
@@ -1154,8 +1165,8 @@ function AdminPageContent() {
         }
       >
         <p>
-          ¿Eliminar <strong className="text-white">PERMANENTEMENTE</strong> a{' '}
-          <strong className="text-white">{deleteTarget?.name}</strong>? Se borrarán sus sesiones,
+          ¿Eliminar <strong className="text-[var(--color-text-primary)]">PERMANENTEMENTE</strong> a{' '}
+          <strong className="text-[var(--color-text-primary)]">{deleteTarget?.name}</strong>? Se borrarán sus sesiones,
           respuestas y suscripciones. Esta acción no se puede deshacer.
         </p>
       </Modal>

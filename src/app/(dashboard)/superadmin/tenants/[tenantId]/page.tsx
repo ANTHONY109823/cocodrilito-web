@@ -13,7 +13,7 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
-import { NEON, DANGER, WARNING, GOLD, INFO, SURFACE_BORDER, policeGreenRgba } from '@/lib/constants/theme'
+import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, policeGreenRgba, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { TenantLoginBrandingFields, emptyLoginBranding } from '@/components/superadmin/TenantLoginBrandingFields'
 import {
@@ -382,7 +382,7 @@ export default function TenantDetailPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">{tenant.name}</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{tenant.name}</h1>
           <p className="text-gray-500 text-sm mt-1">
             {tenant.slug} · {displayInstitutionType(tenant.tenantType)} · {tenant.contactEmail}
           </p>
@@ -395,25 +395,25 @@ export default function TenantDetailPage() {
         <div className="flex gap-2 flex-wrap">
           <button type="button" onClick={handleImpersonate}
             className="px-4 py-2 rounded-xl text-xs font-bold"
-            style={{ backgroundColor: `${WARNING}20`, color: WARNING, border: `1px solid ${WARNING}40` }}>
+            style={{ backgroundColor: `${warningMix(20)}`, color: WARNING, border: `1px solid ${warningMix(40)}` }}>
             🎭 Impersonar
           </button>
           {tenant.suspendedAt || !tenant.isActive ? (
             <button type="button" onClick={handleReactivate}
               className="px-4 py-2 rounded-xl text-xs font-bold"
-              style={{ backgroundColor: NEON, color: '#000' }}>
+              style={{ backgroundColor: NEON, color: 'var(--color-text-primary)' }}>
               Reactivar
             </button>
           ) : (
             <button type="button" onClick={handleSuspend}
               className="px-4 py-2 rounded-xl text-xs font-bold"
-              style={{ backgroundColor: `${DANGER}20`, color: DANGER, border: `1px solid ${DANGER}40` }}>
+              style={{ backgroundColor: `${dangerMix(20)}`, color: DANGER, border: `1px solid ${dangerMix(40)}` }}>
               Suspender
             </button>
           )}
           <button type="button" onClick={() => { setDeleteConfirmText(''); setShowDelete(true) }}
             className="px-4 py-2 rounded-xl text-xs font-bold"
-            style={{ backgroundColor: `${DANGER}12`, color: DANGER, border: `1px solid ${DANGER}30` }}>
+            style={{ backgroundColor: `${dangerMix(12)}`, color: DANGER, border: `1px solid ${dangerMix(30)}` }}>
             🗑️ Eliminar
           </button>
         </div>
@@ -438,10 +438,10 @@ export default function TenantDetailPage() {
       )}
 
       <form onSubmit={handleSetAccess} className="rounded-2xl p-4 mb-6"
-        style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}30` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${primaryMix(30)}` }}>
         <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
           <div>
-            <h3 className="text-white font-semibold">Vigencia de acceso</h3>
+            <h3 className="text-[var(--color-text-primary)] font-semibold">Vigencia de acceso</h3>
             <p className="text-xs text-gray-500 mt-1">
               Registra desde qué fecha la agencia tiene acceso y por cuántos días pagó.
               La fecha de expiración se calcula automáticamente.
@@ -451,8 +451,8 @@ export default function TenantDetailPage() {
             <span className="text-xs px-2 py-1 rounded-full self-start"
               style={
                 new Date(tenant.accessExpiresAt) < new Date()
-                  ? { backgroundColor: `${DANGER}20`, color: DANGER }
-                  : { backgroundColor: `${NEON}20`, color: NEON }
+                  ? { backgroundColor: `${dangerMix(20)}`, color: DANGER }
+                  : { backgroundColor: `${primaryMix(20)}`, color: NEON }
               }>
               {new Date(tenant.accessExpiresAt) < new Date() ? 'EXPIRADO' : 'VIGENTE'}
             </span>
@@ -480,7 +480,7 @@ export default function TenantDetailPage() {
           <div>
             <label className="block text-xs text-gray-500 mb-1">Expira (automático)</label>
             <div className="px-3 py-2 rounded-lg text-sm"
-              style={{ background: 'rgba(0,5,2,0.5)', border: '1px solid var(--color-surface-border)', color: NEON }}>
+              style={{ background: SURFACE, border: '1px solid var(--color-surface-border)', color: NEON }}>
               {computedExpiry ? computedExpiry.toLocaleDateString('es-PE') : '—'}
             </div>
           </div>
@@ -488,7 +488,7 @@ export default function TenantDetailPage() {
         <div className="flex flex-wrap gap-3 items-center mt-3">
           <button type="submit" disabled={savingAccess}
             className="px-4 py-2 rounded-xl text-sm font-bold"
-            style={{ backgroundColor: NEON, color: '#000', opacity: savingAccess ? 0.7 : 1 }}>
+            style={{ backgroundColor: NEON, color: 'var(--color-text-primary)', opacity: savingAccess ? 0.7 : 1 }}>
             {savingAccess ? 'Guardando...' : 'Guardar vigencia'}
           </button>
           {tenant.accessStartsAt && (
@@ -501,10 +501,10 @@ export default function TenantDetailPage() {
       </form>
 
       <div className="rounded-2xl p-4 mb-6"
-        style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}30` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${primaryMix(30)}` }}>
         <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
           <div>
-            <h3 className="text-white font-semibold">Administrador del tenant</h3>
+            <h3 className="text-[var(--color-text-primary)] font-semibold">Administrador del tenant</h3>
             <p className="text-xs text-gray-500 mt-1">
               SuperAdmin gestiona la cuenta de acceso del administrador de la agencia.
             </p>
@@ -513,12 +513,12 @@ export default function TenantDetailPage() {
             <div className="flex gap-2">
               <button type="button" onClick={() => setShowEditAdmin(true)}
                 className="px-3 py-1.5 rounded-lg text-xs font-bold"
-                style={{ background: `${NEON}20`, color: NEON, border: `1px solid ${NEON}40` }}>
+                style={{ background: `${primaryMix(20)}`, color: NEON, border: `1px solid ${primaryMix(40)}` }}>
                 Editar
               </button>
               <button type="button" onClick={() => setShowResetPassword(true)}
                 className="px-3 py-1.5 rounded-lg text-xs font-bold"
-                style={{ background: `${WARNING}20`, color: WARNING, border: `1px solid ${WARNING}40` }}>
+                style={{ background: `${warningMix(20)}`, color: WARNING, border: `1px solid ${warningMix(40)}` }}>
                 Restablecer contraseña
               </button>
             </div>
@@ -533,15 +533,15 @@ export default function TenantDetailPage() {
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div>
               <div className="text-xs text-gray-500">Nombre</div>
-              <div className="text-white">{tenantAdmin.fullName}</div>
+              <div className="text-[var(--color-text-primary)]">{tenantAdmin.fullName}</div>
             </div>
             <div>
               <div className="text-xs text-gray-500">Email</div>
-              <div className="text-white break-all">{tenantAdmin.email}</div>
+              <div className="text-[var(--color-text-primary)] break-all">{tenantAdmin.email}</div>
             </div>
             <div>
               <div className="text-xs text-gray-500">DNI</div>
-              <div className="text-white">{tenantAdmin.dni}</div>
+              <div className="text-[var(--color-text-primary)]">{tenantAdmin.dni}</div>
             </div>
             <div>
               <div className="text-xs text-gray-500">Estado</div>
@@ -554,10 +554,10 @@ export default function TenantDetailPage() {
       </div>
 
       <form onSubmit={handleSaveBranding} className="rounded-2xl p-4 mb-6 space-y-4"
-        style={{ background: 'var(--color-surface-card)', border: `1px solid ${INFO}35` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${infoMix(35)}` }}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 className="text-white font-semibold">Identidad visual</h3>
+            <h3 className="text-[var(--color-text-primary)] font-semibold">Identidad visual</h3>
             <p className="text-xs text-gray-500 mt-1">
               Logo e imagen de fondo del login de {tenant.slug}.simulacros.pe
             </p>
@@ -566,7 +566,7 @@ export default function TenantDetailPage() {
             className="px-4 py-2 rounded-xl text-xs font-bold shrink-0"
             style={{
               backgroundColor: INFO,
-              color: '#000',
+              color: 'var(--color-text-primary)',
               opacity: savingBranding ? 0.6 : 1,
             }}>
             {savingBranding ? 'Subiendo...' : 'Guardar imágenes'}
@@ -582,10 +582,10 @@ export default function TenantDetailPage() {
       </form>
 
       <form onSubmit={handleSaveLoginBranding} className="rounded-2xl p-4 mb-6 space-y-4"
-        style={{ background: 'var(--color-surface-card)', border: `1px solid ${WARNING}35` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${warningMix(35)}` }}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 className="text-white font-semibold">Panel de inicio de sesión</h3>
+            <h3 className="text-[var(--color-text-primary)] font-semibold">Panel de inicio de sesión</h3>
             <p className="text-xs text-gray-500 mt-1">
               Textos, beneficios, estadísticas y redes que verán alumnos y admin de esta agencia.
             </p>
@@ -594,7 +594,7 @@ export default function TenantDetailPage() {
             className="px-4 py-2 rounded-xl text-xs font-bold shrink-0"
             style={{
               backgroundColor: WARNING,
-              color: '#000',
+              color: 'var(--color-text-primary)',
               opacity: savingLoginBranding ? 0.6 : 1,
             }}>
             {savingLoginBranding ? 'Guardando...' : 'Guardar panel de login'}
@@ -605,10 +605,10 @@ export default function TenantDetailPage() {
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <form onSubmit={handleSaveTenant} className="rounded-2xl p-4 space-y-4"
-          style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}35` }}>
+          style={{ background: 'var(--color-surface-card)', border: `1px solid ${primaryMix(35)}` }}>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h3 className="text-white font-semibold">Configuración de la institución</h3>
+              <h3 className="text-[var(--color-text-primary)] font-semibold">Configuración de la institución</h3>
               <p className="text-xs text-gray-500 mt-1">
                 Edita el nombre y el slug (URL de acceso de la agencia).
               </p>
@@ -617,7 +617,7 @@ export default function TenantDetailPage() {
               className="px-4 py-2 rounded-xl text-xs font-bold shrink-0"
               style={{
                 backgroundColor: NEON,
-                color: '#000',
+                color: 'var(--color-text-primary)',
                 opacity: savingTenant || !tenantFormDirty ? 0.55 : 1,
               }}>
               {savingTenant ? 'Guardando...' : 'Guardar cambios'}
@@ -663,8 +663,8 @@ export default function TenantDetailPage() {
         </form>
 
         <form onSubmit={handlePayment} className="rounded-2xl p-4 space-y-3"
-          style={{ background: 'var(--color-surface-card)', border: `1px solid ${WARNING}25` }}>
-          <h3 className="text-white font-semibold">Registrar pago</h3>
+          style={{ background: 'var(--color-surface-card)', border: `1px solid ${warningMix(25)}` }}>
+          <h3 className="text-[var(--color-text-primary)] font-semibold">Registrar pago</h3>
           <input type="number" step="0.01" placeholder="Monto S/."
             className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
             style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
@@ -688,14 +688,14 @@ export default function TenantDetailPage() {
           </div>
           <button type="submit" disabled={saving}
             className="w-full py-2 rounded-xl text-sm font-bold"
-            style={{ backgroundColor: WARNING, color: '#000', opacity: saving ? 0.7 : 1 }}>
+            style={{ backgroundColor: WARNING, color: 'var(--color-text-primary)', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Guardando...' : 'Registrar pago'}
           </button>
         </form>
       </div>
 
       <div className="rounded-2xl p-4 mb-6"
-        style={{ background: 'var(--color-surface-card)', border: `1px solid ${GOLD}30` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${goldBrightMix(30)}` }}>
         <TenantPlansSection
           tenantId={tenantId}
           description="Planes de suscripción que verán los alumnos de esta agencia al contratar acceso."
@@ -790,10 +790,10 @@ export default function TenantDetailPage() {
       >
         <div className="space-y-3">
           <p>
-            ¿Seguro que deseas eliminar <strong className="text-white">{tenant.name}</strong>?
+            ¿Seguro que deseas eliminar <strong className="text-[var(--color-text-primary)]">{tenant.name}</strong>?
             Se cancelarán las suscripciones activas y sus usuarios quedarán bloqueados.
           </p>
-          <div className="rounded-lg px-3 py-2 text-xs" style={{ background: `${DANGER}10`, color: DANGER }}>
+          <div className="rounded-lg px-3 py-2 text-xs" style={{ background: `${dangerMix(10)}`, color: DANGER }}>
             Verificación de seguridad: escribe el nombre exacto de la institución para confirmar.
           </div>
           <div>
@@ -802,7 +802,7 @@ export default function TenantDetailPage() {
             </label>
             <input
               className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'var(--color-input-bg)', border: `1px solid ${DANGER}40` }}
+              style={{ background: 'var(--color-input-bg)', border: `1px solid ${dangerMix(40)}` }}
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               placeholder={tenant.name}

@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils/cn'
 import type { HTMLAttributes } from 'react'
 
 const colors = {
-  green: 'bg-[rgba(49,143,72,0.15)] text-[var(--color-text-accent)] border-[var(--color-surface-border)]',
+  green: 'bg-[var(--color-primary-bg)] text-[var(--color-text-accent)] border-[var(--color-surface-border)]',
   blue: 'bg-[#2E86AB]/20 text-[#5ba8cc] border-[#2E86AB]/40',
   orange: 'bg-[#E67E22]/20 text-[#F39C12] border-[#E67E22]/40',
   red: 'bg-[#C0392B]/20 text-[#e74c3c] border-[#C0392B]/40',

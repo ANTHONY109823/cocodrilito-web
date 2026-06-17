@@ -72,7 +72,7 @@ export default function RankingPage() {
                 #{myRanking.position}
               </div>
               <div>
-                <div className="text-sm font-semibold text-white">Tu posición</div>
+                <div className="text-sm font-semibold text-[var(--color-text-primary)]">Tu posición</div>
                 <div className="text-xs text-[var(--color-text-muted)]">{user?.fullName}</div>
               </div>
             </div>

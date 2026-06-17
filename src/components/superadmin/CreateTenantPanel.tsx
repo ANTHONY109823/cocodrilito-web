@@ -5,7 +5,7 @@ import { Modal, Button } from '@/components/ui'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { NEON } from '@/lib/constants/theme'
+import { NEON, primaryMix } from '@/lib/constants/theme'
 import type { CreateTenantPayload } from '@/lib/api/superadmin'
 import {
   TenantLoginBrandingFields,
@@ -150,7 +150,7 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
         )}
 
         <section>
-          <h3 className="text-white font-semibold text-sm mb-1">1. Datos de la agencia</h3>
+          <h3 className="text-[var(--color-text-primary)] font-semibold text-sm mb-1">1. Datos de la agencia</h3>
           <p className="text-xs text-gray-500 mb-3">Información pública y de contacto del tenant.</p>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
@@ -196,16 +196,16 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
         <section
           className="rounded-xl p-4"
           style={{
-            border: `2px solid ${NEON}55`,
+            border: `2px solid ${primaryMix(55)}`,
             background: 'var(--color-primary-bg)',
           }}
         >
-          <h3 className="text-white font-semibold text-sm mb-1">
+          <h3 className="text-[var(--color-text-primary)] font-semibold text-sm mb-1">
             2. Identidad visual *
           </h3>
           <p className="text-xs text-gray-400 mb-3">
             Sube el logo y la imagen de fondo que verán en{' '}
-            <strong className="text-white">
+            <strong className="text-[var(--color-text-primary)]">
               {(form.slug || form.name || 'agencia').toLowerCase().replace(/[^a-z0-9-]/g, '') || 'agencia'}.simulacros.pe
             </strong>
             . Sin estas imágenes no se puede crear la agencia.
@@ -218,8 +218,8 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
           />
         </section>
 
-        <details className="pt-4 group" style={{ borderTop: '1px solid #ffffff10' }}>
-          <summary className="cursor-pointer list-none text-white font-semibold text-sm mb-1 [&::-webkit-details-marker]:hidden">
+        <details className="pt-4 group" style={{ borderTop: '1px solid var(--color-surface-border)' }}>
+          <summary className="cursor-pointer list-none text-[var(--color-text-primary)] font-semibold text-sm mb-1 [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center gap-2">
               <span className="text-gray-500 transition-transform group-open:rotate-90">▶</span>
               3. Panel de inicio de sesión
@@ -234,8 +234,8 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
           </div>
         </details>
 
-        <section className="pt-4" style={{ borderTop: '1px solid #ffffff10' }}>
-          <h3 className="text-white font-semibold text-sm mb-1">4. Administrador de acceso</h3>
+        <section className="pt-4" style={{ borderTop: '1px solid var(--color-surface-border)' }}>
+          <h3 className="text-[var(--color-text-primary)] font-semibold text-sm mb-1">4. Administrador de acceso</h3>
           <p className="text-xs text-gray-500 mb-3">
             Cuenta con rol Admin Agencia. Recibirá credenciales temporales y deberá cambiar la contraseña al ingresar.
           </p>

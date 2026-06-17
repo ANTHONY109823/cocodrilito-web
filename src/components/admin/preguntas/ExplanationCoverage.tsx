@@ -1,6 +1,6 @@
 'use client'
 
-import { NEON } from '@/lib/constants/theme'
+import { NEON, primaryMix, warningMix, dangerMix, TEXT_MUTED, TEXT_SECONDARY } from '@/lib/constants/theme'
 
 interface ExplanationCoverageBannerProps {
   total: number
@@ -24,14 +24,14 @@ export function ExplanationCoverageBanner({
     <div
       className="rounded-xl px-4 py-3 mb-4 text-xs"
       style={{
-        background: hasGaps ? 'rgba(201,148,58,0.08)' : 'rgba(74,124,89,0.08)',
-        border: `1px solid ${hasGaps ? 'rgba(201,148,58,0.25)' : 'rgba(74,124,89,0.25)'}`,
+        background: hasGaps ? warningMix(8) : primaryMix(8),
+        border: `1px solid ${hasGaps ? warningMix(25) : primaryMix(25)}`,
       }}
     >
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="text-gray-300 font-medium">
           Cobertura de explicaciones:{' '}
-          <span style={{ color: hasGaps ? '#C9943A' : NEON }}>{coveragePct}%</span>
+          <span style={{ color: hasGaps ? 'var(--color-warning)' : NEON }}>{coveragePct}%</span>
         </span>
         <span className="text-gray-500">
           {withExplanation} con explicación · {withoutExplanation} sin explicación
@@ -79,9 +79,9 @@ export function ExplanationFilterBar({
           onClick={() => onChange(opt.key)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
           style={{
-            backgroundColor: filter === opt.key ? `${NEON}18` : 'rgba(255,255,255,0.04)',
-            color: filter === opt.key ? NEON : '#6B7280',
-            border: `1px solid ${filter === opt.key ? `${NEON}40` : 'rgba(255,255,255,0.08)'}`,
+            backgroundColor: filter === opt.key ? primaryMix(18) : 'var(--color-primary-bg)',
+            color: filter === opt.key ? NEON : TEXT_MUTED,
+            border: `1px solid ${filter === opt.key ? primaryMix(40) : 'var(--color-surface-border)'}`,
           }}
         >
           {opt.label}

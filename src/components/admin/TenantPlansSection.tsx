@@ -4,12 +4,19 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
 import { tenantPlansApi, type TenantPlan } from '@/lib/api/tenantPlans'
 import { getApiErrorMessage } from '@/lib/api/errors'
-import { NEON } from '@/lib/constants/theme'
+import {
+  NEON,
+  SKY as NEON2,
+  GOLD_BRIGHT as GOLD,
+  RED_BRIGHT as RED,
+  primaryMix,
+  skyMix,
+  redBrightMix,
+  goldBrightMix,
+  dangerMix,
+  SURFACE_CARD,
+} from '@/lib/constants/theme'
 import { SUBSCRIPTION_PLANS, formatPlanPrice, getPriceForDays } from '@/lib/constants/subscriptionPlans'
-
-const NEON2 = '#4FC3F7'
-const GOLD = '#FFD700'
-const RED = '#FF5252'
 
 const TRACK_OPTIONS: { value: number; label: string }[] = [
   { value: 1, label: 'Ascenso Suboficiales' },
@@ -146,7 +153,7 @@ export function TenantPlansSection({
 
   return (
     <div className="mt-8 space-y-4">
-      <h2 className="text-white font-bold text-lg">Planes de suscripción</h2>
+      <h2 className="text-[var(--color-text-primary)] font-bold text-lg">Planes de suscripción</h2>
       <p className="text-xs text-gray-500">{description}</p>
 
       {!tenantId && (
@@ -158,7 +165,7 @@ export function TenantPlansSection({
           className="px-4 py-3 rounded-xl text-sm"
           style={{
             backgroundColor: msg.ok ? 'var(--color-primary-bg)' : 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
-            border: `1px solid ${msg.ok ? NEON : RED}40`,
+            border: `1px solid ${msg.ok ? primaryMix(40) : redBrightMix(40)}`,
             color: msg.ok ? NEON : RED,
           }}
         >
@@ -173,9 +180,9 @@ export function TenantPlansSection({
           <form
             onSubmit={handleSavePlan}
             className="rounded-2xl p-5 space-y-3 h-fit"
-            style={{ background: 'var(--color-surface-card)', border: `1px solid ${GOLD}25` }}
+            style={{ background: 'var(--color-surface-card)', border: `1px solid ${goldBrightMix(25)}` }}
           >
-            <h3 className="text-white font-bold mb-1">
+            <h3 className="text-[var(--color-text-primary)] font-bold mb-1">
               {editingPlanId ? 'Editar plan' : 'Nuevo plan'}
             </h3>
             <div>
@@ -254,7 +261,7 @@ export function TenantPlansSection({
                 type="submit"
                 disabled={saving}
                 className="flex-1 py-2 rounded-lg text-sm font-bold"
-                style={{ background: GOLD, color: '#000', opacity: saving ? 0.7 : 1 }}
+                style={{ background: GOLD, color: 'var(--color-text-primary)', opacity: saving ? 0.7 : 1 }}
               >
                 {saving ? 'Guardando...' : editingPlanId ? 'Guardar' : 'Crear plan'}
               </button>
@@ -263,9 +270,9 @@ export function TenantPlansSection({
 
           <div
             className="lg:col-span-2 rounded-2xl p-5"
-            style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}25` }}
+            style={{ background: 'var(--color-surface-card)', border: `1px solid ${primaryMix(25)}` }}
           >
-            <h3 className="text-white font-bold mb-4">
+            <h3 className="text-[var(--color-text-primary)] font-bold mb-4">
               Planes activos ({plans.filter((p) => p.isActive).length})
             </h3>
             {plans.length === 0 ? (
@@ -279,24 +286,24 @@ export function TenantPlansSection({
                     key={p.id}
                     className="rounded-xl p-4 flex items-center justify-between gap-3"
                     style={{
-                      background: 'rgba(0,5,2,0.7)',
-                      border: `1px solid ${p.isActive ? NEON + '30' : '#ffffff10'}`,
+                      background: SURFACE_CARD,
+                      border: `1px solid ${p.isActive ? primaryMix(30) : 'var(--color-surface-border)'}`,
                       opacity: p.isActive ? 1 : 0.55,
                     }}
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-semibold">{p.name}</span>
+                        <span className="text-[var(--color-text-primary)] font-semibold">{p.name}</span>
                         <span
                           className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: `${NEON2}20`, color: NEON2 }}
+                          style={{ background: `${skyMix(20)}`, color: NEON2 }}
                         >
                           {trackLabel(p.trackType)}
                         </span>
                         {!p.isActive && (
                           <span
                             className="text-xs px-2 py-0.5 rounded-full"
-                            style={{ background: `${RED}20`, color: RED }}
+                            style={{ background: `${redBrightMix(20)}`, color: RED }}
                           >
                             Inactivo
                           </span>
@@ -313,7 +320,7 @@ export function TenantPlansSection({
                           type="button"
                           onClick={() => startEditPlan(p)}
                           className="text-xs px-3 py-1.5 rounded-lg font-medium"
-                          style={{ background: `${NEON}18`, color: NEON, border: `1px solid ${NEON}40` }}
+                          style={{ background: `${primaryMix(18)}`, color: NEON, border: `1px solid ${primaryMix(40)}` }}
                         >
                           Editar
                         </button>
@@ -321,7 +328,7 @@ export function TenantPlansSection({
                           type="button"
                           onClick={() => void handleDeactivatePlan(p.id)}
                           className="text-xs px-3 py-1.5 rounded-lg font-medium"
-                          style={{ background: `${RED}18`, color: RED, border: `1px solid ${RED}40` }}
+                          style={{ background: redBrightMix(18), color: RED, border: `1px solid ${redBrightMix(40)}` }}
                         >
                           Desactivar
                         </button>

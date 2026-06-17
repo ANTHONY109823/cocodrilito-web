@@ -86,7 +86,7 @@ function StatCard({
       >
         <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
       </div>
-      <div className="text-[22px] font-extrabold text-white">{value}</div>
+      <div className="text-[22px] font-extrabold text-[var(--color-text-primary)]">{value}</div>
       <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">{label}</div>
       <div className={cn('mt-1 text-[11px]', trendColor)}>{trend}</div>
     </div>
@@ -145,7 +145,7 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-extrabold text-white md:text-2xl">
+          <h1 className="text-xl font-extrabold text-[var(--color-text-primary)] md:text-2xl">
             {greet}, {firstName} 👋
           </h1>
           <p className="mt-0.5 text-[13px] capitalize text-[var(--color-text-muted)]">{today}</p>
@@ -183,7 +183,7 @@ export default function DashboardPage() {
           <div className="mb-2.5 flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[rgba(201,148,58,0.15)]">
             <Trophy className="h-[18px] w-[18px] text-[#C9943A]" />
           </div>
-          <div className="text-[22px] font-extrabold text-white">
+          <div className="text-[22px] font-extrabold text-[var(--color-text-primary)]">
             {rankingData?.position != null ? `#${rankingData.position}` : '—'}
           </div>
           <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">Posición ranking</div>
@@ -213,7 +213,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4">
-          <h3 className="mb-3 text-[13px] font-semibold text-white">
+          <h3 className="mb-3 text-[13px] font-semibold text-[var(--color-text-primary)]">
             Rendimiento últimos 7 exámenes
           </h3>
           {chartScores.length === 0 ? (
@@ -251,7 +251,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2.5">
             <span className="text-[32px]">{ligaCfg.emoji}</span>
             <div>
-              <div className="text-[15px] font-bold text-white">{liga}</div>
+              <div className="text-[15px] font-bold text-[var(--color-text-primary)]">{liga}</div>
               <div className="text-xs text-[var(--color-text-muted)]">
                 Liga actual · {xp.toLocaleString()} XP
               </div>
@@ -298,7 +298,7 @@ export default function DashboardPage() {
       {latestData && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4">
           <div>
-            <p className="text-sm font-semibold text-white">Último simulacro</p>
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">Último simulacro</p>
             <p className="text-xs text-[var(--color-text-muted)]">
               {latestData.passed ? 'Aprobado' : 'No aprobado'} · {latestData.score}%
             </p>

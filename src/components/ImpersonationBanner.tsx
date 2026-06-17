@@ -5,7 +5,7 @@ import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { authApi } from '@/lib/api/auth'
 import { normalizeUser, useAuthStore } from '@/lib/store/authStore'
 import { displayInstitutionType } from '@/lib/auth/roles'
-import { WARNING } from '@/lib/constants/theme'
+import { WARNING, warningMix } from '@/lib/constants/theme'
 
 export function ImpersonationBanner() {
   const router = useRouter()
@@ -30,8 +30,8 @@ export function ImpersonationBanner() {
     <div
       className="sticky top-0 z-50 px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap text-sm"
       style={{
-        background: `linear-gradient(90deg, ${WARNING}22, rgba(201,148,58,0.08))`,
-        borderBottom: `1px solid ${WARNING}40`,
+        background: `linear-gradient(90deg, ${warningMix(22)}, ${warningMix(8)})`,
+        borderBottom: `1px solid ${warningMix(40)}`,
         color: WARNING,
       }}
     >
@@ -46,7 +46,7 @@ export function ImpersonationBanner() {
         type="button"
         onClick={() => void handleExit()}
         className="px-3 py-1 rounded-lg text-xs font-bold"
-        style={{ backgroundColor: WARNING, color: '#000' }}
+        style={{ backgroundColor: WARNING, color: '#000000' }}
       >
         Volver a SuperAdmin
       </button>

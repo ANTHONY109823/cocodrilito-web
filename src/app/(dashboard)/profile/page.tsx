@@ -136,7 +136,7 @@ export default function ProfilePage() {
             {user?.fullName?.charAt(0)}
           </div>
           <div>
-            <div className="text-lg font-bold text-white">{user?.fullName}</div>
+            <div className="text-lg font-bold text-[var(--color-text-primary)]">{user?.fullName}</div>
             <div className="text-sm text-[var(--color-text-muted)]">{user?.email}</div>
             <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">DNI: {user?.dni}</div>
             <div className="mt-1 text-xs font-medium text-[var(--color-primary)]">

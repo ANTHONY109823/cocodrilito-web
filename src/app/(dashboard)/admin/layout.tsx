@@ -2,7 +2,7 @@
 
 import { useAuthStore } from '@/lib/store/authStore'
 import { getTenantBadge } from '@/lib/auth/roles'
-import { INFO } from '@/lib/constants/theme'
+import { INFO, infoMix } from '@/lib/constants/theme'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
@@ -16,9 +16,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span
               className="text-xs font-bold px-3 py-1 rounded-full tracking-wide"
               style={{
-                backgroundColor: `${INFO}20`,
+                backgroundColor: infoMix(20),
                 color: INFO,
-                border: `1px solid ${INFO}40`,
+                border: `1px solid ${infoMix(40)}`,
               }}
             >
               {badge}

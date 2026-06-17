@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { NEON } from '@/lib/constants/theme'
+import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 
 export const MAX_BRANDING_IMAGE_BYTES = 2 * 1024 * 1024
 export const ALLOWED_BRANDING_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -68,9 +68,9 @@ function BrandingImageField({
             onClick={() => inputRef.current?.click()}
             className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity"
             style={{
-              backgroundColor: `${NEON}18`,
+              backgroundColor: `${primaryMix(18)}`,
               color: NEON,
-              border: `1px solid ${NEON}35`,
+              border: `1px solid ${primaryMix(35)}`,
               opacity: disabled ? 0.6 : 1,
             }}
           >

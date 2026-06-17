@@ -95,7 +95,7 @@ export default function ConfiguracionPage() {
 
       <section className="rounded-2xl p-5 space-y-3 mb-6" style={cardStyle}>
         <div>
-          <h2 className="text-white font-semibold text-sm">Identidad visual</h2>
+          <h2 className="text-[var(--color-text-primary)] font-semibold text-sm">Identidad visual</h2>
           <p className="text-xs text-gray-500 mt-1">
             El logo y la imagen de fondo del login de {institutionName || 'tu institución'} los configura el equipo de Simulacros.pe.
             Si necesitas cambiarlos, contacta al administrador de la plataforma.
@@ -105,7 +105,7 @@ export default function ConfiguracionPage() {
 
       <section className="rounded-2xl p-5 space-y-4" style={cardStyle}>
         <div>
-          <h2 className="text-white font-semibold text-sm">Cambiar contraseña</h2>
+          <h2 className="text-[var(--color-text-primary)] font-semibold text-sm">Cambiar contraseña</h2>
           <p className="text-xs text-gray-500 mt-1">
             Actualiza la contraseña de tu cuenta de administrador.
           </p>
