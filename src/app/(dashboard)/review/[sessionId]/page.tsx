@@ -116,7 +116,7 @@ export default function ReviewPage() {
 
       {/* PREGUNTA */}
       <div className="rounded-2xl p-5 mb-4 fade-in" key={currentIdx}
-        style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}15` }}>
+        style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${NEON}15` }}>
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xs px-2 py-0.5 rounded-full"
             style={{ backgroundColor: `${NEON}15`, color: NEON }}>
@@ -203,7 +203,7 @@ export default function ReviewPage() {
         {revealed && !isLast && (
           <Link href="/history"
             className="px-5 py-3 rounded-xl text-sm font-medium text-center"
-            style={{ backgroundColor: 'rgba(0,5,2,0.5)', color: '#6B7280', border: '1px solid #ffffff10' }}>
+            style={{ backgroundColor: 'rgba(0,5,2,0.5)', color: 'var(--color-text-muted)', border: '1px solid var(--color-surface-border)' }}>
             Salir
           </Link>
         )}

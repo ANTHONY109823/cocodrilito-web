@@ -149,7 +149,7 @@ export default function PremiumPage() {
       {(isNew || isBlocked) && (
         <Card
           padding="sm"
-          className="mb-6 rounded-xl border-[rgba(49,143,72,0.35)] bg-[rgba(49,143,72,0.08)] text-center"
+          className="mb-6 rounded-xl border-[var(--color-surface-border)] bg-[var(--color-primary-bg)] text-center"
         >
           <div className="mb-2 text-4xl">🐊</div>
           <h2 className="mb-1 text-lg font-bold text-white">
@@ -220,7 +220,7 @@ export default function PremiumPage() {
                   className={cn(
                     'relative cursor-pointer rounded-xl transition-transform hover:scale-[1.02]',
                     isSelected
-                      ? 'border-2 border-[#318F48] bg-[rgba(49,143,72,0.08)] shadow-[0_0_25px_rgba(49,143,72,0.2)]'
+                      ? 'border-2 border-[#318F48] bg-[var(--color-primary-bg)] shadow-[0_0_25px_rgba(49,143,72,0.2)]'
                       : plan.isPopular
                         ? 'border-2 border-[#C9943A]/40'
                         : 'border border-[rgba(189,255,223,0.12)]'
@@ -238,7 +238,7 @@ export default function PremiumPage() {
                   <div
                     className={cn(
                       'mb-0.5 text-3xl font-bold',
-                      isSelected ? 'text-[#318F48]' : plan.isPopular ? 'text-[#C9943A]' : 'text-white'
+                      isSelected ? 'text-[var(--color-primary)]' : plan.isPopular ? 'text-[#C9943A]' : 'text-white'
                     )}
                   >
                     S/. {plan.price.toFixed(2)}
@@ -253,13 +253,13 @@ export default function PremiumPage() {
                         key={f}
                         className="flex items-start gap-1.5 text-xs text-[var(--color-text-muted)]"
                       >
-                        <span className="text-[#318F48]">✓</span> {f}
+                        <span className="text-[var(--color-primary)]">✓</span> {f}
                       </li>
                     ))}
                   </ul>
 
                   {isSelected && (
-                    <div className="mt-4 rounded-lg bg-[rgba(49,143,72,0.2)] py-1.5 text-center text-xs font-bold text-[#318F48]">
+                    <div className="mt-4 rounded-lg bg-[var(--color-primary-bg)] py-1.5 text-center text-xs font-bold text-[var(--color-primary)]">
                       ✓ Seleccionado
                     </div>
                   )}
@@ -291,7 +291,7 @@ export default function PremiumPage() {
                 {selectedPlan.durationDays} días de acceso
               </div>
             </div>
-            <div className="text-2xl font-bold text-[#318F48]">
+            <div className="text-2xl font-bold text-[var(--color-primary)]">
               S/. {selectedPlan.price.toFixed(2)}
             </div>
           </div>
@@ -329,7 +329,7 @@ export default function PremiumPage() {
 
           <Card
             padding="sm"
-            className="mb-5 space-y-2 rounded-xl border-[rgba(49,143,72,0.2)] bg-[rgba(49,143,72,0.05)]"
+            className="mb-5 space-y-2 rounded-xl border-[var(--color-surface-border)] bg-[var(--color-primary-bg)]"
           >
             {(paymentInfo?.instructions
               ? paymentInfo.instructions.split(/\.\s+/).filter(Boolean)
@@ -341,7 +341,7 @@ export default function PremiumPage() {
                 ]
             ).map((stepText, i) => (
               <div key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]">
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgba(49,143,72,0.2)] text-xs font-bold text-[#318F48]">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-bg)] text-xs font-bold text-[var(--color-primary)]">
                   {i + 1}
                 </span>
                 {stepText.endsWith('.') ? stepText : `${stepText}.`}

@@ -39,7 +39,7 @@ export function SystemHealthPanel() {
   if (loading) {
     return (
       <div className="rounded-2xl p-4 text-sm text-gray-500"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
         Verificando infraestructura…
       </div>
     )
@@ -59,7 +59,7 @@ export function SystemHealthPanel() {
 
   return (
     <div className="rounded-2xl p-4"
-      style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+      style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <h3 className="text-white font-semibold">Estado del sistema</h3>
         <span className="text-xs px-2 py-1 rounded-full font-medium"

@@ -7,8 +7,8 @@ import {
   type TenantLoginBranding,
 } from '@/lib/constants/defaultLoginBranding'
 
-const inputClass = 'w-full px-3 py-2 rounded-lg text-sm text-white outline-none'
-const inputStyle = { background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }
+const inputClass = 'input-admin'
+const inputStyle = { background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }
 
 interface TenantLoginBrandingFieldsProps {
   value: TenantLoginBranding
@@ -91,7 +91,7 @@ export function TenantLoginBrandingFields({ value, onChange }: TenantLoginBrandi
 
       <div className="grid sm:grid-cols-3 gap-3">
         {value.stats.map((stat, index) => (
-          <div key={index} className="space-y-2 rounded-lg p-3" style={{ border: '1px solid #ffffff10' }}>
+          <div key={index} className="space-y-2 rounded-lg p-3" style={{ border: '1px solid var(--color-surface-border)' }}>
             <p className="text-[10px] text-gray-500">Estadística {index + 1}</p>
             <input className={inputClass} style={inputStyle} placeholder="100%"
               value={stat.value}

@@ -51,8 +51,8 @@ interface CreateTenantPanelProps {
   onSubmit: (data: CreateTenantFormState) => Promise<void>
 }
 
-const inputClass = 'w-full px-3 py-2 rounded-lg text-sm text-white outline-none'
-const inputStyle = { background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }
+const inputClass = 'input-admin'
+const inputStyle = { background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }
 
 export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTenantPanelProps) {
   const [form, setForm] = useState<CreateTenantFormState>(emptyCreateTenantForm)
@@ -197,7 +197,7 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
           className="rounded-xl p-4"
           style={{
             border: `2px solid ${NEON}55`,
-            background: 'rgba(49,143,72,0.08)',
+            background: 'var(--color-primary-bg)',
           }}
         >
           <h3 className="text-white font-semibold text-sm mb-1">

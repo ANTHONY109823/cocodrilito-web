@@ -132,14 +132,14 @@ export default function ProfilePage() {
 
       <Card padding="sm" className="mb-4 rounded-xl">
         <div className="mb-4 flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgba(49,143,72,0.2)] text-2xl font-bold text-[#318F48]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary-bg)] text-2xl font-bold text-[var(--color-primary)]">
             {user?.fullName?.charAt(0)}
           </div>
           <div>
             <div className="text-lg font-bold text-white">{user?.fullName}</div>
             <div className="text-sm text-[var(--color-text-muted)]">{user?.email}</div>
             <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">DNI: {user?.dni}</div>
-            <div className="mt-1 text-xs font-medium text-[#318F48]">
+            <div className="mt-1 text-xs font-medium text-[var(--color-primary)]">
               Balotario: {trackLabel(resolveUserTrackKey(user))}
             </div>
           </div>
@@ -152,14 +152,14 @@ export default function ProfilePage() {
         ) : subInfo ? (
           <Card
             padding="sm"
-            className="rounded-xl border-[rgba(49,143,72,0.25)] bg-[rgba(49,143,72,0.06)]"
+            className="rounded-xl border-[var(--color-surface-border)] bg-[var(--color-primary-bg)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
                   Plan activo
                 </div>
-                <div className="text-sm font-semibold text-[#318F48]">
+                <div className="text-sm font-semibold text-[var(--color-primary)]">
                   Premium — vence el{' '}
                   {new Date(subInfo.expiresAt).toLocaleDateString('es-PE')}
                 </div>
@@ -168,7 +168,7 @@ export default function ProfilePage() {
                 <div
                   className={cn(
                     'text-xl font-bold',
-                    subInfo.daysLeft <= 7 ? 'text-[#C9943A]' : 'text-[#318F48]'
+                    subInfo.daysLeft <= 7 ? 'text-[#C9943A]' : 'text-[var(--color-primary)]'
                   )}
                 >
                   {subInfo.daysLeft}d

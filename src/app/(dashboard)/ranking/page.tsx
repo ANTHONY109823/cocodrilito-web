@@ -64,11 +64,11 @@ export default function RankingPage() {
         <Card
           variant="highlighted"
           padding="sm"
-          className="mb-4 rounded-xl border-[rgba(49,143,72,0.35)] bg-[rgba(49,143,72,0.08)]"
+          className="mb-4 rounded-xl border-[var(--color-surface-border)] bg-[var(--color-primary-bg)]"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(49,143,72,0.2)] text-lg font-bold text-[#318F48]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary-bg)] text-lg font-bold text-[var(--color-primary)]">
                 #{myRanking.position}
               </div>
               <div>
@@ -77,7 +77,7 @@ export default function RankingPage() {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-lg font-bold text-[#318F48]">
+              <div className="text-lg font-bold text-[var(--color-primary)]">
                 {leagueEmoji[myRanking.currentLeague]} {myRanking.currentLeague}
               </div>
               <div className="text-xs text-[var(--color-text-muted)]">
@@ -145,7 +145,7 @@ export default function RankingPage() {
                 padding="sm"
                 className={cn(
                   'rounded-xl transition-transform hover:translate-x-1',
-                  isMe && 'border-[rgba(49,143,72,0.35)] bg-[rgba(49,143,72,0.06)]'
+                  isMe && 'border-[var(--color-surface-border)] bg-[var(--color-primary-bg)]'
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export default function RankingPage() {
                   </div>
 
                   <div className="shrink-0 text-right">
-                    <div className="text-sm font-bold text-[#318F48]">{entry.averageScore}%</div>
+                    <div className="text-sm font-bold text-[var(--color-primary)]">{entry.averageScore}%</div>
                     <div className="text-xs text-[var(--color-text-muted)]">
                       {leagueEmoji[entry.currentLeague]} {entry.currentLeague}
                     </div>

@@ -104,7 +104,7 @@ export function SuperAdminUsersPanel({ tenantId, tenantName, compact }: SuperAdm
 
   return (
     <div className="rounded-2xl p-4"
-      style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+      style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
           <h3 className="text-white font-semibold">
@@ -116,8 +116,8 @@ export function SuperAdminUsersPanel({ tenantId, tenantName, compact }: SuperAdm
         </div>
         <div className="flex flex-wrap gap-2">
             <select
-              className="px-3 py-2 rounded-lg text-xs text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              className="input-admin text-xs"
+              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
             >
@@ -128,8 +128,8 @@ export function SuperAdminUsersPanel({ tenantId, tenantName, compact }: SuperAdm
             {!compact && (
               <>
                 <input
-                  className="px-3 py-2 rounded-lg text-xs text-white outline-none min-w-[200px]"
-                  style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                  className="input-admin text-xs min-w-[200px]"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                   placeholder="Buscar nombre, email o DNI…"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
@@ -200,13 +200,13 @@ export function SuperAdminUsersPanel({ tenantId, tenantName, compact }: SuperAdm
         <div className="flex items-center justify-center gap-3 mt-4">
           <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
             className="px-3 py-1.5 rounded-lg text-xs disabled:opacity-40"
-            style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF' }}>
+            style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--color-text-muted)' }}>
             ← Anterior
           </button>
           <span className="text-xs text-gray-500">{page} / {totalPages}</span>
           <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
             className="px-3 py-1.5 rounded-lg text-xs disabled:opacity-40"
-            style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF' }}>
+            style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--color-text-muted)' }}>
             Siguiente →
           </button>
         </div>

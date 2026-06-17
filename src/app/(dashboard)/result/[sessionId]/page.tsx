@@ -170,7 +170,7 @@ export default function ResultPage() {
 
       <Link href="/ranking"
         className="block py-3 rounded-xl text-sm font-medium text-center mb-4 transition-all"
-        style={{ backgroundColor: 'rgba(0,8,4,0.8)', color: '#6B7280', border: '1px solid #ffffff08' }}>
+        style={{ backgroundColor: 'var(--color-surface-elevated)', color: 'var(--color-text-muted)', border: '1px solid var(--color-surface-border)' }}>
         Ver mi posición en el ranking →
       </Link>
 

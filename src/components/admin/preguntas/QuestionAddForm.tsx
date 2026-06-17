@@ -159,7 +159,7 @@ export function TrackSelector({ activeTrackType, onChange }: TrackSelectorProps)
   return (
     <div
       className="rounded-2xl p-4 mb-5 space-y-3"
-      style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}
+      style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}25` }}
     >
       <div
         className="rounded-xl px-3 py-2 text-xs text-gray-400"
@@ -180,8 +180,8 @@ export function TrackSelector({ activeTrackType, onChange }: TrackSelectorProps)
         <div className="w-full md:max-w-xs">
           <label className="block text-xs text-gray-500 mb-1.5">Balotario activo</label>
           <select
-            className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-            style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+            className="input-admin"
+            style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
             value={activeTrackType}
             onChange={(e) => onChange(Number(e.target.value))}
           >

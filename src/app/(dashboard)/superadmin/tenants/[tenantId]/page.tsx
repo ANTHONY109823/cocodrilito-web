@@ -429,7 +429,7 @@ export default function TenantDetailPage() {
             { label: 'Planes activos', value: stats.activePlans },
           ].map((s) => (
             <div key={s.label} className="rounded-2xl p-4"
-              style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+              style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
               <div className="text-xs text-gray-500">{s.label}</div>
               <div className="text-xl font-bold" style={{ color: NEON }}>{s.value}</div>
             </div>
@@ -438,7 +438,7 @@ export default function TenantDetailPage() {
       )}
 
       <form onSubmit={handleSetAccess} className="rounded-2xl p-4 mb-6"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}30` }}>
         <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
           <div>
             <h3 className="text-white font-semibold">Vigencia de acceso</h3>
@@ -463,7 +463,7 @@ export default function TenantDetailPage() {
             <label className="block text-xs text-gray-500 mb-1">Fecha de activación</label>
             <input type="date" required
               className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
               value={accessForm.startsAt}
               onChange={(e) => setAccessForm({ ...accessForm, startsAt: e.target.value })}
             />
@@ -472,7 +472,7 @@ export default function TenantDetailPage() {
             <label className="block text-xs text-gray-500 mb-1">Días pagados</label>
             <input type="number" min={1} required
               className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
               value={accessForm.days}
               onChange={(e) => setAccessForm({ ...accessForm, days: Number(e.target.value) })}
             />
@@ -480,7 +480,7 @@ export default function TenantDetailPage() {
           <div>
             <label className="block text-xs text-gray-500 mb-1">Expira (automático)</label>
             <div className="px-3 py-2 rounded-lg text-sm"
-              style={{ background: 'rgba(0,5,2,0.5)', border: '1px solid #ffffff10', color: NEON }}>
+              style={{ background: 'rgba(0,5,2,0.5)', border: '1px solid var(--color-surface-border)', color: NEON }}>
               {computedExpiry ? computedExpiry.toLocaleDateString('es-PE') : '—'}
             </div>
           </div>
@@ -501,7 +501,7 @@ export default function TenantDetailPage() {
       </form>
 
       <div className="rounded-2xl p-4 mb-6"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}30` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}30` }}>
         <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
           <div>
             <h3 className="text-white font-semibold">Administrador del tenant</h3>
@@ -554,7 +554,7 @@ export default function TenantDetailPage() {
       </div>
 
       <form onSubmit={handleSaveBranding} className="rounded-2xl p-4 mb-6 space-y-4"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${INFO}35` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${INFO}35` }}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h3 className="text-white font-semibold">Identidad visual</h3>
@@ -582,7 +582,7 @@ export default function TenantDetailPage() {
       </form>
 
       <form onSubmit={handleSaveLoginBranding} className="rounded-2xl p-4 mb-6 space-y-4"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${WARNING}35` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${WARNING}35` }}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h3 className="text-white font-semibold">Panel de inicio de sesión</h3>
@@ -605,7 +605,7 @@ export default function TenantDetailPage() {
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <form onSubmit={handleSaveTenant} className="rounded-2xl p-4 space-y-4"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}35` }}>
+          style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}35` }}>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <h3 className="text-white font-semibold">Configuración de la institución</h3>
@@ -629,7 +629,7 @@ export default function TenantDetailPage() {
               <label className="block text-xs text-gray-500 mb-1">Nombre</label>
               <input
                 className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                 value={tenantForm.name}
                 onChange={(e) => setTenantForm({ ...tenantForm, name: e.target.value })}
                 required
@@ -639,7 +639,7 @@ export default function TenantDetailPage() {
               <label className="block text-xs text-gray-500 mb-1">Slug (subdominio)</label>
               <input
                 className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                 value={tenantForm.slug}
                 onChange={(e) => setTenantForm({ ...tenantForm, slug: e.target.value })}
                 placeholder="jraasecurity"
@@ -663,11 +663,11 @@ export default function TenantDetailPage() {
         </form>
 
         <form onSubmit={handlePayment} className="rounded-2xl p-4 space-y-3"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${WARNING}25` }}>
+          style={{ background: 'var(--color-surface-card)', border: `1px solid ${WARNING}25` }}>
           <h3 className="text-white font-semibold">Registrar pago</h3>
           <input type="number" step="0.01" placeholder="Monto S/."
             className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-            style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+            style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
             value={paymentForm.amount}
             onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
             required
@@ -675,13 +675,13 @@ export default function TenantDetailPage() {
           <div className="grid grid-cols-2 gap-2">
             <input type="date" required
               className="px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
               value={paymentForm.periodStart}
               onChange={(e) => setPaymentForm({ ...paymentForm, periodStart: e.target.value })}
             />
             <input type="date" required
               className="px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
               value={paymentForm.periodEnd}
               onChange={(e) => setPaymentForm({ ...paymentForm, periodEnd: e.target.value })}
             />
@@ -695,7 +695,7 @@ export default function TenantDetailPage() {
       </div>
 
       <div className="rounded-2xl p-4 mb-6"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}30` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${GOLD}30` }}>
         <TenantPlansSection
           tenantId={tenantId}
           description="Planes de suscripción que verán los alumnos de esta agencia al contratar acceso."
@@ -717,21 +717,21 @@ export default function TenantDetailPage() {
           <div>
             <label className="block text-xs text-gray-500 mb-1">Nombre completo</label>
             <input className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
               value={adminForm.fullName}
               onChange={(e) => setAdminForm({ ...adminForm, fullName: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Email de acceso</label>
             <input type="email" className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
               value={adminForm.email}
               onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">DNI</label>
             <input maxLength={8} className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+              style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
               value={adminForm.dni}
               onChange={(e) => setAdminForm({ ...adminForm, dni: e.target.value.replace(/\D/g, '') })} />
           </div>
@@ -753,7 +753,7 @@ export default function TenantDetailPage() {
           Define una nueva contraseña temporal. El administrador deberá cambiarla en su próximo ingreso.
         </p>
         <input type="password" className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-          style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+          style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           placeholder="Nueva contraseña temporal"
@@ -802,7 +802,7 @@ export default function TenantDetailPage() {
             </label>
             <input
               className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-              style={{ background: 'rgba(0,5,2,0.8)', border: `1px solid ${DANGER}40` }}
+              style={{ background: 'var(--color-input-bg)', border: `1px solid ${DANGER}40` }}
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               placeholder={tenant.name}

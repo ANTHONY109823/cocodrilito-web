@@ -11,7 +11,7 @@ export default function SuperAdminPreguntasPage() {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl overflow-hidden"
-        style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+        style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
         <button
           type="button"
           onClick={() => setShowDistribution((s) => !s)}

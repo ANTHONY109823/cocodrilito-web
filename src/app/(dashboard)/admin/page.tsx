@@ -453,18 +453,10 @@ function AdminPageContent() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        .fade-in { animation: fadeIn 0.3s ease forwards; }
-        .input-admin { width:100%; padding:10px 14px; border-radius:10px; background:rgba(0,5,2,0.8); border:1px solid #ffffff15; color:#fff; font-size:13px; outline:none; }
-        .input-admin:focus { border-color: ${NEON}50; }
-        .input-admin::placeholder { color:#4B5563; }
-      `}</style>
-
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
             {user?.tenantName ? `${user.tenantName}` : 'Panel Admin'} 🛡️
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">Gestión de tu agencia</p>
@@ -478,7 +470,7 @@ function AdminPageContent() {
 
       {msg && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium fade-in"
-          style={{ backgroundColor: msg.ok ? 'rgba(74,124,89,0.1)' : 'rgba(255,82,82,0.1)', border: `1px solid ${msg.ok ? NEON : RED}40`, color: msg.ok ? NEON : RED }}>
+          style={{ backgroundColor: msg.ok ? 'var(--color-primary-bg)' : 'color-mix(in srgb, var(--color-danger) 10%, transparent)', border: `1px solid ${msg.ok ? NEON : RED}40`, color: msg.ok ? NEON : RED }}>
           {msg.text}
         </div>
       )}
@@ -540,14 +532,14 @@ function AdminPageContent() {
               </div>
 
               {dashData.pendingSubscriptions > 0 && (
-                <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}20` }}>
-                  <h3 className="text-white font-semibold mb-3">Pagos por aprobar</h3>
+                <div className="rounded-2xl p-4 panel-card" style={{ border: `1px solid ${GOLD}20` }}>
+                  <h3 className="text-[var(--color-text-primary)] font-semibold mb-3">Pagos por aprobar</h3>
                   <div className="space-y-3">
                     {subscriptions.map(sub => {
                       const days = inferDays(sub.amountPaid)
                       return (
-                        <div key={sub.id} className="rounded-xl p-4"
-                          style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${GOLD}15` }}>
+                        <div key={sub.id} className="rounded-xl p-4 panel-elevated"
+                          style={{ border: `1px solid ${GOLD}15` }}>
                           <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div>
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -587,7 +579,7 @@ function AdminPageContent() {
 
       {tab === 'users' && (
         <div className="fade-in space-y-4">
-          <div className="flex gap-2 flex-wrap border-b border-white/10 pb-3">
+          <div className="flex gap-2 flex-wrap border-b border-[var(--color-surface-border)] pb-3">
             {userSubTabs.map((st) => (
               <AppNavLink key={st.key} href={st.href}
                 className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
@@ -610,7 +602,7 @@ function AdminPageContent() {
       {userSub === 'activos' && (
         <div>
           {createdUser && (
-            <div className="rounded-2xl p-4 mb-4 fade-in" style={{ background: 'rgba(49,143,72,0.1)', border: `2px solid ${NEON}50` }}>
+            <div className="rounded-2xl p-4 mb-4 fade-in" style={{ background: 'var(--color-primary-bg)', border: `2px solid ${NEON}50` }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold mb-2" style={{ color: NEON }}>✅ Usuario creado correctamente</p>
@@ -632,7 +624,7 @@ function AdminPageContent() {
                       </>
                     )}
                   </div>
-                  <p className="text-xs mt-2" style={{ color: '#6B8A75' }}>
+                  <p className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
                     El alumno ingresa con su usuario y contraseña en la URL de la agencia.
                   </p>
                 </div>
@@ -651,7 +643,7 @@ function AdminPageContent() {
               <div className="text-gray-500 text-center py-12">Cargando usuarios...</div>
             ) : activeUsers.length === 0 ? (
               <div className="text-center py-12 rounded-2xl"
-                style={{ background: 'rgba(0,10,5,0.8)', border: `1px solid ${NEON}15` }}>
+                style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}15` }}>
                 <div className="text-4xl mb-3">👥</div>
                 <p className="text-gray-500">No hay usuarios activos en esta categoría</p>
               </div>
@@ -662,7 +654,7 @@ function AdminPageContent() {
               const noSub = u.planType === 'Free' || !u.subscription
               return (
                 <div key={u.id} className="rounded-2xl p-4"
-                  style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${expired ? RED : warning ? GOLD : noSub ? `${GOLD}40` : NEON}15` }}>
+                  style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${expired ? RED : warning ? GOLD : noSub ? `${GOLD}40` : NEON}15` }}>
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -743,7 +735,7 @@ function AdminPageContent() {
       {userSub === 'inactivos' && (
         <div>
           <div className="rounded-2xl p-4 mb-5 flex items-center gap-3"
-            style={{ background: `rgba(255,82,82,0.06)`, border: `1px solid ${RED}25` }}>
+            style={{ background: 'color-mix(in srgb, var(--color-danger) 6%, var(--color-surface-card))', border: `1px solid ${RED}25` }}>
             <span className="text-2xl">🔴</span>
             <div>
               <p className="text-sm font-semibold" style={{ color: RED }}>Usuarios desactivados</p>
@@ -761,7 +753,7 @@ function AdminPageContent() {
               <div className="text-gray-500 text-center py-12">Cargando...</div>
             ) : inactiveUsers.length === 0 ? (
               <div className="text-center py-12 rounded-2xl"
-                style={{ background: 'rgba(0,10,5,0.8)', border: `1px solid ${RED}15` }}>
+                style={{ background: 'var(--color-surface-card)', border: `1px solid ${RED}15` }}>
                 <div className="text-4xl mb-3">✅</div>
                 <p className="text-gray-500">No hay usuarios inactivos en esta categoría</p>
               </div>
@@ -769,7 +761,7 @@ function AdminPageContent() {
               const days = daysLeft(u.subscription?.expiresAt)
               return (
                 <div key={u.id} className="rounded-2xl p-4"
-                  style={{ background: 'rgba(5,2,2,0.9)', border: `1px solid ${RED}15`, opacity: 0.85 }}>
+                  style={{ background: 'color-mix(in srgb, var(--color-danger) 10%, var(--color-surface-elevated))', border: `1px solid ${RED}15`, opacity: 0.85 }}>
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -830,7 +822,7 @@ function AdminPageContent() {
                       </button>
                       <button onClick={() => setDeleteTarget({ id: u.id, name: u.fullName })}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: 'rgba(255,82,82,0.15)', color: '#FF5252', border: '1px solid #FF525230' }}>
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-danger) 15%, transparent)', color: '#FF5252', border: '1px solid #FF525230' }}>
                         🗑️ Eliminar
                       </button>
                     </div>
@@ -843,9 +835,8 @@ function AdminPageContent() {
       )}
 
       {userSub === 'crear' && (
-        <div className="rounded-2xl p-6"
-          style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}20` }}>
-          <h2 className="text-white font-bold text-lg mb-5">Crear usuario con acceso directo</h2>
+        <div className="rounded-2xl p-6 panel-card" style={{ border: `1px solid ${NEON}20` }}>
+          <h2 className="text-[var(--color-text-primary)] font-bold text-lg mb-5">Crear usuario con acceso directo</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               {[
@@ -869,7 +860,7 @@ function AdminPageContent() {
             </div>
             {previewLoginUsername ? (
               <div className="rounded-xl px-4 py-3 text-sm"
-                style={{ background: 'rgba(49,143,72,0.1)', border: `1px solid ${NEON}35` }}>
+                style={{ background: 'var(--color-primary-bg)', border: `1px solid ${NEON}35` }}>
                 <span className="text-gray-500 text-xs">Usuario de acceso generado: </span>
                 <strong className="text-white tracking-widest">{previewLoginUsername}</strong>
                 <p className="text-[10px] text-gray-600 mt-1">Inicial del nombre + apellido paterno (ej. Anthony Ccayo → ACCAYO)</p>
@@ -934,9 +925,8 @@ function AdminPageContent() {
             </div>
 
             {/* IMPORTAR DESDE EXCEL */}
-            <div className="rounded-2xl p-5"
-              style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${PURPLE}25` }}>
-              <h3 className="text-white font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
+            <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${PURPLE}25` }}>
+              <h3 className="text-[var(--color-text-primary)] font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
               <p className="text-gray-500 text-xs mb-3">
                 Columnas: Nombre, DNI, Email, Contraseña, Grado, Unidad, Días (30/60/180), Balotario (opcional: Suboficiales/Oficiales).
                 Si no hay columna Balotario, se usa el seleccionado arriba ({trackLabel(form.trackType)}).
@@ -1073,8 +1063,7 @@ function AdminPageContent() {
         <div className="space-y-3">
           <p>Indica el motivo del rechazo. El usuario lo verá en su notificación.</p>
           <textarea
-            className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-            style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+            className="textarea-admin"
             rows={3}
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
@@ -1104,8 +1093,7 @@ function AdminPageContent() {
           <strong className="text-white">{resetPasswordTarget?.fullName}</strong>.
           El alumno deberá cambiarla en su próximo ingreso.
         </p>
-        <input type="password" className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-          style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+        <input type="password" className="input-admin"
           value={resetPasswordValue}
           onChange={(e) => setResetPasswordValue(e.target.value)}
           placeholder="Nueva contraseña temporal"
@@ -1138,13 +1126,13 @@ function AdminPageContent() {
       >
         <div className="space-y-2 text-sm">
           <p>¿Crear acceso inmediato para este alumno?</p>
-          <div className="rounded-lg border border-white/10 bg-black/30 p-3 space-y-1">
-            <div><span className="text-gray-500">Nombre: </span><strong className="text-white">{form.fullName}</strong></div>
-            <div><span className="text-gray-500">Usuario: </span><strong className="text-white tracking-wide">{previewLoginUsername ?? '—'}</strong></div>
-            <div><span className="text-gray-500">Email: </span><strong className="text-white">{form.email}</strong></div>
-            <div><span className="text-gray-500">DNI: </span><strong className="text-white">{form.dni}</strong></div>
+          <div className="rounded-lg border border-[var(--color-surface-border)] bg-[var(--color-primary-bg)] p-3 space-y-1">
+            <div><span className="text-gray-500">Nombre: </span><strong className="text-[var(--color-text-primary)]">{form.fullName}</strong></div>
+            <div><span className="text-gray-500">Usuario: </span><strong className="text-[var(--color-text-primary)] tracking-wide">{previewLoginUsername ?? '—'}</strong></div>
+            <div><span className="text-gray-500">Email: </span><strong className="text-[var(--color-text-primary)]">{form.email}</strong></div>
+            <div><span className="text-gray-500">DNI: </span><strong className="text-[var(--color-text-primary)]">{form.dni}</strong></div>
             <div><span className="text-gray-500">Plan: </span><strong style={{ color: NEON }}>{form.planDays} días</strong></div>
-            <div><span className="text-gray-500">Balotario: </span><strong className="text-white">{trackLabel(form.trackType)}</strong></div>
+            <div><span className="text-gray-500">Balotario: </span><strong className="text-[var(--color-text-primary)]">{trackLabel(form.trackType)}</strong></div>
           </div>
           <p className="text-xs text-gray-500">El alumno deberá cambiar su contraseña al primer ingreso.</p>
         </div>

@@ -203,14 +203,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               {navContext === 'tenant-admin' ? (
               <AppNavLink
                 href="/admin/configuracion"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[var(--color-text-accent)] hover:ring-2 hover:ring-[#318F48]/40"
               >
                 {initials}
               </AppNavLink>
             ) : navContext === 'student' ? (
               <AppNavLink
                 href="/profile"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[#BDFFDF] hover:ring-2 hover:ring-[#318F48]/40"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A5C2E] text-xs font-bold text-[var(--color-text-accent)] hover:ring-2 hover:ring-[#318F48]/40"
               >
                 {initials}
               </AppNavLink>

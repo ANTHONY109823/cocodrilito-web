@@ -117,7 +117,7 @@ export function ExamDistributionPanel() {
         </div>
       ) : (
         <div className="rounded-2xl overflow-hidden"
-          style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${policeGreenRgba(0.2)}` }}>
+          style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${policeGreenRgba(0.2)}` }}>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500" style={{ borderBottom: `1px solid ${SURFACE_BORDER}` }}>
@@ -152,7 +152,7 @@ export function ExamDistributionPanel() {
                       value={r.percentage}
                       onChange={(e) => setPercentage(idx, e.target.value)}
                       className="w-20 px-2 py-1 rounded-lg text-white outline-none"
-                      style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                      style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                     />
                   </td>
                   <td className="px-3 py-2 font-semibold" style={{ color: NEON }}>

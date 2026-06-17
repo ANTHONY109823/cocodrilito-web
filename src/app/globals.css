@@ -146,6 +146,92 @@ h3 {
   padding: 1.5rem;
 }
 
+/* Paneles admin / superadmin — heredan en todas las agencias */
+.panel-card {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-surface-border);
+}
+
+.panel-elevated {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-surface-border);
+}
+
+.panel-primary {
+  background: var(--color-primary-bg);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.panel-danger {
+  background: color-mix(in srgb, var(--color-danger) 6%, var(--color-surface-card));
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+}
+
+.input-admin {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-surface-border);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-admin:focus {
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+
+.input-admin::placeholder {
+  color: var(--color-text-muted);
+}
+
+.textarea-admin {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-surface-border);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  outline: none;
+  resize: vertical;
+}
+
+.textarea-admin:focus {
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+
+.chip-primary {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.chip-warning {
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
+}
+
+.chip-danger {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  color: var(--color-danger);
+}
+
+.chip-info {
+  background: color-mix(in srgb, var(--color-info) 15%, transparent);
+  color: var(--color-info);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
 .input-field {
   width: 100%;
   background-color: var(--color-input-bg);
@@ -371,8 +457,23 @@ h3 {
   border: 1px solid #6BAF88 !important;
 }
 
-[data-theme='light'] .border-\[\#318F48\] {
-  border-color: var(--color-primary) !important;
+[data-theme='light'] .border-white\/10,
+[data-theme='light'] .border-white\/15 {
+  border-color: var(--color-surface-border) !important;
+}
+
+[data-theme='light'] .bg-black\/30 {
+  background-color: var(--color-primary-bg) !important;
+}
+
+[data-theme='light'] main .border-b.border-white\/10 {
+  border-color: var(--color-surface-border) !important;
+}
+
+[data-theme='light'] .textarea-admin,
+[data-theme='light'] textarea.textarea-admin {
+  color: var(--color-text-primary) !important;
+  background-color: var(--color-input-bg) !important;
 }
 
 [data-theme='light'] .bg-\[\#318F48\]\/10,

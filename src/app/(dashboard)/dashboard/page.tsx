@@ -67,7 +67,7 @@ function StatCard({
   value,
   label,
   trend,
-  trendColor = 'text-[#318F48]',
+  trendColor = 'text-[var(--color-primary)]',
 }: {
   icon: typeof FileText
   iconClass: string
@@ -150,7 +150,7 @@ export default function DashboardPage() {
           </h1>
           <p className="mt-0.5 text-[13px] capitalize text-[var(--color-text-muted)]">{today}</p>
         </div>
-        <span className="rounded-full border border-[#318F48] bg-[#318F48]/15 px-3 py-1.5 text-xs font-medium text-[#318F48]">
+        <span className="rounded-full border border-[#318F48] bg-[#318F48]/15 px-3 py-1.5 text-xs font-medium text-[var(--color-primary)]">
           {ligaCfg.emoji} Liga {liga}
         </span>
       </div>
@@ -158,7 +158,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <StatCard
           icon={FileText}
-          iconClass="bg-[#318F48]/15 text-[#318F48]"
+          iconClass="bg-[#318F48]/15 text-[var(--color-primary)]"
           value={sessions}
           label="Exámenes realizados"
           trend="↑ Actividad registrada"
@@ -198,7 +198,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-3 gap-2.5">
         <div className="rounded-xl border border-[rgba(74,124,89,0.2)] bg-[var(--color-surface-card)] px-3.5 py-3 text-center">
-          <div className="text-[20px] font-extrabold text-[#318F48]">{statsData?.totalCorrect ?? 0}</div>
+          <div className="text-[20px] font-extrabold text-[var(--color-primary)]">{statsData?.totalCorrect ?? 0}</div>
           <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">✅ Correctas (total)</div>
         </div>
         <div className="rounded-xl border border-[rgba(255,82,82,0.2)] bg-[var(--color-surface-card)] px-3.5 py-3 text-center">
@@ -305,7 +305,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/history"
-            className="text-sm font-medium text-[#318F48] hover:text-[#5EC97A]"
+            className="text-sm font-medium text-[var(--color-primary)] hover:text-[#5EC97A]"
           >
             Ver historial →
           </Link>

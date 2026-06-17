@@ -77,7 +77,7 @@ export function CredentialsModal({
           { label: 'DNI', value: credentials.dni },
           { label: 'Rol', value: credentials.role },
         ].filter((item) => item.value).map((item) => (
-          <div key={item.label} className="rounded-lg px-3 py-2" style={{ background: 'rgba(0,5,2,0.6)', border: '1px solid #ffffff10' }}>
+          <div key={item.label} className="rounded-lg px-3 py-2" style={{ background: 'rgba(0,5,2,0.6)', border: '1px solid var(--color-surface-border)' }}>
             <div className="text-xs text-gray-500">{item.label}</div>
             <div className="text-white font-medium break-all">{item.value}</div>
           </div>

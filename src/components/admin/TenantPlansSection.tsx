@@ -157,7 +157,7 @@ export function TenantPlansSection({
         <div
           className="px-4 py-3 rounded-xl text-sm"
           style={{
-            backgroundColor: msg.ok ? 'rgba(74,124,89,0.1)' : 'rgba(255,82,82,0.1)',
+            backgroundColor: msg.ok ? 'var(--color-primary-bg)' : 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
             border: `1px solid ${msg.ok ? NEON : RED}40`,
             color: msg.ok ? NEON : RED,
           }}
@@ -173,7 +173,7 @@ export function TenantPlansSection({
           <form
             onSubmit={handleSavePlan}
             className="rounded-2xl p-5 space-y-3 h-fit"
-            style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${GOLD}25` }}
+            style={{ background: 'var(--color-surface-card)', border: `1px solid ${GOLD}25` }}
           >
             <h3 className="text-white font-bold mb-1">
               {editingPlanId ? 'Editar plan' : 'Nuevo plan'}
@@ -181,8 +181,8 @@ export function TenantPlansSection({
             <div>
               <label className="block text-xs text-gray-500 mb-1">Tipo de preparación</label>
               <select
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                className="input-admin"
+                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                 value={planForm.trackType}
                 onChange={(e) => setPlanForm({ ...planForm, trackType: Number(e.target.value) })}
               >
@@ -194,8 +194,8 @@ export function TenantPlansSection({
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nombre del plan</label>
               <input
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                className="input-admin"
+                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                 value={planForm.name}
                 onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
                 placeholder="Ej. Plan Mensual"
@@ -208,16 +208,16 @@ export function TenantPlansSection({
                 <input
                   type="text"
                   readOnly
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                  className="input-admin"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                   value={formatPlanPrice(planForm.price)}
                 />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Duración</label>
                 <select
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                  className="input-admin"
+                  style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                   value={planForm.durationDays}
                   onChange={(e) => setDurationDays(Number(e.target.value))}
                 >
@@ -232,8 +232,8 @@ export function TenantPlansSection({
             <div>
               <label className="block text-xs text-gray-500 mb-1">Descripción (opcional)</label>
               <textarea
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none resize-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                className="input-admin resize-none"
+                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                 rows={2}
                 value={planForm.description}
                 onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
@@ -245,7 +245,7 @@ export function TenantPlansSection({
                   type="button"
                   onClick={resetPlanForm}
                   className="flex-1 py-2 rounded-lg text-sm font-medium"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF', border: '1px solid #ffffff15' }}
+                  style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--color-text-muted)', border: '1px solid var(--color-surface-border)' }}
                 >
                   Cancelar
                 </button>
@@ -263,7 +263,7 @@ export function TenantPlansSection({
 
           <div
             className="lg:col-span-2 rounded-2xl p-5"
-            style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${NEON}25` }}
+            style={{ background: 'var(--color-surface-card)', border: `1px solid ${NEON}25` }}
           >
             <h3 className="text-white font-bold mb-4">
               Planes activos ({plans.filter((p) => p.isActive).length})

@@ -42,7 +42,7 @@ export function QuestionEditModal({
         <div>
           <label className="mb-1.5 block text-xs text-[var(--color-text-muted)]">Texto de la pregunta</label>
           <textarea
-            className="w-full rounded-lg border border-[rgba(189,255,223,0.18)] bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#318F48]"
+            className="w-full rounded-lg border border-[var(--color-surface-border)] bg-[var(--color-input-bg)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
             rows={4}
             value={question.questionText}
             onChange={(e) => onChange({ ...question, questionText: e.target.value })}
@@ -81,7 +81,7 @@ export function QuestionEditModal({
             Explicación oficial (normativa, doctrina o criterio PNP)
           </label>
           <textarea
-            className="w-full rounded-lg border border-[rgba(189,255,223,0.18)] bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#318F48]"
+            className="w-full rounded-lg border border-[var(--color-surface-border)] bg-[var(--color-input-bg)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
             rows={4}
             placeholder="Ej: Art. 166 Constitución — La PNP garantiza el orden interno..."
             value={question.explanation ?? ''}
@@ -95,7 +95,7 @@ export function QuestionEditModal({
         {question.answerOptions && (
           <div>
             <label className="mb-2 block text-xs text-[var(--color-text-muted)]">
-              Opciones — <span className="text-[#318F48]">toca la letra para marcar correcta</span>
+              Opciones — <span className="text-[var(--color-primary)]">toca la letra para marcar correcta</span>
             </label>
             {question.answerOptions
               .sort((a, b) => a.optionIndex - b.optionIndex)

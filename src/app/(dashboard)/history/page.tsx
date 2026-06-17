@@ -102,7 +102,7 @@ export default function HistoryPage() {
                 className={cn(
                   'rounded-xl',
                   s.passed
-                    ? 'border-[rgba(49,143,72,0.25)]'
+                    ? 'border-[var(--color-surface-border)]'
                     : 'border-[rgba(192,57,43,0.25)]'
                 )}
               >
@@ -116,7 +116,7 @@ export default function HistoryPage() {
                     </div>
                     <div className="text-xs text-[var(--color-text-muted)]">{formatDate(s.finishedAt)}</div>
                     <div className="mt-2 flex flex-wrap gap-3 text-xs">
-                      <span className="text-[#318F48]">✓ {s.correctAnswers} correctas</span>
+                      <span className="text-[var(--color-primary)]">✓ {s.correctAnswers} correctas</span>
                       <span className="text-[#e74c3c]">✗ {incorrect} incorrectas</span>
                       <span className="inline-flex items-center gap-1 text-[#5ba8cc]">
                         <Clock className="h-3 w-3" />
@@ -129,7 +129,7 @@ export default function HistoryPage() {
                     <div
                       className={cn(
                         'text-2xl font-bold',
-                        s.passed ? 'text-[#318F48]' : 'text-[#e74c3c]'
+                        s.passed ? 'text-[var(--color-primary)]' : 'text-[#e74c3c]'
                       )}
                     >
                       {s.score}%

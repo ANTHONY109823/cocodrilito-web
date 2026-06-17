@@ -288,7 +288,7 @@ function SuperAdminPageContent() {
     <div
       className="rounded-2xl p-4 min-h-[108px] flex flex-col justify-between"
       style={{
-        background: 'linear-gradient(145deg, rgba(0,14,8,0.95), rgba(0,8,4,0.88))',
+        background: 'linear-gradient(145deg, var(--color-surface-card), var(--color-surface-elevated))',
         border: `1px solid ${policeGreenRgba(0.22)}`,
         boxShadow: 'inset 0 1px 0 rgba(189,255,223,0.06)',
       }}
@@ -320,7 +320,7 @@ function SuperAdminPageContent() {
       <div className="space-y-3">
         {list.map((t) => (
           <div key={t.id} className="rounded-2xl p-4 flex flex-wrap items-center gap-3 justify-between"
-            style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${policeGreenRgba(0.2)}` }}>
+            style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${policeGreenRgba(0.2)}` }}>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-white font-semibold">{t.name}</span>
@@ -448,7 +448,7 @@ function SuperAdminPageContent() {
             <SystemHealthPanel />
 
             <div className="rounded-2xl p-4"
-              style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${WARNING}35` }}>
+              style={{ background: 'var(--color-surface-card)', border: `1px solid ${WARNING}35` }}>
               <h3 className="text-white font-semibold text-sm mb-1">Registro de cuentas</h3>
               <p className="text-xs text-gray-500 mb-3">
                 Crea instituciones con logo y fondo personalizado para su página de login.
@@ -487,7 +487,7 @@ function SuperAdminPageContent() {
               </div>
             )}
             <div className="rounded-2xl p-4"
-              style={{ background: 'rgba(0,10,5,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+              style={{ background: 'var(--color-surface-card)', border: `1px solid ${SURFACE_BORDER}` }}>
               <h3 className="text-white font-semibold mb-3">Instituciones más activas</h3>
               {dashboard.topTenantsByActivity.length === 0 ? (
                 <p className="text-gray-500 text-sm">Aún no hay actividad registrada.</p>
@@ -533,7 +533,7 @@ function SuperAdminPageContent() {
               <p className="text-gray-500 text-center py-8">Sin registros de auditoría</p>
             ) : auditLogs.map((log) => (
               <div key={log.id} className="rounded-xl px-4 py-3 text-sm"
-                style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${SURFACE_BORDER}` }}>
+                style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${SURFACE_BORDER}` }}>
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="font-bold" style={{ color: INFO }}>{log.action}</span>
                   <span className="text-gray-500">{log.userFullName}</span>
@@ -586,7 +586,7 @@ function SuperAdminPageContent() {
               </label>
               <input
                 className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: `1px solid ${DANGER}40` }}
+                style={{ background: 'var(--color-input-bg)', border: `1px solid ${DANGER}40` }}
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder={pendingAction?.tenant.name}
@@ -604,7 +604,7 @@ function SuperAdminPageContent() {
               <label className="block text-xs text-gray-500 mb-1">Motivo (opcional)</label>
               <textarea
                 className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'rgba(0,5,2,0.8)', border: '1px solid #ffffff15' }}
+                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                 rows={2}
                 value={suspendReason}
                 onChange={(e) => setSuspendReason(e.target.value)}

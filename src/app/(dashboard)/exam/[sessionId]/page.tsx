@@ -263,7 +263,7 @@ export default function ExamPage() {
 
       {/* HEADER */}
       <div className="rounded-2xl p-4 mb-4 flex items-center justify-between"
-        style={{ background: 'rgba(0,8,4,0.9)', border: '1px solid #ffffff08' }}>
+        style={{ background: 'var(--color-surface-elevated)', border: '1px solid var(--color-surface-border)' }}>
         <div>
           <div className="text-white font-bold text-sm">{session.examTitle}</div>
           {currentQ?.category ? (
@@ -296,7 +296,7 @@ export default function ExamPage() {
 
       {/* PREGUNTA */}
       <div className="rounded-2xl p-5 mb-4 fade-in" key={currentIdx}
-        style={{ background: 'rgba(0,8,4,0.9)', border: `1px solid ${NEON}15` }}>
+        style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${NEON}15` }}>
         <div className="text-xs text-gray-600 mb-3 uppercase tracking-wider">
           Pregunta {currentIdx + 1}
         </div>
@@ -347,7 +347,7 @@ export default function ExamPage() {
             style={{
               backgroundColor: currentIdx === 0 ? 'rgba(0,5,2,0.3)' : 'rgba(0,8,4,0.8)',
               color: currentIdx === 0 ? '#374151' : '#9CA3AF',
-              border: '1px solid #ffffff10',
+              border: '1px solid var(--color-surface-border)',
               cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
             }}>
             ← Anterior
@@ -368,7 +368,7 @@ export default function ExamPage() {
           ) : (
             <button onClick={goNext}
               className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-              style={{ backgroundColor: 'rgba(0,8,4,0.8)', color: '#9CA3AF', border: '1px solid #ffffff10' }}>
+              style={{ backgroundColor: 'var(--color-surface-elevated)', color: 'var(--color-text-muted)', border: '1px solid var(--color-surface-border)' }}>
               Siguiente →
             </button>
           )}

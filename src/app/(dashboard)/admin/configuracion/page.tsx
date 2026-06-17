@@ -64,8 +64,8 @@ export default function ConfiguracionPage() {
   }
 
   const cardStyle = {
-    background: 'rgba(0,8,4,0.9)',
-    border: '1px solid #ffffff08',
+    background: 'var(--color-surface-elevated)',
+    border: '1px solid var(--color-surface-border)',
   }
 
   if (loading) {
@@ -85,7 +85,7 @@ export default function ConfiguracionPage() {
       {msg && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm"
           style={{
-            backgroundColor: msg.ok ? 'rgba(74,124,89,0.1)' : 'rgba(255,82,82,0.1)',
+            backgroundColor: msg.ok ? 'var(--color-primary-bg)' : 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
             border: `1px solid ${msg.ok ? NEON : '#FF5252'}40`,
             color: msg.ok ? NEON : '#FF5252',
           }}>
