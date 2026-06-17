@@ -61,7 +61,7 @@ type AdminTab = 'dashboard' | 'users'
 type UserSubTab = 'activos' | 'inactivos' | 'crear'
 
 function AdminPageLoading() {
-  return <p className="py-12 text-center text-[#6B8A75]">Cargando panel...</p>
+  return <p className="py-12 text-center text-[var(--color-text-muted)]">Cargando panel...</p>
 }
 
 export default function AdminPage() {
@@ -503,33 +503,35 @@ function AdminPageContent() {
                   { label: 'Suscripciones activas', value: dashData.activeSubscriptions, color: NEON },
                   { label: 'Pagos pendientes', value: dashData.pendingSubscriptions, color: GOLD },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-2xl p-4"
-                    style={{ background: 'rgba(0,10,5,0.9)', border: '1px solid #ffffff10' }}>
-                    <div className="text-xs text-gray-500 mb-1">{s.label}</div>
+                  <div
+                    key={s.label}
+                    className="rounded-2xl p-4 bg-[var(--color-surface-card)] border border-[var(--color-surface-border)]"
+                  >
+                    <div className="text-xs text-[var(--color-text-secondary)] mb-1 font-semibold">{s.label}</div>
                     <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
                   </div>
                 ))}
               </div>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: '1px solid #ffffff10' }}>
-                  <h3 className="text-white font-semibold mb-3">🏆 Top alumnos</h3>
+                <div className="rounded-2xl p-4 bg-[var(--color-surface-card)] border border-[var(--color-surface-border)]">
+                  <h3 className="text-[var(--color-text-primary)] font-semibold mb-3">🏆 Top alumnos</h3>
                   {dashData.ranking.length === 0 ? (
-                    <p className="text-gray-500 text-sm">Sin datos aún</p>
+                    <p className="text-[var(--color-text-muted)] text-sm">Sin datos aún</p>
                   ) : dashData.ranking.map((r) => (
-                    <div key={r.userId} className="flex justify-between text-sm py-1.5 border-b border-white/5">
-                      <span className="text-gray-300">{r.position}. {r.fullName}</span>
+                    <div key={r.userId} className="flex justify-between text-sm py-1.5 border-b border-[var(--color-surface-border)]">
+                      <span className="text-[var(--color-text-primary)]">{r.position}. {r.fullName}</span>
                       <span style={{ color: NEON }}>{r.avgScore}% · {r.examsCount} ex.</span>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-2xl p-4" style={{ background: 'rgba(0,10,5,0.9)', border: '1px solid #ffffff10' }}>
-                  <h3 className="text-white font-semibold mb-3">👤 Accesos recientes</h3>
+                <div className="rounded-2xl p-4 bg-[var(--color-surface-card)] border border-[var(--color-surface-border)]">
+                  <h3 className="text-[var(--color-text-primary)] font-semibold mb-3">👤 Accesos recientes</h3>
                   {dashData.recentAccess.length === 0 ? (
-                    <p className="text-gray-500 text-sm">Ningún alumno ha iniciado sesión aún</p>
+                    <p className="text-[var(--color-text-muted)] text-sm">Ningún alumno ha iniciado sesión aún</p>
                   ) : dashData.recentAccess.map((u) => (
-                    <div key={u.id} className="flex justify-between gap-2 text-sm py-1.5 border-b border-white/5">
-                      <span className="text-gray-300 truncate">{u.fullName}</span>
-                      <span className="text-gray-500 text-xs shrink-0">
+                    <div key={u.id} className="flex justify-between gap-2 text-sm py-1.5 border-b border-[var(--color-surface-border)]">
+                      <span className="text-[var(--color-text-primary)] truncate">{u.fullName}</span>
+                      <span className="text-[var(--color-text-muted)] text-xs shrink-0">
                         {formatRelativeTime(u.lastLogin)}
                       </span>
                     </div>

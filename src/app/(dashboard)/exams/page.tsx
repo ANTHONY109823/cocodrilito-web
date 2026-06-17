@@ -182,7 +182,7 @@ export default function ExamsPage() {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+        <div className="hidden sm:block">
           <h1 className="text-xl font-extrabold text-[var(--color-text-primary)] md:text-2xl">
             {previewMode ? 'Modo prueba examen' : 'Centro de Exámenes'}
           </h1>

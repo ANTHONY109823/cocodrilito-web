@@ -71,10 +71,10 @@ export default function PreguntasPage() {
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
         .fade-in { animation: fadeIn 0.2s ease forwards; }
-        .input-q { width:100%; padding:9px 13px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:#e5e7eb; font-size:13px; outline:none; transition: border-color 0.2s; }
-        .input-q:focus { border-color: rgba(255,255,255,0.25); }
-        .input-q::placeholder { color:#4B5563; }
-        select.input-q option { background:#111; }
+        .input-q { width:100%; padding:10px 13px; border-radius:8px; background:var(--color-input-bg); border:1px solid var(--color-surface-border); color:var(--color-text-primary); font-size:14px; outline:none; transition: border-color 0.2s; }
+        .input-q:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent); }
+        .input-q::placeholder { color:var(--color-text-muted); }
+        select.input-q option { background:var(--color-surface-card); color:var(--color-text-primary); }
       `}</style>
 
       {q.editingQuestion && (
@@ -91,13 +91,13 @@ export default function PreguntasPage() {
       <div className="flex items-center gap-4 mb-6 flex-wrap">
         <Link
           href={isSuperAdminMode ? '/superadmin?tab=agencias' : '/admin'}
-          className="text-gray-600 hover:text-gray-300 text-sm transition-colors"
+          className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-sm font-medium transition-colors"
         >
           ← {isSuperAdminMode ? 'SuperAdmin' : 'Panel Admin'}
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-semibold text-white">Banco de Preguntas de Ascenso</h1>
-          <p className="text-gray-600 text-xs mt-0.5">
+          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">Banco de Preguntas de Ascenso</h1>
+          <p className="text-[var(--color-text-muted)] text-xs mt-0.5">
             {readOnly && isAgencia
               ? `${q.categorizedCount} preguntas en vista · balotario: ${trackLabel(q.activeTrackType)}`
               : `${q.categorizedCount} preguntas en vista · ${q.categories.length} categorías · balotario: ${trackLabel(isSuperAdminMode ? q.activeTrackType : allowTrackSwitch ? q.activeTrackType : viewerTrackType)}`}

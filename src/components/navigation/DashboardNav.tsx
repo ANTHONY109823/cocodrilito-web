@@ -17,8 +17,8 @@ function navClass(active: boolean) {
   return cn(
     'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-colors duration-75',
     active
-      ? 'border-l-[3px] border-[#318F48] bg-[rgba(49,143,72,0.12)] pl-[7px] text-[#BDFFDF]'
-      : 'border-l-[3px] border-transparent text-[#A8BFB0] hover:bg-[rgba(49,143,72,0.07)] hover:text-white'
+      ? 'border-l-[3px] border-[var(--color-primary)] bg-[var(--color-primary-bg)] pl-[7px] text-[var(--color-text-accent)] font-semibold'
+      : 'border-l-[3px] border-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-primary-bg)] hover:text-[var(--color-text-primary)]'
   )
 }
 
@@ -69,8 +69,10 @@ export function DashboardMobileNav({
             key={href}
             href={href}
             className={cn(
-              'flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium',
-              active ? 'text-[#BDFFDF]' : 'text-[#6B8A75]'
+              'flex flex-col items-center gap-1 px-2 py-1.5 text-[11px] font-semibold min-w-[56px]',
+              active
+                ? 'text-[var(--color-text-accent)]'
+                : 'text-[var(--color-text-muted)]'
             )}
           >
             <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />

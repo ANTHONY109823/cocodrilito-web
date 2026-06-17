@@ -6,6 +6,7 @@ import { hasUsableExplanation, needsExplanationReview } from '@/lib/utils/explan
 import type { ExplanationFilter } from '@/lib/utils/explanation'
 import { ExplanationFilterBar } from '@/components/admin/preguntas/ExplanationCoverage'
 import { PRESET_COLORS, type Category, type Question } from '@/components/admin/preguntas/types'
+import { cn } from '@/lib/utils/cn'
 
 interface CategoryPanelProps {
   categories: Category[]
@@ -60,12 +61,9 @@ export function CategoryPanel({
   )
 
   return (
-    <div className="rounded-xl overflow-hidden mb-4" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-      <div
-        className="flex items-center justify-between px-4 py-3"
-        style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-      >
-        <p className="text-gray-400 text-xs font-medium">Categorías</p>
+    <div className="rounded-xl overflow-hidden mb-4 border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-surface-border)] bg-[var(--color-surface-elevated)]">
+        <p className="text-[var(--color-text-muted)] text-xs font-semibold uppercase tracking-wide">Categorías</p>
         {(!readOnly || isSuperAdminMode) && (
           <button
             onClick={onToggleAddCategory}
@@ -125,12 +123,12 @@ export function CategoryPanel({
       )}
 
       {loading ? (
-        <div className="text-gray-600 text-center py-6 text-sm">Cargando...</div>
+        <div className="text-[var(--color-text-muted)] text-center py-6 text-sm">Cargando...</div>
       ) : categories.length === 0 ? (
-        <div className="text-gray-600 text-center py-6 text-sm">No hay categorías — agrega una</div>
+        <div className="text-[var(--color-text-muted)] text-center py-6 text-sm">No hay categorías — agrega una</div>
       ) : (
         <div>
-          {categories.map((cat, idx) => {
+          {categories.map((cat) => {
             const isSelected = selectedCategory === cat.name
             const count = counts[cat.name] || 0
             const missingExpl = missingExplanationByCategory[cat.name] || 0
@@ -138,22 +136,28 @@ export function CategoryPanel({
             return (
               <div
                 key={cat.id}
-                className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors border-b border-[var(--color-surface-border)] last:border-b-0',
+                  isSelected ? 'bg-[var(--color-primary-bg)]' : 'bg-transparent hover:bg-[var(--color-primary-bg)]/40'
+                )}
                 style={{
-                  background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent',
-                  borderBottom: idx < categories.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                   borderLeft: isSelected ? `3px solid ${cat.color}` : '3px solid transparent',
                 }}
                 onClick={() => onSelectCategory(cat.name)}
               >
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color, opacity: 0.8 }} />
-                <span className="flex-1 text-sm" style={{ color: isSelected ? '#e5e7eb' : '#9CA3AF' }}>
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                <span
+                  className={cn(
+                    'flex-1 text-sm font-semibold leading-snug',
+                    isSelected ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'
+                  )}
+                >
                   {cat.name}
                 </span>
-                <span className="text-xs tabular-nums" style={{ color: count > 0 ? '#6B7280' : '#374151' }}>
+                <span className="text-xs tabular-nums text-[var(--color-text-muted)] font-medium shrink-0">
                   {count} {count === 1 ? 'pregunta' : 'preguntas'}
                   {missingExpl > 0 && (
-                    <span className="ml-1.5" style={{ color: '#C9943A' }}>
+                    <span className="ml-1.5 text-[var(--color-warning)] font-semibold">
                       · {missingExpl} sin explicación
                     </span>
                   )}
