@@ -112,7 +112,7 @@ export default function PremiumPage() {
       <div className="mx-auto max-w-md py-12 text-center">
         <div className="mb-6 text-7xl">🐊</div>
         <h1 className="mb-3 text-2xl font-bold text-white">¡Solicitud enviada!</h1>
-        <p className="mb-6 text-sm text-[#6B8A75]">
+        <p className="mb-6 text-sm text-[var(--color-text-muted)]">
           Verificaremos tu pago y activaremos tu cuenta en menos de 24 horas.
         </p>
         <Card padding="sm" className="mb-6 space-y-3 rounded-xl text-left">
@@ -123,7 +123,7 @@ export default function PremiumPage() {
             { label: 'Referencia', value: reference },
           ].map((item) => (
             <div key={item.label} className="flex justify-between text-sm">
-              <span className="text-[#6B8A75]">{item.label}</span>
+              <span className="text-[var(--color-text-muted)]">{item.label}</span>
               <span className="font-medium text-white">{item.value}</span>
             </div>
           ))}
@@ -141,7 +141,7 @@ export default function PremiumPage() {
     <div className="mx-auto max-w-2xl">
       <Link
         href="/dashboard"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-[#6B8A75] transition-colors hover:text-white"
+        className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
       >
         ← Volver al inicio
       </Link>
@@ -155,7 +155,7 @@ export default function PremiumPage() {
           <h2 className="mb-1 text-lg font-bold text-white">
             {isNew ? '¡Cuenta creada! Elige tu plan para comenzar' : '¡Un paso más para practicar!'}
           </h2>
-          <p className="text-sm text-[#6B8A75]">
+          <p className="text-sm text-[var(--color-text-muted)]">
             {isNew
               ? 'Tu cuenta está lista. Selecciona un plan y paga por Yape/Plin para activar tu acceso.'
               : 'Necesitas un plan activo para acceder a los simulacros PNP.'}
@@ -165,7 +165,7 @@ export default function PremiumPage() {
 
       <div className="mb-8 text-center">
         <h1 className="mb-2 text-2xl font-bold text-white sm:text-3xl">Elige tu plan</h1>
-        <p className="text-sm text-[#6B8A75]">
+        <p className="text-sm text-[var(--color-text-muted)]">
           Acceso ilimitado a todos los simulacros PNP · Paga con Yape o Plin
         </p>
       </div>
@@ -173,7 +173,7 @@ export default function PremiumPage() {
       {plansLoading && (
         <div className="py-12 text-center">
           <div className="mb-4 animate-bounce text-4xl">🐊</div>
-          <p className="text-[#6B8A75]">Cargando planes...</p>
+          <p className="text-[var(--color-text-muted)]">Cargando planes...</p>
         </div>
       )}
 
@@ -233,7 +233,7 @@ export default function PremiumPage() {
                   )}
 
                   <div className="mb-0.5 text-base font-bold text-white">{plan.name}</div>
-                  <div className="mb-3 text-xs text-[#6B8A75]">{plan.description}</div>
+                  <div className="mb-3 text-xs text-[var(--color-text-muted)]">{plan.description}</div>
 
                   <div
                     className={cn(
@@ -243,7 +243,7 @@ export default function PremiumPage() {
                   >
                     S/. {plan.price.toFixed(2)}
                   </div>
-                  <div className="mb-4 text-xs text-[#6B8A75]">
+                  <div className="mb-4 text-xs text-[var(--color-text-muted)]">
                     {plan.durationDays} días de acceso
                   </div>
 
@@ -251,7 +251,7 @@ export default function PremiumPage() {
                     {plan.features.map((f) => (
                       <li
                         key={f}
-                        className="flex items-start gap-1.5 text-xs text-[#6B8A75]"
+                        className="flex items-start gap-1.5 text-xs text-[var(--color-text-muted)]"
                       >
                         <span className="text-[#318F48]">✓</span> {f}
                       </li>
@@ -287,7 +287,7 @@ export default function PremiumPage() {
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(189,255,223,0.12)] pb-4">
             <div>
               <div className="font-bold text-white">{selectedPlan.name}</div>
-              <div className="text-xs text-[#6B8A75]">
+              <div className="text-xs text-[var(--color-text-muted)]">
                 {selectedPlan.durationDays} días de acceso
               </div>
             </div>
@@ -314,15 +314,15 @@ export default function PremiumPage() {
 
           <Card
             padding="sm"
-            className="mb-5 rounded-xl border-[rgba(189,255,223,0.12)] bg-[#080E0A] text-center"
+            className="mb-5 rounded-xl border-[var(--color-surface-border)] bg-[var(--color-surface)] text-center"
           >
-            <div className="mb-1 text-xs text-[#6B8A75]">Envía exactamente</div>
+            <div className="mb-1 text-xs text-[var(--color-text-muted)]">Envía exactamente</div>
             <div className="mb-2 text-3xl font-bold text-[#C9943A]">
               S/. {selectedPlan.price.toFixed(2)}
             </div>
-            <div className="mb-1 text-xs text-[#6B8A75]">al número</div>
+            <div className="mb-1 text-xs text-[var(--color-text-muted)]">al número</div>
             <div className="mb-1 text-2xl font-bold text-white">{paymentNumber}</div>
-            <div className="text-xs text-[#6B8A75]">
+            <div className="text-xs text-[var(--color-text-muted)]">
               A nombre de: {paymentInfo?.accountName ?? 'Institución'}
             </div>
           </Card>
@@ -340,7 +340,7 @@ export default function PremiumPage() {
                   'Activación en máximo 24 horas',
                 ]
             ).map((stepText, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs text-[#6B8A75]">
+              <div key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]">
                 <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgba(49,143,72,0.2)] text-xs font-bold text-[#318F48]">
                   {i + 1}
                 </span>

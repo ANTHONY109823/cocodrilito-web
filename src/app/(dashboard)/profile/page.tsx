@@ -118,13 +118,13 @@ export default function ProfilePage() {
       <div className="mb-6 flex flex-wrap items-start gap-3 sm:gap-4">
         <Link
           href="/dashboard"
-          className="text-sm text-[#6B8A75] transition-colors hover:text-white"
+          className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
         >
           ← Inicio
         </Link>
         <div>
           <h1 className="text-xl font-bold text-white sm:text-2xl">Mi perfil</h1>
-          <p className="mt-0.5 text-sm text-[#6B8A75]">
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
             Administra tu cuenta de estudiante
           </p>
         </div>
@@ -137,8 +137,8 @@ export default function ProfilePage() {
           </div>
           <div>
             <div className="text-lg font-bold text-white">{user?.fullName}</div>
-            <div className="text-sm text-[#6B8A75]">{user?.email}</div>
-            <div className="mt-0.5 text-xs text-[#6B8A75]">DNI: {user?.dni}</div>
+            <div className="text-sm text-[var(--color-text-muted)]">{user?.email}</div>
+            <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">DNI: {user?.dni}</div>
             <div className="mt-1 text-xs font-medium text-[#318F48]">
               Balotario: {trackLabel(resolveUserTrackKey(user))}
             </div>
@@ -156,7 +156,7 @@ export default function ProfilePage() {
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-xs uppercase tracking-wider text-[#6B8A75]">
+                <div className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
                   Plan activo
                 </div>
                 <div className="text-sm font-semibold text-[#318F48]">
@@ -173,7 +173,7 @@ export default function ProfilePage() {
                 >
                   {subInfo.daysLeft}d
                 </div>
-                <div className="text-xs text-[#6B8A75]">restantes</div>
+                <div className="text-xs text-[var(--color-text-muted)]">restantes</div>
               </div>
             </div>
           </Card>

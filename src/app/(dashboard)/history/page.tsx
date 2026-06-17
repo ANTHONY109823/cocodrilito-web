@@ -61,7 +61,7 @@ export default function HistoryPage() {
       <div className="mb-6 flex flex-wrap items-start gap-3 sm:gap-4">
         <Link
           href="/dashboard"
-          className="text-sm text-[#6B8A75] transition-colors hover:text-white"
+          className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
         >
           ← Inicio
         </Link>
@@ -69,7 +69,7 @@ export default function HistoryPage() {
           <h1 className="text-xl font-bold text-white sm:text-2xl">
             Historial de simulacros
           </h1>
-          <p className="mt-0.5 text-sm text-[#6B8A75]">Todos tus exámenes anteriores</p>
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">Todos tus exámenes anteriores</p>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export default function HistoryPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-24 animate-pulse rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10]"
+              className="h-24 animate-pulse rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]"
             />
           ))}
         </div>
@@ -114,7 +114,7 @@ export default function HistoryPage() {
                         {s.passed ? '✓ Aprobado' : '✗ No aprobado'}
                       </Badge>
                     </div>
-                    <div className="text-xs text-[#6B8A75]">{formatDate(s.finishedAt)}</div>
+                    <div className="text-xs text-[var(--color-text-muted)]">{formatDate(s.finishedAt)}</div>
                     <div className="mt-2 flex flex-wrap gap-3 text-xs">
                       <span className="text-[#318F48]">✓ {s.correctAnswers} correctas</span>
                       <span className="text-[#e74c3c]">✗ {incorrect} incorrectas</span>

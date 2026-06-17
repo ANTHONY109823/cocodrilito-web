@@ -1,5 +1,5 @@
 export default function DashboardLoading() {
   return (
-    <div className="py-12 text-center text-[#6B8A75] text-sm">Cargando...</div>
+    <div className="py-12 text-center text-[var(--color-text-muted)] text-sm">Cargando...</div>
   )
 }

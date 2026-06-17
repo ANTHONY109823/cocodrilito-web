@@ -92,7 +92,7 @@ export default function ResultPage() {
 
       {/* BOTÓN VOLVER */}
       <Link href="/exams"
-        className="inline-flex items-center gap-1 text-gray-500 hover:text-white text-sm mb-6 transition-colors">
+        className="inline-flex items-center gap-1 text-gray-500 hover:text-[var(--color-text-primary)] text-sm mb-6 transition-colors">
         ← Volver a exámenes
       </Link>
 

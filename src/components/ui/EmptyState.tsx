@@ -22,8 +22,8 @@ export function EmptyState({
   return (
     <Card padding="lg" className={cn('text-center', className)}>
       {icon != null && <div className="mb-4 text-4xl">{icon}</div>}
-      <h3 className="mb-2 font-bold text-white">{title}</h3>
-      {description && <p className="mb-4 text-sm text-[#6B8A75]">{description}</p>}
+      <h3 className="mb-2 font-bold text-[var(--color-text-primary)]">{title}</h3>
+      {description && <p className="mb-4 text-sm text-[var(--color-text-muted)]">{description}</p>}
       {action && (
         <Link href={action.href}>
           <Button variant="primary" size="sm">

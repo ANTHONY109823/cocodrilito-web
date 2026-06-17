@@ -75,6 +75,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Hereda en todo el sistema — nuevas agencias y usuarios automáticamente */
+main,
+aside nav {
+  color: var(--color-text-primary);
+}
+
+[data-theme='dark'] main h1,
+[data-theme='dark'] main h2,
+[data-theme='dark'] main h3,
+[data-theme='dark'] main .font-bold,
+[data-theme='dark'] main .font-extrabold,
+[data-theme='dark'] main .font-semibold {
+  color: var(--color-text-primary);
+}
+
+[data-theme='light'] main h1,
+[data-theme='light'] main h2,
+[data-theme='light'] main h3 {
+  color: var(--color-text-primary);
+}
+
 a,
 button,
 [role='button'] {

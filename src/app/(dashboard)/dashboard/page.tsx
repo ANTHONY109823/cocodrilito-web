@@ -77,7 +77,7 @@ function StatCard({
   trendColor?: string
 }) {
   return (
-    <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-3.5 py-4">
+    <div className="rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-3.5 py-4">
       <div
         className={cn(
           'mb-2.5 flex h-[34px] w-[34px] items-center justify-center rounded-lg',
@@ -87,7 +87,7 @@ function StatCard({
         <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
       </div>
       <div className="text-[22px] font-extrabold text-white">{value}</div>
-      <div className="mt-0.5 text-[11px] text-[#6B8A75]">{label}</div>
+      <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">{label}</div>
       <div className={cn('mt-1 text-[11px]', trendColor)}>{trend}</div>
     </div>
   )
@@ -126,7 +126,7 @@ export default function DashboardPage() {
 
   if (loading && !gamiData && !statsData) {
     return (
-      <div className="mx-auto max-w-6xl py-12 text-center text-[#6B8A75]">
+      <div className="mx-auto max-w-6xl py-12 text-center text-[var(--color-text-muted)]">
         Cargando estadísticas...
       </div>
     )
@@ -148,7 +148,7 @@ export default function DashboardPage() {
           <h1 className="text-xl font-extrabold text-white md:text-2xl">
             {greet}, {firstName} 👋
           </h1>
-          <p className="mt-0.5 text-[13px] capitalize text-[#6B8A75]">{today}</p>
+          <p className="mt-0.5 text-[13px] capitalize text-[var(--color-text-muted)]">{today}</p>
         </div>
         <span className="rounded-full border border-[#318F48] bg-[#318F48]/15 px-3 py-1.5 text-xs font-medium text-[#318F48]">
           {ligaCfg.emoji} Liga {liga}
@@ -179,14 +179,14 @@ export default function DashboardPage() {
           trend={streak > 0 ? '🔥 ¡Sigue así!' : 'Practica hoy'}
           trendColor="text-[#BA7517]"
         />
-        <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] px-3.5 py-4">
+        <div className="rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-3.5 py-4">
           <div className="mb-2.5 flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[rgba(201,148,58,0.15)]">
             <Trophy className="h-[18px] w-[18px] text-[#C9943A]" />
           </div>
           <div className="text-[22px] font-extrabold text-white">
             {rankingData?.position != null ? `#${rankingData.position}` : '—'}
           </div>
-          <div className="mt-0.5 text-[11px] text-[#6B8A75]">Posición ranking</div>
+          <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">Posición ranking</div>
           <Link
             href="/ranking"
             className="mt-1 inline-block text-[11px] text-[#C9943A] hover:underline"
@@ -197,22 +197,22 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-xl border border-[rgba(74,124,89,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
+        <div className="rounded-xl border border-[rgba(74,124,89,0.2)] bg-[var(--color-surface-card)] px-3.5 py-3 text-center">
           <div className="text-[20px] font-extrabold text-[#318F48]">{statsData?.totalCorrect ?? 0}</div>
-          <div className="mt-0.5 text-[11px] text-[#6B8A75]">✅ Correctas (total)</div>
+          <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">✅ Correctas (total)</div>
         </div>
-        <div className="rounded-xl border border-[rgba(255,82,82,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
+        <div className="rounded-xl border border-[rgba(255,82,82,0.2)] bg-[var(--color-surface-card)] px-3.5 py-3 text-center">
           <div className="text-[20px] font-extrabold text-[#FF5252]">{statsData?.totalIncorrect ?? 0}</div>
-          <div className="mt-0.5 text-[11px] text-[#6B8A75]">❌ Incorrectas (total)</div>
+          <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">❌ Incorrectas (total)</div>
         </div>
-        <div className="rounded-xl border border-[rgba(255,215,0,0.2)] bg-[#0D1A10] px-3.5 py-3 text-center">
+        <div className="rounded-xl border border-[rgba(255,215,0,0.2)] bg-[var(--color-surface-card)] px-3.5 py-3 text-center">
           <div className="text-[20px] font-extrabold text-[#FFD700]">{statsData?.totalUnanswered ?? 0}</div>
-          <div className="mt-0.5 text-[11px] text-[#6B8A75]">⬜ Sin responder (total)</div>
+          <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">⬜ Sin responder (total)</div>
         </div>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-4">
+        <div className="rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4">
           <h3 className="mb-3 text-[13px] font-semibold text-white">
             Rendimiento últimos 7 exámenes
           </h3>
@@ -240,19 +240,19 @@ export default function DashboardPage() {
                     )}
                     style={{ height: `${Math.max(8, score)}%` }}
                   />
-                  <span className="text-[9px] text-[#6B8A75]">{score}%</span>
+                  <span className="text-[9px] text-[var(--color-text-muted)]">{score}%</span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="flex flex-col gap-3 rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4">
           <div className="flex items-center gap-2.5">
             <span className="text-[32px]">{ligaCfg.emoji}</span>
             <div>
               <div className="text-[15px] font-bold text-white">{liga}</div>
-              <div className="text-xs text-[#6B8A75]">
+              <div className="text-xs text-[var(--color-text-muted)]">
                 Liga actual · {xp.toLocaleString()} XP
               </div>
             </div>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
           {xpTarget > 0 && (
             <>
               <ProgressBar value={xp} max={xpTarget} color="green" animated />
-              <p className="text-xs text-[#6B8A75]">
+              <p className="text-xs text-[var(--color-text-muted)]">
                 Siguiente:{' '}
                 <span className="font-semibold text-[#C9943A]">{ligaCfg.next}</span>
                 {xpTarget > xp && ` · faltan ${xpTarget - xp} XP`}
@@ -296,10 +296,10 @@ export default function DashboardPage() {
       </div>
 
       {latestData && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4">
           <div>
             <p className="text-sm font-semibold text-white">Último simulacro</p>
-            <p className="text-xs text-[#6B8A75]">
+            <p className="text-xs text-[var(--color-text-muted)]">
               {latestData.passed ? 'Aprobado' : 'No aprobado'} · {latestData.score}%
             </p>
           </div>
@@ -316,7 +316,7 @@ export default function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#C9943A]/30 bg-[#C9943A]/10 p-4">
           <div>
             <p className="font-bold text-[#C9943A]">⭐ Desbloquea Premium</p>
-            <p className="mt-0.5 text-xs text-[#6B8A75]">
+            <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
               Simulacros ilimitados y banco completo
             </p>
           </div>

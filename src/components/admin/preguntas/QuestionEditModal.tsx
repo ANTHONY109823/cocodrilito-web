@@ -40,7 +40,7 @@ export function QuestionEditModal({
     <Modal open={true} title="Editar pregunta" onClose={onClose} maxWidth="max-w-2xl">
       <div className="space-y-4">
         <div>
-          <label className="mb-1.5 block text-xs text-[#6B8A75]">Texto de la pregunta</label>
+          <label className="mb-1.5 block text-xs text-[var(--color-text-muted)]">Texto de la pregunta</label>
           <textarea
             className="w-full rounded-lg border border-[rgba(189,255,223,0.18)] bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#318F48]"
             rows={4}
@@ -51,9 +51,9 @@ export function QuestionEditModal({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-xs text-[#6B8A75]">Categoría</label>
+            <label className="mb-1.5 block text-xs text-[var(--color-text-muted)]">Categoría</label>
             <select
-              className="w-full rounded-lg border border-[rgba(189,255,223,0.18)] bg-[#0D1A10] px-3 py-2 text-sm text-white outline-none focus:border-[#318F48]"
+              className="w-full rounded-lg border border-[var(--color-surface-border)] bg-[var(--color-input-bg)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
               value={question.category}
               onChange={(e) => onChange({ ...question, category: e.target.value })}
             >
@@ -65,7 +65,7 @@ export function QuestionEditModal({
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs text-[#6B8A75]">Año</label>
+            <label className="mb-1.5 block text-xs text-[var(--color-text-muted)]">Año</label>
             <Input
               type="number"
               value={String(question.yearValuation)}
@@ -77,7 +77,7 @@ export function QuestionEditModal({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs text-[#6B8A75]">
+          <label className="mb-1.5 block text-xs text-[var(--color-text-muted)]">
             Explicación oficial (normativa, doctrina o criterio PNP)
           </label>
           <textarea
@@ -87,14 +87,14 @@ export function QuestionEditModal({
             value={question.explanation ?? ''}
             onChange={(e) => onChange({ ...question, explanation: e.target.value })}
           />
-          <p className="mt-1 text-[11px] text-[#6B8A75]">
+          <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
             Usa texto curado y verificable. Para marcar revisión pendiente escribe [REVISAR] al inicio.
           </p>
         </div>
 
         {question.answerOptions && (
           <div>
-            <label className="mb-2 block text-xs text-[#6B8A75]">
+            <label className="mb-2 block text-xs text-[var(--color-text-muted)]">
               Opciones — <span className="text-[#318F48]">toca la letra para marcar correcta</span>
             </label>
             {question.answerOptions
@@ -116,7 +116,7 @@ export function QuestionEditModal({
                       'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-all',
                       opt.isCorrect
                         ? 'border border-[#318F48] bg-[#318F48] text-black'
-                        : 'border border-[rgba(189,255,223,0.12)] bg-white/5 text-[#6B8A75]'
+                        : 'border border-[rgba(189,255,223,0.12)] bg-white/5 text-[var(--color-text-muted)]'
                     )}
                   >
                     {letters[i]}

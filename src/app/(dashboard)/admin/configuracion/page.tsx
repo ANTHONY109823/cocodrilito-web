@@ -75,7 +75,7 @@ export default function ConfiguracionPage() {
   return (
     <div className="max-w-xl mx-auto">
       <div className="mb-6">
-        <Link href="/admin" className="text-gray-500 hover:text-white text-sm">← Panel admin</Link>
+        <Link href="/admin" className="text-gray-500 hover:text-[var(--color-text-primary)] text-sm">← Panel admin</Link>
         <h1 className="text-2xl font-bold text-white mt-2">Configuración</h1>
         <p className="text-gray-500 text-sm mt-0.5">
           Administra tu contraseña de acceso

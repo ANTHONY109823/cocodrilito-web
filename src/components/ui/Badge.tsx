@@ -6,7 +6,7 @@ const colors = {
   blue: 'bg-[#2E86AB]/20 text-[#5ba8cc] border-[#2E86AB]/40',
   orange: 'bg-[#E67E22]/20 text-[#F39C12] border-[#E67E22]/40',
   red: 'bg-[#C0392B]/20 text-[#e74c3c] border-[#C0392B]/40',
-  gray: 'bg-[rgba(49,143,72,0.08)] text-[#A8BFB0] border-[rgba(189,255,223,0.12)]',
+  gray: 'bg-[var(--color-primary-bg)] text-[var(--color-text-secondary)] border-[var(--color-surface-border)]',
   gold: 'bg-[#C9943A]/20 text-[#C9943A] border-[#C9943A]/40',
 } as const
 

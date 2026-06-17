@@ -106,7 +106,7 @@ export function DashboardClientLayout({ children }: { children: React.ReactNode 
 
   if (!authReady || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#080E0A] flex items-center justify-center text-[#6B8A75] text-sm">
+      <div className="min-h-screen bg-[var(--color-surface)] flex items-center justify-center text-[var(--color-text-muted)] text-sm">
         Cargando...
       </div>
     )

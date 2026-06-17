@@ -91,7 +91,7 @@ export default function ReviewPage() {
 
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/history" className="text-gray-500 hover:text-white text-sm transition-colors">
+        <Link href="/history" className="text-gray-500 hover:text-[var(--color-text-primary)] text-sm transition-colors">
           ← Historial
         </Link>
         <div className="flex-1">

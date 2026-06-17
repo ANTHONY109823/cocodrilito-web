@@ -10,7 +10,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={clsx(
-        'animate-pulse rounded-lg bg-police-green-800/30',
+        'animate-pulse rounded-lg bg-[var(--color-primary-bg)]',
         className
       )}
       aria-hidden
@@ -20,7 +20,7 @@ export function Skeleton({ className }: SkeletonProps) {
 
 export function SkeletonCard() {
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(0,10,5,0.8)', border: '1px solid rgba(189,255,223,0.12)' }}>
+    <div className="rounded-2xl p-4 space-y-3 bg-[var(--color-surface-card)] border border-[var(--color-surface-border)]">
       <Skeleton className="h-4 w-1/3" />
       <Skeleton className="h-3 w-2/3" />
       <Skeleton className="h-3 w-1/2" />

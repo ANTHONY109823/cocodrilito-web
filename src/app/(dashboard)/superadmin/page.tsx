@@ -46,7 +46,7 @@ interface AuditLogEntry {
 }
 
 function SuperAdminPageLoading() {
-  return <p className="py-12 text-center text-[#6B8A75]">Cargando panel...</p>
+  return <p className="py-12 text-center text-[var(--color-text-muted)]">Cargando panel...</p>
 }
 
 export default function SuperAdminPage() {

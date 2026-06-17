@@ -2,9 +2,10 @@ import { cn } from '@/lib/utils/cn'
 import type { HTMLAttributes, ReactNode } from 'react'
 
 const variants = {
-  default: 'bg-[#0D1A10] border border-[rgba(189,255,223,0.12)]',
-  highlighted: 'bg-[#0D1A10] border border-[#318F48]',
-  glass: 'bg-[#0D1A10]/80 border border-[rgba(189,255,223,0.12)] backdrop-blur-md',
+  default: 'bg-[var(--color-surface-card)] border border-[var(--color-surface-border)]',
+  highlighted: 'bg-[var(--color-surface-card)] border border-[var(--color-primary)]',
+  glass:
+    'bg-[var(--color-surface-card)]/90 border border-[var(--color-surface-border)] backdrop-blur-md',
 } as const
 
 export type CardVariant = keyof typeof variants
@@ -30,12 +31,7 @@ export function Card({
 
   return (
     <div
-      className={cn(
-        'rounded-xl',
-        variants[variant],
-        paddingClass,
-        className
-      )}
+      className={cn('rounded-xl text-[var(--color-text-primary)]', variants[variant], paddingClass, className)}
       {...props}
     >
       {children}
@@ -61,7 +57,7 @@ export function CardTitle({
   ...props
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={cn('text-lg font-semibold text-white', className)} {...props}>
+    <h3 className={cn('text-lg font-semibold text-[var(--color-text-primary)]', className)} {...props}>
       {children}
     </h3>
   )
@@ -73,7 +69,7 @@ export function CardDescription({
   ...props
 }: HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={cn('text-sm text-[#A8BFB0]', className)} {...props}>
+    <p className={cn('text-sm text-[var(--color-text-muted)]', className)} {...props}>
       {children}
     </p>
   )
@@ -97,7 +93,13 @@ export function CardFooter({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('mt-4 flex items-center gap-3 border-t border-[rgba(189,255,223,0.12)] pt-4', className)} {...props}>
+    <div
+      className={cn(
+        'mt-4 flex items-center gap-3 border-t border-[var(--color-surface-border)] pt-4',
+        className
+      )}
+      {...props}
+    >
       {children}
     </div>
   )

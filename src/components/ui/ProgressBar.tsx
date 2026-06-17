@@ -52,16 +52,16 @@ export function ProgressBar({
     <div className={cn('w-full', className)}>
       {(label || showPercent) && (
         <div className="mb-2 flex items-center justify-between gap-2 text-sm">
-          {label && <span className="text-[#A8BFB0]">{label}</span>}
+          {label && <span className="text-[var(--color-text-muted)]">{label}</span>}
           {showPercent && (
-            <span className="font-medium text-white tabular-nums">
+            <span className="font-medium text-[var(--color-text-primary)] tabular-nums">
               {Math.round(percent)}%
             </span>
           )}
         </div>
       )}
       <div
-        className={cn('w-full overflow-hidden rounded-full bg-[rgba(189,255,223,0.12)]', trackHeight)}
+        className={cn('w-full overflow-hidden rounded-full bg-[var(--color-primary-bg)]', trackHeight)}
         role="progressbar"
         aria-valuenow={value}
         aria-valuemin={0}

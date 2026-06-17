@@ -637,7 +637,7 @@ function AdminPageContent() {
                   </p>
                 </div>
                 <button type="button" onClick={() => setCreatedUser(null)}
-                  className="text-gray-500 hover:text-white text-lg leading-none shrink-0">✕</button>
+                  className="text-gray-500 hover:text-[var(--color-text-primary)] text-lg leading-none shrink-0">✕</button>
               </div>
             </div>
           )}

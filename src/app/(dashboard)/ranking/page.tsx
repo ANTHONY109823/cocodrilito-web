@@ -17,7 +17,7 @@ const podiumStyles: Record<number, string> = {
 
 const podiumScoreColor: Record<number, string> = {
   1: 'text-[#C9943A]',
-  2: 'text-[#A8BFB0]',
+  2: 'text-[var(--color-text-secondary)]',
   3: 'text-[#BA7517]',
 }
 
@@ -36,7 +36,7 @@ function PositionBadge({ position }: { position: number }) {
     )
   }
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(189,255,223,0.08)] text-sm font-bold text-[#6B8A75]">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-bg)] text-sm font-bold text-[var(--color-text-muted)]">
       #{position}
     </div>
   )
@@ -51,12 +51,12 @@ export default function RankingPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 flex flex-wrap items-start gap-3 sm:gap-4">
-        <Link href="/dashboard" className="text-sm text-[#6B8A75] transition-colors hover:text-white">
+        <Link href="/dashboard" className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]">
           ← Inicio
         </Link>
         <div>
           <h1 className="text-xl font-bold text-white sm:text-2xl">Ranking PNP 🏆</h1>
-          <p className="mt-0.5 text-sm text-[#6B8A75]">Los mejores efectivos del simulacro</p>
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">Los mejores efectivos del simulacro</p>
         </div>
       </div>
 
@@ -73,14 +73,14 @@ export default function RankingPage() {
               </div>
               <div>
                 <div className="text-sm font-semibold text-white">Tu posición</div>
-                <div className="text-xs text-[#6B8A75]">{user?.fullName}</div>
+                <div className="text-xs text-[var(--color-text-muted)]">{user?.fullName}</div>
               </div>
             </div>
             <div className="text-right">
               <div className="text-lg font-bold text-[#318F48]">
                 {leagueEmoji[myRanking.currentLeague]} {myRanking.currentLeague}
               </div>
-              <div className="text-xs text-[#6B8A75]">
+              <div className="text-xs text-[var(--color-text-muted)]">
                 Promedio {myRanking.averageScore}% · {myRanking.examsCompleted} exámenes
               </div>
             </div>
@@ -110,7 +110,7 @@ export default function RankingPage() {
                 <div className={cn('mt-0.5 text-xs', podiumScoreColor[actualPos])}>
                   {entry.averageScore}% prom.
                 </div>
-                <div className="mt-0.5 text-xs text-[#6B8A75]">{leagueEmoji[entry.currentLeague]}</div>
+                <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">{leagueEmoji[entry.currentLeague]}</div>
               </Card>
             )
           })}
@@ -122,7 +122,7 @@ export default function RankingPage() {
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="h-16 animate-pulse rounded-xl border border-[rgba(189,255,223,0.12)] bg-[#0D1A10]"
+              className="h-16 animate-pulse rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]"
             />
           ))}
         </div>
@@ -156,14 +156,14 @@ export default function RankingPage() {
                       <span className="truncate text-sm font-semibold text-white">{entry.fullName}</span>
                       {isMe && <Badge color="green">tú</Badge>}
                     </div>
-                    <div className="truncate text-xs text-[#6B8A75]">
+                    <div className="truncate text-xs text-[var(--color-text-muted)]">
                       {entry.rank} · {entry.unit}
                     </div>
                   </div>
 
                   <div className="shrink-0 text-right">
                     <div className="text-sm font-bold text-[#318F48]">{entry.averageScore}%</div>
-                    <div className="text-xs text-[#6B8A75]">
+                    <div className="text-xs text-[var(--color-text-muted)]">
                       {leagueEmoji[entry.currentLeague]} {entry.currentLeague}
                     </div>
                   </div>

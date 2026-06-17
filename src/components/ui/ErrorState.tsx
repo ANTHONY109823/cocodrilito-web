@@ -16,9 +16,9 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <Card padding="lg" className={cn('text-center', className)}>
-      <AlertCircle className="mx-auto mb-3 h-10 w-10 text-[#C9943A]" strokeWidth={1.5} />
-      <h3 className="mb-2 font-bold text-white">Algo salió mal</h3>
-      <p className="mb-4 text-sm text-[#6B8A75]">{message}</p>
+      <AlertCircle className="mx-auto mb-3 h-10 w-10 text-[var(--color-warning)]" strokeWidth={1.5} />
+      <h3 className="mb-2 font-bold text-[var(--color-text-primary)]">Algo salió mal</h3>
+      <p className="mb-4 text-sm text-[var(--color-text-muted)]">{message}</p>
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry}>
           Reintentar

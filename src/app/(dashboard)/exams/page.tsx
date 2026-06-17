@@ -141,7 +141,7 @@ export default function ExamsPage() {
       <div className="mx-auto max-w-md py-16 text-center">
         <div className="mb-4 text-6xl">🔒</div>
         <h2 className="mb-3 text-xl font-bold text-white">Acceso restringido</h2>
-        <p className="mb-6 text-sm text-[#6B8A75]">
+        <p className="mb-6 text-sm text-[var(--color-text-muted)]">
           Necesitas un plan activo para acceder a los simulacros.
         </p>
         <Link href="/premium?blocked=1">
