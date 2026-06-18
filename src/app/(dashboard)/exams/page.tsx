@@ -202,7 +202,7 @@ export default function ExamsPage() {
             setPreviewTrack(track)
             const valid = hierarchiesForTrack(track).map((h) => h.value)
             setPreviewHierarchy((prev) =>
-              valid.includes(prev) ? prev : defaultHierarchyForTrack(track)
+              valid.some((v) => v === prev) ? prev : defaultHierarchyForTrack(track)
             )
           }}
           hint="Prueba el simulacro como lo verían alumnos Oficiales o Suboficiales. No afecta métricas ni ranking."

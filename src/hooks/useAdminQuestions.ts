@@ -91,7 +91,7 @@ export function useAdminQuestions({
   const trackKey = trackKeyFromValue(resolvedTrackType)
   const resolvedHierarchy = useMemo(() => {
     const valid = hierarchiesForTrack(resolvedTrackType).map((h) => h.value)
-    return valid.includes(activeHierarchy)
+    return valid.some((v) => v === activeHierarchy)
       ? activeHierarchy
       : defaultHierarchyForTrack(resolvedTrackType)
   }, [resolvedTrackType, activeHierarchy])
