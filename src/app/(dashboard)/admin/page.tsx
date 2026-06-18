@@ -113,6 +113,7 @@ function AdminPageContent() {
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const excelInputRef = useRef<HTMLInputElement>(null)
@@ -158,17 +159,22 @@ function AdminPageContent() {
 
   const loadData = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false
-    if (!silent) setLoading(true)
+    if (!silent) {
+      setLoading(true)
+      setLoadError(null)
+    }
     try {
       if (tab === 'dashboard') {
-        const [dashRes, profileRes, subsRes] = await Promise.all([
-          tenantAdminApi.getDashboard(),
+        const dashRes = await tenantAdminApi.getDashboard()
+        setDashData(dashRes.data)
+
+        void Promise.allSettled([
           tenantAdminApi.getProfile(),
           apiClient.get('/subscriptions/pending'),
-        ])
-        setDashData(dashRes.data)
-        setTenantProfile(profileRes.data)
-        setSubscriptions(subsRes.data)
+        ]).then(([profileRes, subsRes]) => {
+          if (profileRes.status === 'fulfilled') setTenantProfile(profileRes.value.data)
+          if (subsRes.status === 'fulfilled') setSubscriptions(subsRes.value.data ?? [])
+        })
       } else if (tab === 'users') {
         const res = await apiClient.get(`/admin/users?page=${usersPage}&pageSize=${USERS_PAGE_SIZE}`)
         const data = res.data as User[] | { items: User[]; total: number }
@@ -180,7 +186,11 @@ function AdminPageContent() {
           setUsersTotal(data.total ?? 0)
         }
       }
-    } catch { /* ignore */ } finally { if (!silent) setLoading(false) }
+    } catch (err: unknown) {
+      setLoadError(getApiErrorMessage(err, 'No se pudo cargar el panel. Intenta de nuevo.'))
+    } finally {
+      if (!silent) setLoading(false)
+    }
   }, [tab, usersPage])
 
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -488,6 +498,12 @@ function AdminPageContent() {
   const inactiveUsers = students.filter(u => !u.isActive)
   const pendingPayment = students.filter(u => u.isActive && u.planType === 'Free')
 
+  const headerActiveCount = dashData?.activeUsers ?? activeUsers.length
+  const headerPendingCount = dashData?.pendingSubscriptions ?? pendingPayment.length
+  const headerInactiveCount = dashData
+    ? Math.max(0, dashData.totalUsers - dashData.activeUsers)
+    : inactiveUsers.length
+
   const createExpiry = (() => {
     if (!form.activationDate || !form.planDays) return null
     const d = new Date(form.activationDate)
@@ -514,9 +530,9 @@ function AdminPageContent() {
           <p className="text-gray-500 text-sm mt-0.5">Gestión de tu agencia</p>
         </div>
         <div className="flex gap-4 text-right text-sm">
-          <div><span className="font-bold" style={{ color: NEON }}>{activeUsers.length}</span> <span className="text-gray-500">activos</span></div>
-          <div><span className="font-bold" style={{ color: GOLD }}>{pendingPayment.length}</span> <span className="text-gray-500">sin pago</span></div>
-          <div><span className="font-bold" style={{ color: RED }}>{inactiveUsers.length}</span> <span className="text-gray-500">inactivos</span></div>
+          <div><span className="font-bold" style={{ color: NEON }}>{headerActiveCount}</span> <span className="text-gray-500">activos</span></div>
+          <div><span className="font-bold" style={{ color: GOLD }}>{headerPendingCount}</span> <span className="text-gray-500">sin pago</span></div>
+          <div><span className="font-bold" style={{ color: RED }}>{headerInactiveCount}</span> <span className="text-gray-500">inactivos</span></div>
         </div>
       </div>
 
@@ -530,7 +546,18 @@ function AdminPageContent() {
       {tab === 'dashboard' && (
         <div className="fade-in space-y-4">
           {loading ? (
-            <p className="text-gray-500 text-center py-12">Cargando dashboard...</p>
+            <p className="text-[var(--color-text-muted)] text-center py-12">Cargando dashboard...</p>
+          ) : loadError ? (
+            <div className="text-center py-12 space-y-4">
+              <p className="text-[var(--color-danger)] text-sm">{loadError}</p>
+              <button
+                type="button"
+                onClick={() => void loadData()}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-[var(--color-primary)] text-white"
+              >
+                Reintentar
+              </button>
+            </div>
           ) : dashData ? (
             <>
               {tenantProfile && (
@@ -626,7 +653,18 @@ function AdminPageContent() {
                 </div>
               )}
             </>
-          ) : null}
+          ) : (
+            <div className="text-center py-12 space-y-4">
+              <p className="text-[var(--color-text-muted)] text-sm">No hay datos del panel todavía.</p>
+              <button
+                type="button"
+                onClick={() => void loadData()}
+                className="px-4 py-2 rounded-lg text-sm font-semibold border border-[var(--color-surface-border)]"
+              >
+                Cargar panel
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -693,7 +731,18 @@ function AdminPageContent() {
           </div>
           <div className="space-y-3">
             {loading ? (
-              <div className="text-gray-500 text-center py-12">Cargando usuarios...</div>
+              <div className="text-[var(--color-text-muted)] text-center py-12">Cargando usuarios...</div>
+            ) : loadError ? (
+              <div className="text-center py-12 space-y-4">
+                <p className="text-[var(--color-danger)] text-sm">{loadError}</p>
+                <button
+                  type="button"
+                  onClick={() => void loadData()}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-[var(--color-primary)] text-white"
+                >
+                  Reintentar
+                </button>
+              </div>
             ) : activeUsers.length === 0 ? (
               <div className="text-center py-12 rounded-2xl"
                 style={{ background: 'var(--color-surface-card)', border: `1px solid ${primaryMix(15)}` }}>

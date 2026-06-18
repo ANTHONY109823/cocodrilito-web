@@ -5,6 +5,7 @@ import { resolveApiBaseUrl } from './apiBaseUrl'
 
 const apiClient = axios.create({
   withCredentials: true,
+  timeout: 20_000,
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
   },
@@ -37,7 +38,7 @@ apiClient.interceptors.response.use(
         await axios.post(
           `${resolveApiBaseUrl()}/Auth/refresh`,
           {},
-          { withCredentials: true }
+          { withCredentials: true, timeout: 10_000 }
         )
         return apiClient(original)
       } catch {

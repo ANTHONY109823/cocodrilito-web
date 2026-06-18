@@ -50,6 +50,19 @@ export function useDashboardRoutePrefetch() {
       }
     })
 
+    if (navContext === 'tenant-admin') {
+      const warm = () => {
+        void mutate('/admin/dashboard', () => swrFetcher('/admin/dashboard'), { revalidate: false })
+        void mutate('/admin/tenant/profile', () => swrFetcher('/admin/tenant/profile'), { revalidate: false })
+      }
+      if (typeof window.requestIdleCallback === 'function') {
+        const id = window.requestIdleCallback(warm, { timeout: 2000 })
+        return () => window.cancelIdleCallback(id)
+      }
+      const t = window.setTimeout(warm, 300)
+      return () => window.clearTimeout(t)
+    }
+
     if (navContext !== 'student') return
 
     const prefetchData = () => {

@@ -27,6 +27,7 @@ import {
 import { NavigationProgressBar } from '@/components/navigation/NavigationProgressBar'
 import { useDashboardRoutePrefetch } from '@/hooks/useDashboardRoutePrefetch'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useNavigationStore } from '@/lib/store/navigationStore'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -80,9 +81,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     stopImpersonation()
+    useNavigationStore.getState().setPendingHref(null)
     logout()
-    void authApi.logout().catch(() => {})
     redirectToLogin()
+    void authApi.logout().catch(() => {})
   }
 
   return (
@@ -148,7 +150,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
             <button
               type="button"
-              onClick={() => void handleLogout()}
+              onClick={handleLogout}
               className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-primary-bg)] hover:text-[var(--color-text-primary)]"
             >
               <LogOut className="h-4 w-4" />

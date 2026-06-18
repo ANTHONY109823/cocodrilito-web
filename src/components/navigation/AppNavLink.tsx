@@ -1,9 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
-import { useNavigationStore } from '@/lib/store/navigationStore'
+import { useNavigationStore, useNavSearchStore } from '@/lib/store/navigationStore'
+
+function hrefMatchesCurrent(href: string, pathname: string, search: string): boolean {
+  const [targetPath, targetQuery = ''] = href.split('?')
+  if (pathname !== targetPath) return false
+  if (!targetQuery) return true
+  const current = search.startsWith('?') ? search.slice(1) : search
+  return current === targetQuery
+}
 
 export function AppNavLink({
   href,
@@ -18,30 +26,32 @@ export function AppNavLink({
   trackQuery?: boolean
 }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const search = searchParams.size > 0 ? `?${searchParams.toString()}` : ''
   const setPending = useNavigationStore((s) => s.setPendingHref)
 
   useEffect(() => {
     const pending = useNavigationStore.getState().pendingHref
     if (!pending) return
-    const targetPath = pending.split('?')[0]
-    if (pathname === targetPath) setPending(null)
-  }, [pathname, setPending])
+    if (hrefMatchesCurrent(pending, pathname, search)) {
+      setPending(null)
+    }
+  }, [pathname, search, setPending])
 
   return (
     <Link
       href={href}
       prefetch={true}
+      scroll={false}
       className={className}
       style={style}
       onClick={() => {
-        // Same-path navigation (only query params change): pathname won't change so the
-        // clearing effect never fires — skip pendingHref entirely for these transitions.
-        if (href.split('?')[0] === pathname) return
+        if (hrefMatchesCurrent(href, pathname, search)) return
+        useNavSearchStore.getState().applyHref(href)
         setPending(href)
-        // Safety: clear after 5 s if the pathname never changed (e.g. navigation aborted)
-        setTimeout(() => {
+        window.setTimeout(() => {
           if (useNavigationStore.getState().pendingHref === href) setPending(null)
-        }, 5000)
+        }, 8000)
       }}
     >
       {children}
