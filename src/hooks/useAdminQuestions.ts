@@ -80,6 +80,9 @@ export function useAdminQuestions({
   const bankCacheRef = useRef<Map<string, Question[]>>(new Map())
   const trackRequestRef = useRef(0)
   const categoryRequestRef = useRef(0)
+  const categoryMetaRequestRef = useRef(0)
+  const categoriesScopeRef = useRef<string | null>(null)
+  const questionsScopeRef = useRef<string | null>(null)
   const { mutate: globalMutate } = useSWRConfig()
 
   const browseMode = allowTrackSwitch && questionScope === 'base'
@@ -101,6 +104,23 @@ export function useAdminQuestions({
     setActiveHierarchy(defaultHierarchyForTrack(track))
     setPage(1)
   }, [])
+
+  const bankScopeKey = `${resolvedTrackType}-${resolvedHierarchy}`
+  const [syncedScopeKey, setSyncedScopeKey] = useState<string | null>(null)
+
+  const markScopePartial = useCallback((scopeKey: string, part: 'categories' | 'questions') => {
+    if (part === 'categories') categoriesScopeRef.current = scopeKey
+    else questionsScopeRef.current = scopeKey
+
+    if (
+      categoriesScopeRef.current === scopeKey &&
+      questionsScopeRef.current === scopeKey
+    ) {
+      setSyncedScopeKey(scopeKey)
+    }
+  }, [])
+
+  const bankScopeReady = syncedScopeKey === bankScopeKey && !bankLoading && !listLoading
 
   const {
     total: remoteTotal,
@@ -136,10 +156,13 @@ export function useAdminQuestions({
   }, [metaLoaded])
 
   const loadCategories = useCallback(async (track: number, hierarchy: number) => {
+    const scopeKey = `${track}-${hierarchy}`
+    const requestId = ++categoryMetaRequestRef.current
     try {
       const cRes = await apiClient.get('/categories', {
         params: { trackType: track, promotionHierarchy: hierarchy },
       })
+      if (requestId !== categoryMetaRequestRef.current) return
       const cats = Array.isArray(cRes.data) ? cRes.data : []
       setCategories(cats)
       setSelectedCategory((prev) => {
@@ -152,18 +175,22 @@ export function useAdminQuestions({
           ? f.category
           : cats[0]?.name || '',
       }))
+      markScopePartial(scopeKey, 'categories')
     } catch (err: unknown) {
+      if (requestId !== categoryMetaRequestRef.current) return
       setMsg({ text: getApiErrorDetail(err, 'Error al cargar categorías'), ok: false })
     }
-  }, [])
+  }, [markScopePartial])
 
   const loadFullBank = useCallback(async (track: number, hierarchy: number) => {
-    const cacheKey = `${track}-${hierarchy}`
+    const scopeKey = `${track}-${hierarchy}`
     const requestId = ++trackRequestRef.current
-    const cached = bankCacheRef.current.get(cacheKey)
+    const cached = bankCacheRef.current.get(scopeKey)
     if (cached) {
+      if (requestId !== trackRequestRef.current) return
       setQuestions(cached)
       setBankLoading(false)
+      markScopePartial(scopeKey, 'questions')
     } else {
       setBankLoading(true)
     }
@@ -174,19 +201,23 @@ export function useAdminQuestions({
       )
       if (requestId !== trackRequestRef.current) return
       const qs = parseQuestionsResponse(res.data)
-      bankCacheRef.current.set(cacheKey, qs)
+      bankCacheRef.current.set(scopeKey, qs)
       setQuestions(qs)
+      markScopePartial(scopeKey, 'questions')
     } catch (err: unknown) {
       if (requestId !== trackRequestRef.current) return
       setMsg({ text: getApiErrorDetail(err, 'Error al cargar el banco de preguntas'), ok: false })
     } finally {
       if (requestId === trackRequestRef.current) setBankLoading(false)
     }
-  }, [])
+  }, [markScopePartial])
 
   const loadCategoryQuestions = useCallback(async (category: string, track: number, hierarchy: number) => {
+    const scopeKey = `${track}-${hierarchy}`
     if (!category) {
       setQuestions([])
+      questionsScopeRef.current = scopeKey
+      markScopePartial(scopeKey, 'questions')
       return
     }
     const requestId = ++categoryRequestRef.current
@@ -197,13 +228,22 @@ export function useAdminQuestions({
       )
       if (requestId !== categoryRequestRef.current) return
       setQuestions(parseQuestionsResponse(res.data))
+      markScopePartial(scopeKey, 'questions')
     } catch (err: unknown) {
       if (requestId !== categoryRequestRef.current) return
       setMsg({ text: getApiErrorDetail(err, 'Error al cargar preguntas'), ok: false })
     } finally {
       if (requestId === categoryRequestRef.current) setListLoading(false)
     }
-  }, [])
+  }, [markScopePartial])
+
+  useEffect(() => {
+    if (!enabled || !metaLoaded) return
+    categoriesScopeRef.current = null
+    questionsScopeRef.current = null
+    setSyncedScopeKey(null)
+    setQuestions([])
+  }, [enabled, metaLoaded, resolvedTrackType, resolvedHierarchy])
 
   useEffect(() => {
     if (!enabled) return
@@ -537,12 +577,13 @@ export function useAdminQuestions({
         categories.some((cat) => categoryMatches(q.category, cat.name))
       ).length
 
-  const uncategorizedCount = browseMode
-    ? 0
-    : scopedQuestions.length -
-      scopedQuestions.filter((q) =>
-        categories.some((cat) => categoryMatches(q.category, cat.name))
-      ).length
+  const uncategorizedCount =
+    !bankScopeReady || browseMode
+      ? 0
+      : scopedQuestions.length -
+        scopedQuestions.filter((q) =>
+          categories.some((cat) => categoryMatches(q.category, cat.name))
+        ).length
 
   const explanationCoverage = useMemo(() => {
     if (browseMode) {
@@ -675,6 +716,7 @@ export function useAdminQuestions({
     scopedQuestions,
     categorizedCount,
     uncategorizedCount,
+    bankScopeReady,
     filtered,
     counts,
     loadAll,

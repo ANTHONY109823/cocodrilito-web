@@ -196,7 +196,7 @@ export default function PreguntasPage() {
         needsReview={q.explanationCoverage.needsReview}
       />
 
-      {q.uncategorizedCount > 0 && (
+      {q.bankScopeReady && q.uncategorizedCount > 0 && (
         <div
           className="mb-4 px-4 py-3 rounded-xl text-sm"
           style={{
@@ -205,8 +205,8 @@ export default function PreguntasPage() {
             color: '#fbbf24',
           }}
         >
-          ⚠️ {q.uncategorizedCount} preguntas de {hierarchyLabel(q.activeHierarchy)} no coinciden
-          con ninguna categoría activa. Revisa el CSV o elimínalas con &quot;Eliminar todo&quot;.
+          ⚠️ {q.uncategorizedCount} preguntas de {hierarchyLabel(q.activeHierarchy)}{' '}
+          no coinciden con ninguna categoría activa. Revisa el CSV o elimínalas con &quot;Eliminar todo&quot;.
         </div>
       )}
 
