@@ -9,13 +9,18 @@ function isProductionBrowserHost(hostname: string): boolean {
 }
 
 /**
- * En simulacros.pe las peticiones deben ir a /api (proxy same-origin)
- * para que las cookies httpOnly queden en el dominio del frontend.
+ * En simulacros.pe las peticiones deben ir al proxy /api (same-origin).
+ * Si el usuario está en el apex (sin www), Vercel responde 308 a www y axios
+ * con cookies falla con "Network Error" — usamos www directamente.
  */
 export function resolveApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     if (isProductionBrowserHost(window.location.hostname)) {
-      return '/api'
+      const origin =
+        window.location.hostname === 'simulacros.pe'
+          ? `${window.location.protocol}//www.simulacros.pe`
+          : window.location.origin
+      return `${origin}/api`
     }
   }
 

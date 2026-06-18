@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSWRConfig } from 'swr'
 import { getApiErrorDetail, getApiErrorMessage } from '@/lib/api/errors'
 import apiClient from '@/lib/api/client'
+import { resolveApiBaseUrl } from '@/lib/api/apiBaseUrl'
 import { prefetchAscensoQuestionCounts } from '@/lib/api/questionCounts'
 import {
   ADMIN_QUESTIONS_PAGE_SIZE,
@@ -250,20 +251,30 @@ export function useAdminQuestions({
 
   const handleDownloadTemplate = async (category?: string) => {
     try {
-      const params = category
-        ? { categoria: category, promotionHierarchy: activeHierarchy }
-        : { promotionHierarchy: activeHierarchy }
-      const res = await apiClient.get('/admin/import/template', { responseType: 'blob', params })
-      const contentType = String(res.headers['content-type'] ?? '')
-      if (contentType.includes('application/json')) {
-        const text = await (res.data as Blob).text()
-        const json = JSON.parse(text) as { message?: string }
-        setMsg({ text: json.message ?? 'No se pudo descargar la plantilla', ok: false })
+      const params = new URLSearchParams({
+        promotionHierarchy: String(activeHierarchy),
+      })
+      if (category?.trim()) params.set('categoria', category.trim())
+
+      const res = await fetch(`${resolveApiBaseUrl()}/admin/import/template?${params}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      })
+
+      const contentType = res.headers.get('content-type') ?? ''
+      if (!res.ok || contentType.includes('application/json')) {
+        const json = (await res.json().catch(() => null)) as { message?: string } | null
+        setMsg({
+          text: json?.message ?? `No se pudo descargar la plantilla (${res.status})`,
+          ok: false,
+        })
         return
       }
 
+      const blob = await res.blob()
       const safeCat = category?.toLowerCase().replace(/\s+/g, '_') ?? 'general'
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }))
+      const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `plantilla_${hierarchyLabel(activeHierarchy).toLowerCase().replace(/\s+/g, '_')}_${safeCat}.csv`
@@ -274,7 +285,7 @@ export function useAdminQuestions({
       setMsg({ text: '✅ Plantilla CSV descargada', ok: true })
       setTimeout(() => setMsg(null), 3000)
     } catch (err: unknown) {
-      setMsg({ text: getApiErrorDetail(err, 'No se pudo descargar la plantilla CSV'), ok: false })
+      setMsg({ text: getApiErrorMessage(err, 'No se pudo descargar la plantilla CSV'), ok: false })
     }
   }
 
