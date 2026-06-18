@@ -17,10 +17,13 @@ import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
 import { DEFAULT_QUESTION_TRACK, resolveUserTrackKey, trackKeyFromValue, trackLabel } from '@/lib/constants/trackTypes'
 import {
   defaultHierarchyForTrack,
+  hierarchiesForTrack,
+  hierarchyLabel,
   resolveUserHierarchyValue,
   trackValueForHierarchy,
 } from '@/lib/constants/promotionGrades'
 import { TrackSwitchBar } from '@/components/admin/preguntas/TrackSwitchBar'
+import { HierarchySwitchBar } from '@/components/admin/preguntas/HierarchySwitchBar'
 import { prefetchAscensoQuestionCounts } from '@/lib/api/questionCounts'
 import { examsApi } from '@/lib/api/exams'
 import { saveExamSessionMeta } from '@/lib/examSession'
@@ -60,12 +63,15 @@ export default function ExamsPage() {
   const previewMode = isTenantAdmin(user?.role) || isSuperAdmin(user?.role)
   const backHref = isSuperAdmin(user?.role) ? '/superadmin?tab=inicio' : '/admin'
   const [previewTrack, setPreviewTrack] = useState(DEFAULT_QUESTION_TRACK)
+  const [previewHierarchy, setPreviewHierarchy] = useState(() =>
+    defaultHierarchyForTrack(DEFAULT_QUESTION_TRACK)
+  )
   const studentTrackKey = useMemo(() => resolveUserTrackKey(user), [user])
   const effectiveTrackKey = previewMode
     ? trackKeyFromValue(previewTrack)
     : studentTrackKey
   const categoryHierarchy = previewMode
-    ? defaultHierarchyForTrack(previewTrack)
+    ? previewHierarchy
     : resolveUserHierarchyValue(user)
   const categoryTrack = trackValueForHierarchy(categoryHierarchy)
   const { exams, isLoading: examsLoading, error: examsError } = useExamList()
@@ -78,7 +84,10 @@ export default function ExamsPage() {
     byCategory: questionCounts,
     isLoading: countsLoading,
     error: countsError,
-  } = useQuestionCounts(previewMode ? effectiveTrackKey : null)
+  } = useQuestionCounts(
+    previewMode ? effectiveTrackKey : null,
+    previewMode ? categoryHierarchy : null
+  )
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -121,6 +130,7 @@ export default function ExamsPage() {
       const res = await examsApi.start(examId, {
         ...options,
         track: previewMode ? effectiveTrackKey : undefined,
+        hierarchy: previewMode ? categoryHierarchy : undefined,
       })
       const sessionId = res.data?.sessionId ?? res.data?.SessionId
       if (!sessionId) {
@@ -188,8 +198,23 @@ export default function ExamsPage() {
       {previewMode && (
         <TrackSwitchBar
           activeTrackType={previewTrack}
-          onChange={(track) => setPreviewTrack(track)}
+          onChange={(track) => {
+            setPreviewTrack(track)
+            const valid = hierarchiesForTrack(track).map((h) => h.value)
+            setPreviewHierarchy((prev) =>
+              valid.includes(prev) ? prev : defaultHierarchyForTrack(track)
+            )
+          }}
           hint="Prueba el simulacro como lo verían alumnos Oficiales o Suboficiales. No afecta métricas ni ranking."
+        />
+      )}
+
+      {previewMode && (
+        <HierarchySwitchBar
+          activeTrackType={previewTrack}
+          activeHierarchy={previewHierarchy}
+          onChange={setPreviewHierarchy}
+          hint="Elige la jerarquía exacta que quieres probar (Subalternos, Superiores, etc.)."
         />
       )}
 
@@ -207,6 +232,7 @@ export default function ExamsPage() {
         <Badge color="green" className="gap-1.5 px-3.5 py-1.5">
           <BookOpen className="h-3.5 w-3.5" />
           {totalQuestions} preguntas · {trackLabel(previewMode ? previewTrack : studentTrackKey)}
+          {previewMode ? ` · ${hierarchyLabel(previewHierarchy)}` : user?.promotionGrade ? ` · ${hierarchyLabel(categoryHierarchy)}` : ''}
         </Badge>
       </div>
 
