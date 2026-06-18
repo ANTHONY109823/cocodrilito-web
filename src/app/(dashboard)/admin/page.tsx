@@ -1046,7 +1046,7 @@ function AdminPageContent() {
                 style={{ background: 'var(--color-primary-bg)', border: `1px solid ${primaryMix(35)}` }}>
                 <span className="text-gray-500 text-xs">Usuario de acceso generado: </span>
                 <strong className="text-white tracking-widest">{previewLoginUsername}</strong>
-                <p className="text-[10px] text-gray-600 mt-1">Inicial del nombre + apellido paterno (ej. Anthony Ccayo → ACCAYO)</p>
+                <p className="text-[10px] text-gray-600 mt-1">Inicial del nombre + apellido paterno (ej. Juan Pérez → JPEREZ)</p>
               </div>
             ) : form.fullName.trim() ? (
               <p className="text-xs text-amber-500">Indica nombre y apellido para generar el usuario de acceso.</p>
