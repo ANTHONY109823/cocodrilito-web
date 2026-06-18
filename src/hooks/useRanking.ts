@@ -3,6 +3,9 @@
 import useSWR from 'swr'
 import { swrFetcher } from '@/lib/swr/fetcher'
 import { getLeague } from '@/lib/utils/league'
+import { resolveUserTrackKey } from '@/lib/constants/trackTypes'
+import { resolveUserHierarchyValue } from '@/lib/constants/promotionGrades'
+import { useAuthStore } from '@/lib/store/authStore'
 
 export interface RankingEntry {
   position: number
@@ -94,23 +97,29 @@ function extractEntries(data: GlobalRankingResponse | ApiRankingEntry[] | null |
 }
 
 export function useRanking(period = 'weekly') {
+  const { user } = useAuthStore()
+  const trackKey = resolveUserTrackKey(user)
+  const hierarchy = resolveUserHierarchyValue(user)
+
+  const globalKey = `/rankings/global?period=${encodeURIComponent(period)}&track=${encodeURIComponent(trackKey)}&hierarchy=${hierarchy}`
+  const myKey = `/rankings/me?period=${encodeURIComponent(period)}`
+
   const {
     data: globalData,
     error: globalError,
     isLoading: globalLoading,
     mutate: refreshGlobal,
-  } = useSWR<GlobalRankingResponse | ApiRankingEntry[]>(
-    `/rankings/global?period=${period}`,
-    swrFetcher,
-    { revalidateOnFocus: false, dedupingInterval: 120_000 }
-  )
+  } = useSWR<GlobalRankingResponse | ApiRankingEntry[]>(globalKey, swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 120_000,
+  })
 
   const {
     data: myData,
     error: myError,
     isLoading: myLoading,
     mutate: refreshMy,
-  } = useSWR<MyRankingResponse>(`/rankings/me?period=${period}`, swrFetcher, {
+  } = useSWR<MyRankingResponse>(myKey, swrFetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 120_000,
   })
