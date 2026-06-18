@@ -6,6 +6,7 @@ import { getLeague } from '@/lib/utils/league'
 import { resolveUserTrackKey } from '@/lib/constants/trackTypes'
 import { resolveUserHierarchyValue } from '@/lib/constants/promotionGrades'
 import { useAuthStore } from '@/lib/store/authStore'
+import { isSuperAdmin, isTenantAdmin } from '@/lib/auth/roles'
 
 export interface RankingEntry {
   position: number
@@ -98,11 +99,14 @@ function extractEntries(data: GlobalRankingResponse | ApiRankingEntry[] | null |
 
 export function useRanking(period = 'weekly') {
   const { user } = useAuthStore()
+  const isStudent = Boolean(user && !isTenantAdmin(user.role) && !isSuperAdmin(user.role))
   const trackKey = resolveUserTrackKey(user)
   const hierarchy = resolveUserHierarchyValue(user)
 
-  const globalKey = `/rankings/global?period=${encodeURIComponent(period)}&track=${encodeURIComponent(trackKey)}&hierarchy=${hierarchy}`
-  const myKey = `/rankings/me?period=${encodeURIComponent(period)}`
+  const globalKey = isStudent
+    ? `/rankings/global?period=${encodeURIComponent(period)}&track=${encodeURIComponent(trackKey)}&hierarchy=${hierarchy}`
+    : null
+  const myKey = isStudent ? `/rankings/me?period=${encodeURIComponent(period)}` : null
 
   const {
     data: globalData,

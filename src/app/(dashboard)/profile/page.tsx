@@ -11,6 +11,11 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin } from '@/lib/auth/roles'
 import { useAuthStore } from '@/lib/store/authStore'
 import { resolveUserTrackKey, trackLabel } from '@/lib/constants/trackTypes'
+import {
+  hierarchyLabel,
+  promotionGradeLabel,
+  resolveUserHierarchyValue,
+} from '@/lib/constants/promotionGrades'
 import { cn } from '@/lib/utils/cn'
 
 export default function ProfilePage() {
@@ -142,6 +147,20 @@ export default function ProfilePage() {
             <div className="mt-1 text-xs font-medium text-[var(--color-primary)]">
               Balotario: {trackLabel(resolveUserTrackKey(user))}
             </div>
+            {user?.promotionGrade ? (
+              <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                Postula a:{' '}
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  {promotionGradeLabel(user.promotionGrade)}
+                </span>
+                {' · '}
+                {hierarchyLabel(resolveUserHierarchyValue(user))}
+              </div>
+            ) : (
+              <div className="mt-0.5 text-xs text-[#C9943A]">
+                Sin grado de postulación asignado. Pide a tu agencia que lo configure.
+              </div>
+            )}
           </div>
         </div>
 
@@ -198,11 +217,14 @@ export default function ProfilePage() {
         <h2 className="mb-4 text-base font-bold text-white">Actualizar datos</h2>
         <form onSubmit={handleUpdateProfile} className="space-y-3">
           <Input
-            label="Grado"
-            placeholder="Suboficial de 3ra"
+            label="Grado PNP"
+            placeholder="Ej. ALFEREZ PNP"
             value={profileForm.rank}
             onChange={(e) => setProfileForm({ ...profileForm, rank: e.target.value })}
           />
+          <p className="text-xs text-[var(--color-text-muted)]">
+            El grado al que postulas (Alférez, Teniente, etc.) lo asigna tu agencia y define qué preguntas ves.
+          </p>
           <Input
             label="Unidad"
             placeholder="Comisaría Lima Norte"

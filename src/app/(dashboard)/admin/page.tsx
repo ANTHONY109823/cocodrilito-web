@@ -39,6 +39,8 @@ import {
   promotionGradeLabel,
   PROMOTION_GRADE_OPTIONS,
   trackFromGrade,
+  postulationGradeFromCurrentRankText,
+  defaultPostulationGradeForTrack,
 } from '@/lib/constants/promotionGrades'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
@@ -153,7 +155,7 @@ function AdminPageContent() {
     fullName: '', dni: '', email: '', password: '',
     rank: '', unit: '', planDays: 180,
     trackType: DEFAULT_QUESTION_TRACK,
-    promotionGrade: PROMOTION_GRADE_OPTIONS[0].value as number,
+    promotionGrade: defaultPostulationGradeForTrack(DEFAULT_QUESTION_TRACK),
     activationDate: new Date().toISOString().slice(0, 10),
   })
 
@@ -166,15 +168,22 @@ function AdminPageContent() {
   useEffect(() => {
     if (userSub !== 'crear' || !user) return
     const defaultTrack = resolveDefaultStudentTrack(user)
-    const defaultGrade =
-      PROMOTION_GRADE_OPTIONS.find((g) => g.trackValue === defaultTrack)?.value ??
-      PROMOTION_GRADE_OPTIONS[0].value
+    const defaultGrade = defaultPostulationGradeForTrack(defaultTrack)
     setForm((prev) =>
       prev.trackType === defaultTrack && prev.promotionGrade === defaultGrade
         ? prev
         : { ...prev, trackType: defaultTrack, promotionGrade: defaultGrade }
     )
   }, [userSub, user])
+
+  useEffect(() => {
+    if (userSub !== 'crear') return
+    const suggested = postulationGradeFromCurrentRankText(form.rank)
+    if (suggested == null) return
+    setForm((prev) =>
+      prev.promotionGrade === suggested ? prev : { ...prev, promotionGrade: suggested }
+    )
+  }, [form.rank, userSub])
 
   const loadData = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false
@@ -236,7 +245,7 @@ function AdminPageContent() {
   }
 
   const handleDownloadExcelTemplate = () => {
-    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado actual,Unidad,Días,Balotario,Grado postulación\nJuan Pérez Torres,12345678,juan@gmail.com,Ejemplo1234,Capitán,Comisaría Lima Norte,180,Oficiales,Mayor\n'
+    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado actual,Unidad,Días,Balotario,Grado postulación\nJuan Pérez Torres,12345678,juan@gmail.com,Ejemplo1234,Alférez,Comisaría Lima Norte,180,Oficiales,Teniente\n'
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -302,8 +311,7 @@ function AdminPageContent() {
         fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180,
         trackType: resolveDefaultStudentTrack(user),
         promotionGrade:
-          PROMOTION_GRADE_OPTIONS.find((g) => g.trackValue === resolveDefaultStudentTrack(user))?.value ??
-          PROMOTION_GRADE_OPTIONS[0].value,
+          defaultPostulationGradeForTrack(resolveDefaultStudentTrack(user)),
         activationDate: new Date().toISOString().slice(0, 10),
       })
       router.push('/admin?tab=users&sub=activos')
@@ -1054,7 +1062,7 @@ function AdminPageContent() {
             <div>
               <label className="block text-xs text-gray-500 mb-2">Grado al que postula *</label>
               <p className="text-[10px] text-gray-600 mb-3">
-                El balotario se asigna según el grado de postulación (ej. Capitán que postula a Mayor → Oficiales Superiores).
+                Según el grado PNP actual: Alférez postula Teniente, Capitán postula Mayor, etc. Oficiales Generales no incluidos.
               </p>
               <div className="space-y-4">
                 {hierarchiesForTrack(form.trackType).map((h) => (
