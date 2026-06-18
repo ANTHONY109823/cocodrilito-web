@@ -84,3 +84,27 @@ export function parseHierarchyKey(value: string | null | undefined): number | nu
   const num = Number(value)
   return PROMOTION_HIERARCHY_OPTIONS.some((h) => h.value === num) ? num : null
 }
+
+/** Jerarquía del balotario para listar categorías según perfil del alumno. */
+export function resolveUserHierarchyValue(user?: {
+  promotionHierarchy?: string | null
+  promotionGrade?: string | null
+  activeTrackType?: string | null
+} | null): number {
+  const fromHierarchy = parseHierarchyKey(user?.promotionHierarchy ?? null)
+  if (fromHierarchy) return fromHierarchy
+
+  const grade = parseGradeKey(user?.promotionGrade ?? null)
+  if (grade) {
+    const h = hierarchyFromGrade(grade)
+    if (h) return h
+  }
+
+  const trackValue =
+    user?.activeTrackType === 'AscensosOficiales' || user?.activeTrackType === '2' ? 2 : 1
+  return defaultHierarchyForTrack(trackValue)
+}
+
+export function trackValueForHierarchy(hierarchyValue: number): number {
+  return PROMOTION_HIERARCHY_OPTIONS.find((h) => h.value === hierarchyValue)?.trackValue ?? 1
+}

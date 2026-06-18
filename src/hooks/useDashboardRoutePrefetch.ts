@@ -8,6 +8,8 @@ import { useAuthStore } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
 import { getNavContext } from '@/lib/auth/roles'
 import { resolveUserTrackKey } from '@/lib/constants/trackTypes'
+import { resolveUserHierarchyValue, trackValueForHierarchy } from '@/lib/constants/promotionGrades'
+import { categoriesApiPath } from '@/hooks/useCategories'
 import {
   STUDENT_NAV,
   SUPERADMIN_NAV,
@@ -77,7 +79,10 @@ export function useDashboardRoutePrefetch() {
         { revalidate: false }
       )
       void mutate('/exams/list', () => swrFetcher('/exams/list'), { revalidate: false })
-      void mutate('/categories', () => swrFetcher('/categories'), { revalidate: false })
+      const hierarchy = resolveUserHierarchyValue(user)
+      const track = trackValueForHierarchy(hierarchy)
+      const categoriesKey = categoriesApiPath(track, hierarchy)
+      void mutate(categoriesKey, () => swrFetcher(categoriesKey), { revalidate: false })
       void mutate(
         `/exams/question-counts?track=${encodeURIComponent(trackKey)}`,
         () => swrFetcher(`/exams/question-counts?track=${encodeURIComponent(trackKey)}`),

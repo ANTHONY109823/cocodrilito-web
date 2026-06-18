@@ -8,10 +8,17 @@ export interface Category {
   name: string
   color: string
   orderIndex: number
+  trackType?: number
+  promotionHierarchy?: number
 }
 
-export function useCategories() {
-  const { data, error, isLoading, mutate } = useSWR<Category[]>('/categories', swrFetcher, {
+export function categoriesApiPath(trackType: number, promotionHierarchy: number) {
+  return `/categories?trackType=${trackType}&promotionHierarchy=${promotionHierarchy}`
+}
+
+export function useCategories(trackType: number, promotionHierarchy: number) {
+  const key = categoriesApiPath(trackType, promotionHierarchy)
+  const { data, error, isLoading, mutate } = useSWR<Category[]>(key, swrFetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 120_000,
   })

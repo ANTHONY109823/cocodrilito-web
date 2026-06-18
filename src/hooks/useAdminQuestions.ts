@@ -111,20 +111,35 @@ export function useAdminQuestions({
   const loadMeta = useCallback(async () => {
     if (metaLoaded) return
     try {
-      const [eRes, cRes] = await Promise.all([
-        apiClient.get('/exams/list'),
-        apiClient.get('/categories'),
-      ])
-      const cats = Array.isArray(cRes.data) ? cRes.data : []
+      const eRes = await apiClient.get('/exams/list')
       setExams(Array.isArray(eRes.data) ? eRes.data : [])
-      setCategories(cats)
-      setSelectedCategory((prev) => prev || cats[0]?.name || '')
-      setQForm((f) => ({ ...f, category: f.category || cats[0]?.name || '' }))
       setMetaLoaded(true)
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorDetail(err, 'Error al cargar exámenes'), ok: false })
+    }
+  }, [metaLoaded])
+
+  const loadCategories = useCallback(async (track: number, hierarchy: number) => {
+    try {
+      const cRes = await apiClient.get('/categories', {
+        params: { trackType: track, promotionHierarchy: hierarchy },
+      })
+      const cats = Array.isArray(cRes.data) ? cRes.data : []
+      setCategories(cats)
+      setSelectedCategory((prev) => {
+        if (prev && cats.some((c: Category) => c.name === prev)) return prev
+        return cats[0]?.name || ''
+      })
+      setQForm((f) => ({
+        ...f,
+        category: cats.some((c: Category) => c.name === f.category)
+          ? f.category
+          : cats[0]?.name || '',
+      }))
     } catch (err: unknown) {
       setMsg({ text: getApiErrorDetail(err, 'Error al cargar categorías'), ok: false })
     }
-  }, [metaLoaded])
+  }, [])
 
   const loadFullBank = useCallback(async (track: number, hierarchy: number) => {
     const cacheKey = `${track}-${hierarchy}`
@@ -178,6 +193,11 @@ export function useAdminQuestions({
     if (!enabled) return
     void loadMeta()
   }, [enabled, loadMeta])
+
+  useEffect(() => {
+    if (!enabled || !metaLoaded) return
+    void loadCategories(resolvedTrackType, activeHierarchy)
+  }, [enabled, metaLoaded, resolvedTrackType, activeHierarchy, loadCategories])
 
   useEffect(() => {
     if (!enabled || !metaLoaded) return
@@ -293,7 +313,12 @@ export function useAdminQuestions({
     if (!newCatName.trim()) return
     setSaving(true)
     try {
-      const res = await apiClient.post('/categories', { name: newCatName, color: newCatColor })
+      const res = await apiClient.post('/categories', {
+        name: newCatName,
+        color: newCatColor,
+        trackType: resolvedTrackType,
+        promotionHierarchy: activeHierarchy,
+      })
       setCategories((prev) => [...prev, res.data])
       setNewCatName('')
       setNewCatColor(PRESET_COLORS[0])
@@ -311,19 +336,15 @@ export function useAdminQuestions({
     const trackSuffix = isSuperAdminMode || allowTrackSwitch
       ? ` de ${hierarchyLabel(activeHierarchy)} (${trackLabel(activeTrackType)})`
       : ''
-    if (!confirm(`¿Eliminar las preguntas de "${name}"${trackSuffix}?${isSuperAdminMode ? ' La categoría solo se borra si queda vacía en todos los balotarios.' : ' También se eliminará la categoría si queda vacía.'}`)) return
+    if (!confirm(`¿Eliminar las preguntas de "${name}"${trackSuffix}? La categoría solo se borra en ${hierarchyLabel(activeHierarchy)}.`)) return
     try {
-      const trackQuery =
-        isSuperAdminMode || allowTrackSwitch
-          ? `?trackType=${activeTrackType}&promotionHierarchy=${activeHierarchy}`
-          : ''
-      const res = await apiClient.delete(`/categories/${id}${trackQuery}`)
+      const res = await apiClient.delete(`/categories/${id}`)
       setCategories((prev) => {
         const remaining = prev.filter((c) => c.id !== id)
         if (selectedCategory === name) {
           setSelectedCategory(remaining[0]?.name || '')
         }
-        return res.data?.categoryDeactivated === false ? prev : remaining
+        return remaining
       })
       invalidateBankCaches()
       if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType, activeHierarchy)

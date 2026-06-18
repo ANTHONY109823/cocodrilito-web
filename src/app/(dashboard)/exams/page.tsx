@@ -15,6 +15,11 @@ import {
 import { useAuthStore } from '@/lib/store/authStore'
 import { isTenantAdmin, isSuperAdmin } from '@/lib/auth/roles'
 import { DEFAULT_QUESTION_TRACK, resolveUserTrackKey, trackKeyFromValue, trackLabel } from '@/lib/constants/trackTypes'
+import {
+  defaultHierarchyForTrack,
+  resolveUserHierarchyValue,
+  trackValueForHierarchy,
+} from '@/lib/constants/promotionGrades'
 import { TrackSwitchBar } from '@/components/admin/preguntas/TrackSwitchBar'
 import { prefetchAscensoQuestionCounts } from '@/lib/api/questionCounts'
 import { examsApi } from '@/lib/api/exams'
@@ -59,8 +64,15 @@ export default function ExamsPage() {
   const effectiveTrackKey = previewMode
     ? trackKeyFromValue(previewTrack)
     : studentTrackKey
+  const categoryHierarchy = previewMode
+    ? defaultHierarchyForTrack(previewTrack)
+    : resolveUserHierarchyValue(user)
+  const categoryTrack = trackValueForHierarchy(categoryHierarchy)
   const { exams, isLoading: examsLoading, error: examsError } = useExamList()
-  const { categories, isLoading: catsLoading, error: catsError } = useCategories()
+  const { categories, isLoading: catsLoading, error: catsError } = useCategories(
+    categoryTrack,
+    categoryHierarchy
+  )
   const {
     total: totalQuestions,
     byCategory: questionCounts,
