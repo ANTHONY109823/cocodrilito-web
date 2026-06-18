@@ -16,6 +16,8 @@ const HOP_BY_HOP = new Set([
   'upgrade',
   'host',
   'content-length',
+  // Node fetch descomprime gzip/br; reenviar Content-Encoding rompe descargas CSV/binarias.
+  'content-encoding',
 ])
 
 // Headers internos de infraestructura que el cliente no debe poder inyectar al backend
@@ -67,6 +69,9 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
     headers.set('x-forwarded-for', clientIp)
   }
 
+  // Evitar respuestas comprimidas upstream que el runtime descomprime al reenviar.
+  headers.set('accept-encoding', 'identity')
+
   const method = request.method.toUpperCase()
   const hasBody = !['GET', 'HEAD'].includes(method)
   const body = hasBody ? await request.arrayBuffer() : undefined
@@ -79,6 +84,8 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
     cache: cacheableGet ? 'force-cache' : 'no-store',
     ...(cacheableGet ? { next: { revalidate: 600 } } : {}),
   })
+
+  const responseBody = await upstream.arrayBuffer()
 
   const responseHeaders = new Headers()
   upstream.headers.forEach((value, key) => {
@@ -95,7 +102,7 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
         ? [upstream.headers.get('set-cookie')!]
         : []
 
-  const response = new NextResponse(upstream.body, {
+  const response = new NextResponse(responseBody, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: responseHeaders,
