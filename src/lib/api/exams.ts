@@ -19,6 +19,13 @@ export const examsApi = {
     selectedOptionId: string | null
     timeSpentMs: number
   }) => apiClient.post(`/exams/sessions/${sessionId}/answer`, data),
+  submitAnswersBatch: (sessionId: string, data: {
+    answers: Array<{
+      questionId: string
+      selectedOptionId: string | null
+      timeSpentMs: number
+    }>
+  }) => apiClient.post(`/exams/sessions/${sessionId}/answers`, data),
   finish: (sessionId: string) =>
     apiClient.post(`/exams/sessions/${sessionId}/finish`),
   getResult: (sessionId: string) =>

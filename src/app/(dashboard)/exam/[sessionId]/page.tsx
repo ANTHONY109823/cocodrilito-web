@@ -65,17 +65,50 @@ export default function ExamPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [showFinishModal, setShowFinishModal] = useState(false)
   const answeringRef = useRef(false)
+  const pendingAnswersRef = useRef<Array<{
+    questionId: string
+    selectedOptionId: string | null
+    timeSpentMs: number
+  }>>([])
+  const flushInFlightRef = useRef(false)
+
+  const flushAnswers = useCallback(async () => {
+    if (flushInFlightRef.current) return
+    const batch = pendingAnswersRef.current.splice(0)
+    if (batch.length === 0) return
+    flushInFlightRef.current = true
+    try {
+      await examsApi.submitAnswersBatch(sessionId, { answers: batch })
+    } catch {
+      pendingAnswersRef.current.unshift(...batch)
+    } finally {
+      flushInFlightRef.current = false
+      if (pendingAnswersRef.current.length > 0) {
+        await flushAnswers()
+      }
+    }
+  }, [sessionId])
+
+  const queueAnswer = useCallback((answer: {
+    questionId: string
+    selectedOptionId: string | null
+    timeSpentMs: number
+  }) => {
+    pendingAnswersRef.current.push(answer)
+    window.setTimeout(() => { void flushAnswers() }, 1200)
+  }, [flushAnswers])
 
   const handleFinish = useCallback(async () => {
     if (finishing) return
     setFinishing(true)
+    await flushAnswers()
     // Race API call vs 8s timeout — redirect regardless so user never waits minutes
     await Promise.race([
       examsApi.finish(sessionId).catch(() => {}),
       new Promise<void>((resolve) => setTimeout(resolve, 8000)),
     ])
     router.push(`/result/${sessionId}`)
-  }, [finishing, sessionId, router])
+  }, [finishing, sessionId, router, flushAnswers])
 
   const applySessionPayload = useCallback((data: Record<string, unknown>, fallbackId: string) => {
     const meta = normalizeExamSessionPayload(data)
@@ -180,11 +213,11 @@ export default function ExamPage() {
     setSelectedOption(optionId)
     setAnswers((prev) => ({ ...prev, [q.id]: optionId }))
 
-    void examsApi.submitAnswer(sessionId, {
+    void queueAnswer({
       questionId: q.id,
       selectedOptionId: optionId,
       timeSpentMs: spentMs,
-    }).catch(() => {})
+    })
 
     const total = getEffectiveQuestionCount(session.totalQuestions, session.questions.length)
     const isLast = currentIdx >= total - 1

@@ -45,7 +45,7 @@ export function DashboardClientLayout({ children }: { children: React.ReactNode 
       if (document.visibilityState === 'visible') ping()
     }
     document.addEventListener('visibilitychange', onVisible)
-    const id = setInterval(ping, 8 * 60 * 1000)
+    const id = setInterval(ping, 5 * 60 * 1000)
     return () => {
       clearInterval(id)
       document.removeEventListener('visibilitychange', onVisible)

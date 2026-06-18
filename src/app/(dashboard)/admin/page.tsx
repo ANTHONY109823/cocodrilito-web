@@ -106,6 +106,11 @@ function AdminPageContent() {
 
   const [dashData, setDashData] = useState<AdminDashboardData | null>(null)
   const [users, setUsers] = useState<User[]>([])
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersTotal, setUsersTotal] = useState(0)
+  const USERS_PAGE_SIZE = 50
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [approvingId, setApprovingId] = useState<string | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -165,11 +170,18 @@ function AdminPageContent() {
         setTenantProfile(profileRes.data)
         setSubscriptions(subsRes.data)
       } else if (tab === 'users') {
-        const res = await apiClient.get('/admin/users')
-        setUsers(res.data)
+        const res = await apiClient.get(`/admin/users?page=${usersPage}&pageSize=${USERS_PAGE_SIZE}`)
+        const data = res.data as User[] | { items: User[]; total: number }
+        if (Array.isArray(data)) {
+          setUsers(data)
+          setUsersTotal(data.length)
+        } else {
+          setUsers(data.items ?? [])
+          setUsersTotal(data.total ?? 0)
+        }
       }
     } catch { /* ignore */ } finally { if (!silent) setLoading(false) }
-  }, [tab])
+  }, [tab, usersPage])
 
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -212,7 +224,7 @@ function AdminPageContent() {
     }
     const hasCachedData = tab === 'dashboard' ? Boolean(dashData) : users.length > 0
     void loadData({ silent: hasCachedData })
-  }, [user, loadData, router, tab])
+  }, [user, loadData, router, tab, usersPage])
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
@@ -270,6 +282,8 @@ function AdminPageContent() {
   const inferDays = (amount: number) => inferDaysFromAmount(amount)
 
   const handleApprove = async (sub: Subscription) => {
+    if (approvingId) return
+    setApprovingId(sub.id)
     try {
       const days = sub.planDurationDays && sub.planDurationDays > 0
         ? sub.planDurationDays
@@ -282,6 +296,7 @@ function AdminPageContent() {
       setMsg({ text: `✅ Suscripción aprobada — ${days} días activados`, ok: true })
       setTimeout(() => setMsg(null), 3000)
     } catch { setMsg({ text: 'Error al aprobar', ok: false }) }
+    finally { setApprovingId(null) }
   }
 
   const confirmReject = async () => {
@@ -326,20 +341,46 @@ function AdminPageContent() {
   }
 
   const handleReactivate = async (id: string) => {
+    const loadKey = `reactivate:${id}`
+    if (actionLoading) return
+    setActionLoading(loadKey)
     try {
       await apiClient.put(`/admin/users/${id}/reactivate`, {})
       setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: true } : u))
       setMsg({ text: '✅ Usuario reactivado', ok: true })
       setTimeout(() => setMsg(null), 2000)
-    } catch { }
+    } catch {
+      setMsg({ text: 'Error al reactivar', ok: false })
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const handleExtend = async (id: string, days: number) => {
+    const loadKey = `extend:${id}:${days}`
+    if (actionLoading) return
+    setActionLoading(loadKey)
     try {
-      await apiClient.put(`/admin/users/${id}/extend`, { planDays: days })
+      const res = await apiClient.put(`/admin/users/${id}/extend`, { planDays: days })
+      const expiresAt = (res.data as { expiresAt?: string }).expiresAt
+      setUsers(prev => prev.map(u => {
+        if (u.id !== id) return u
+        return {
+          ...u,
+          planType: 'Premium',
+          subscription: {
+            startsAt: u.subscription?.startsAt ?? new Date().toISOString(),
+            expiresAt: expiresAt ?? u.subscription?.expiresAt ?? new Date().toISOString(),
+          },
+        }
+      }))
       setMsg({ text: `✅ Suscripción extendida ${days} días`, ok: true })
-      setTimeout(() => { setMsg(null); loadData() }, 2000)
-    } catch { }
+      setTimeout(() => setMsg(null), 2000)
+    } catch {
+      setMsg({ text: 'Error al extender suscripción', ok: false })
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const confirmResetPassword = async () => {
@@ -566,9 +607,10 @@ function AdminPageContent() {
                             </div>
                             <div className="flex gap-2">
                               <button type="button" onClick={() => handleApprove(sub)}
-                                className="px-4 py-2 rounded-lg text-sm font-bold"
+                                disabled={approvingId === sub.id}
+                                className="px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-60"
                                 style={{ backgroundColor: NEON, color: 'var(--color-text-primary)' }}>
-                                Aprobar {days}d
+                                {approvingId === sub.id ? 'Aprobando...' : `Aprobar ${days}d`}
                               </button>
                               <button type="button" onClick={() => { setRejectReason(''); setRejectTarget(sub.id) }}
                                 className="px-4 py-2 rounded-lg text-sm font-medium"
@@ -715,15 +757,24 @@ function AdminPageContent() {
                           </button>
                         </>
                       )}
-                      <button onClick={() => handleExtend(u.id, 30)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${skyMix(15)}`, color: NEON2, border: `1px solid ${skyMix(25)}` }}>+30d</button>
-                      <button onClick={() => handleExtend(u.id, 60)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${warningMix(15)}`, color: GOLD, border: `1px solid ${goldBrightMix(25)}` }}>+60d</button>
-                      <button onClick={() => handleExtend(u.id, 180)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: `${primaryMix(15)}`, color: NEON, border: `1px solid ${primaryMix(25)}` }}>+180d</button>
+                      <button type="button" onClick={() => handleExtend(u.id, 30)}
+                        disabled={Boolean(actionLoading)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-60"
+                        style={{ backgroundColor: `${skyMix(15)}`, color: NEON2, border: `1px solid ${skyMix(25)}` }}>
+                        {actionLoading === `extend:${u.id}:30` ? '...' : '+30d'}
+                      </button>
+                      <button type="button" onClick={() => handleExtend(u.id, 60)}
+                        disabled={Boolean(actionLoading)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-60"
+                        style={{ backgroundColor: `${warningMix(15)}`, color: GOLD, border: `1px solid ${goldBrightMix(25)}` }}>
+                        {actionLoading === `extend:${u.id}:60` ? '...' : '+60d'}
+                      </button>
+                      <button type="button" onClick={() => handleExtend(u.id, 180)}
+                        disabled={Boolean(actionLoading)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-60"
+                        style={{ backgroundColor: `${primaryMix(15)}`, color: NEON, border: `1px solid ${primaryMix(25)}` }}>
+                        {actionLoading === `extend:${u.id}:180` ? '...' : '+180d'}
+                      </button>
                       <button type="button" onClick={() => handleDeactivate(u.id)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ backgroundColor: `${redBrightMix(15)}`, color: RED, border: `1px solid ${redBrightMix(25)}` }}>Desactivar</button>
@@ -740,6 +791,34 @@ function AdminPageContent() {
               )
             })}
           </div>
+          {userSub === 'activos' && usersTotal > USERS_PAGE_SIZE && (
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Mostrando {users.length} de {usersTotal} alumnos
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={usersPage <= 1 || loading}
+                  onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg text-xs border border-[var(--color-surface-border)] disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <span className="text-xs text-[var(--color-text-muted)] self-center">
+                  Página {usersPage} / {Math.max(1, Math.ceil(usersTotal / USERS_PAGE_SIZE))}
+                </span>
+                <button
+                  type="button"
+                  disabled={usersPage >= Math.ceil(usersTotal / USERS_PAGE_SIZE) || loading}
+                  onClick={() => setUsersPage((p) => p + 1)}
+                  className="px-3 py-1.5 rounded-lg text-xs border border-[var(--color-surface-border)] disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
