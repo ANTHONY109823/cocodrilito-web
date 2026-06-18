@@ -11,11 +11,13 @@ import {
   isAdminAcademia,
 } from '@/lib/auth/roles'
 import { trackLabel, QUESTION_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK } from '@/lib/constants/trackTypes'
+import { hierarchyLabel } from '@/lib/constants/promotionGrades'
 import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 import { useAdminQuestions } from '@/hooks/useAdminQuestions'
 import { QuestionEditModal } from '@/components/admin/preguntas/QuestionEditModal'
 import { QuestionAddForm, TrackSelector, NEON2 } from '@/components/admin/preguntas/QuestionAddForm'
 import { TrackSwitchBar } from '@/components/admin/preguntas/TrackSwitchBar'
+import { HierarchySwitchBar } from '@/components/admin/preguntas/HierarchySwitchBar'
 import { CategoryPanel, QuestionsList } from '@/components/admin/preguntas/CategoryPanel'
 import { ExplanationCoverageBanner } from '@/components/admin/preguntas/ExplanationCoverage'
 import { PAGE_SIZE } from '@/components/admin/preguntas/types'
@@ -99,8 +101,8 @@ export default function PreguntasPage() {
           <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">Banco de Preguntas de Ascenso</h1>
           <p className="text-[var(--color-text-muted)] text-xs mt-0.5">
             {readOnly && isAgencia
-              ? `${q.categorizedCount} preguntas en vista · balotario: ${trackLabel(q.activeTrackType)}`
-              : `${q.categorizedCount} preguntas en vista · ${q.categories.length} categorías · balotario: ${trackLabel(isSuperAdminMode ? q.activeTrackType : allowTrackSwitch ? q.activeTrackType : viewerTrackType)}`}
+              ? `${q.categorizedCount} preguntas en vista · jerarquía: ${hierarchyLabel(q.activeHierarchy)}`
+              : `${q.categorizedCount} preguntas en vista · ${q.categories.length} categorías · ${hierarchyLabel(q.activeHierarchy)} · ${trackLabel(isSuperAdminMode ? q.activeTrackType : allowTrackSwitch ? q.activeTrackType : viewerTrackType)}`}
           </p>
         </div>
         {!readOnly && (
@@ -179,9 +181,23 @@ export default function PreguntasPage() {
             q.setActiveTrackType(track)
             q.setPage(1)
           }}
-          hint="Solo lectura — Simulacros.pe gestiona el banco. Tus alumnos ven el balotario que les asignes."
+          hint="Solo lectura — Simulacros.pe gestiona el banco. Tus alumnos ven el balotario según el grado al que postulan."
         />
       )}
+
+      <HierarchySwitchBar
+        activeTrackType={q.activeTrackType}
+        activeHierarchy={q.activeHierarchy}
+        onChange={(hierarchy) => {
+          q.setActiveHierarchy(hierarchy)
+          q.setPage(1)
+        }}
+        hint={
+          readOnly
+            ? 'Consulta el banco por jerarquía. Cada CSV y cada alumno debe corresponder a una sola jerarquía.'
+            : 'Sube ~1500 preguntas por jerarquía. No mezcles grados ni jerarquías en un mismo CSV.'
+        }
+      />
 
       {isSuperAdminMode && !readOnly && (
         <TrackSelector
@@ -222,7 +238,7 @@ export default function PreguntasPage() {
             color: '#fbbf24',
           }}
         >
-          ⚠️ {q.uncategorizedCount} preguntas del balotario {trackLabel(q.activeTrackType)} no coinciden
+          ⚠️ {q.uncategorizedCount} preguntas de {hierarchyLabel(q.activeHierarchy)} no coinciden
           con ninguna categoría activa. Revisa el CSV o elimínalas con &quot;Eliminar todo&quot;.
         </div>
       )}

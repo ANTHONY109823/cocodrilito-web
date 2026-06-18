@@ -32,6 +32,14 @@ import {
   inferDaysFromAmount,
 } from '@/lib/constants/subscriptionPlans'
 import { ASCENSO_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK, resolveDefaultStudentTrack, trackLabel } from '@/lib/constants/trackTypes'
+import {
+  gradesForHierarchy,
+  hierarchiesForTrack,
+  hierarchyLabel,
+  promotionGradeLabel,
+  PROMOTION_GRADE_OPTIONS,
+  trackFromGrade,
+} from '@/lib/constants/promotionGrades'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
@@ -52,6 +60,8 @@ interface User {
   createdByAdmin: boolean
   createdAt: string
   activeTrackType?: string | null
+  promotionGrade?: string | null
+  promotionHierarchy?: string | null
   allowedTrackTypes?: string[]
   subscription?: { expiresAt: string; startsAt: string } | null
 }
@@ -123,6 +133,7 @@ function AdminPageContent() {
   const [editForm, setEditForm] = useState({
     fullName: '', email: '', dni: '', rank: '', unit: '',
     trackType: DEFAULT_QUESTION_TRACK,
+    promotionGrade: null as number | null,
   })
 
   const [rejectTarget, setRejectTarget] = useState<string | null>(null)
@@ -142,6 +153,7 @@ function AdminPageContent() {
     fullName: '', dni: '', email: '', password: '',
     rank: '', unit: '', planDays: 180,
     trackType: DEFAULT_QUESTION_TRACK,
+    promotionGrade: PROMOTION_GRADE_OPTIONS[0].value as number,
     activationDate: new Date().toISOString().slice(0, 10),
   })
 
@@ -154,7 +166,14 @@ function AdminPageContent() {
   useEffect(() => {
     if (userSub !== 'crear' || !user) return
     const defaultTrack = resolveDefaultStudentTrack(user)
-    setForm((prev) => (prev.trackType === defaultTrack ? prev : { ...prev, trackType: defaultTrack }))
+    const defaultGrade =
+      PROMOTION_GRADE_OPTIONS.find((g) => g.trackValue === defaultTrack)?.value ??
+      PROMOTION_GRADE_OPTIONS[0].value
+    setForm((prev) =>
+      prev.trackType === defaultTrack && prev.promotionGrade === defaultGrade
+        ? prev
+        : { ...prev, trackType: defaultTrack, promotionGrade: defaultGrade }
+    )
   }, [userSub, user])
 
   const loadData = useCallback(async (opts?: { silent?: boolean }) => {
@@ -217,7 +236,7 @@ function AdminPageContent() {
   }
 
   const handleDownloadExcelTemplate = () => {
-    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado,Unidad,Días,Balotario\nJuan Pérez Torres,12345678,juan@gmail.com,Ejemplo1234,Suboficial de 3ra,Comisaría Lima Norte,180,Suboficiales\n'
+    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado actual,Unidad,Días,Balotario,Grado postulación\nJuan Pérez Torres,12345678,juan@gmail.com,Ejemplo1234,Capitán,Comisaría Lima Norte,180,Oficiales,Mayor\n'
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -260,7 +279,8 @@ function AdminPageContent() {
         rank: savedForm.rank,
         unit: savedForm.unit,
         planDays: savedForm.planDays,
-        trackType: savedForm.trackType,
+        trackType: trackFromGrade(savedForm.promotionGrade),
+        promotionGrade: savedForm.promotionGrade,
         startsAt: savedForm.activationDate,
       })
       const data = res.data as {
@@ -281,6 +301,9 @@ function AdminPageContent() {
       setForm({
         fullName: '', dni: '', email: '', password: '', rank: '', unit: '', planDays: 180,
         trackType: resolveDefaultStudentTrack(user),
+        promotionGrade:
+          PROMOTION_GRADE_OPTIONS.find((g) => g.trackValue === resolveDefaultStudentTrack(user))?.value ??
+          PROMOTION_GRADE_OPTIONS[0].value,
         activationDate: new Date().toISOString().slice(0, 10),
       })
       router.push('/admin?tab=users&sub=activos')
@@ -460,6 +483,10 @@ function AdminPageContent() {
       rank: u.rank,
       unit: u.unit,
       trackType: trackValue,
+      promotionGrade:
+        PROMOTION_GRADE_OPTIONS.find((g) => g.key === u.promotionGrade)?.value ??
+        PROMOTION_GRADE_OPTIONS.find((g) => g.trackValue === trackValue)?.value ??
+        null,
     })
   }
 
@@ -467,12 +494,29 @@ function AdminPageContent() {
     if (!editTarget) return
     setModalLoading(true)
     try {
-      await apiClient.put(`/admin/users/${editTarget.id}`, editForm)
+      await apiClient.put(`/admin/users/${editTarget.id}`, {
+        ...editForm,
+        trackType: editForm.promotionGrade ? trackFromGrade(editForm.promotionGrade) : editForm.trackType,
+        promotionGrade: editForm.promotionGrade ?? undefined,
+      })
       const trackKey = ASCENSO_TRACK_OPTIONS.find((t) => t.value === editForm.trackType)?.key
+      const gradeKey =
+        editForm.promotionGrade != null
+          ? PROMOTION_GRADE_OPTIONS.find((g) => g.value === editForm.promotionGrade)?.key ?? null
+          : null
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editTarget.id
-            ? { ...u, ...editForm, activeTrackType: trackKey ?? u.activeTrackType }
+            ? {
+                ...u,
+                fullName: editForm.fullName,
+                email: editForm.email,
+                dni: editForm.dni,
+                rank: editForm.rank,
+                unit: editForm.unit,
+                activeTrackType: trackKey ?? u.activeTrackType,
+                promotionGrade: gradeKey,
+              }
             : u
         )
       )
@@ -983,7 +1027,7 @@ function AdminPageContent() {
                 { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '12345678' },
                 { label: 'Email (contacto) *', key: 'email', placeholder: 'juan@gmail.com', type: 'email' },
                 { label: 'Contraseña temporal *', key: 'password', placeholder: 'Mínimo 8 caracteres', type: 'password' },
-                { label: 'Grado *', key: 'rank', placeholder: 'Suboficial de 3ra' },
+                { label: 'Grado actual *', key: 'rank', placeholder: 'Capitán' },
                 { label: 'Unidad *', key: 'unit', placeholder: 'Comisaría Lima Norte' },
               ].map(field => {
                 const fieldKey = field.key as keyof typeof form
@@ -1008,23 +1052,42 @@ function AdminPageContent() {
               <p className="text-xs text-amber-500">Indica nombre y apellido para generar el usuario de acceso.</p>
             ) : null}
             <div>
-              <label className="block text-xs text-gray-500 mb-2">Balotario de preguntas *</label>
-              <div className="grid md:grid-cols-2 gap-3">
-                {ASCENSO_TRACK_OPTIONS.map((track) => (
-                  <button key={track.value} type="button"
-                    onClick={() => setForm({ ...form, trackType: track.value })}
-                    className="p-4 rounded-xl text-left transition-all"
-                    style={{
-                      border: `2px solid ${form.trackType === track.value ? NEON : 'var(--color-surface-border)'}`,
-                      backgroundColor: form.trackType === track.value ? 'var(--color-primary-bg)' : SURFACE,
-                    }}>
-                    <div className="font-bold text-white text-sm">{track.label}</div>
-                    <div className="text-xs mt-0.5" style={{ color: form.trackType === track.value ? NEON : '#6B7280' }}>
-                      Acceso solo a preguntas de {track.label.toLowerCase()}
+              <label className="block text-xs text-gray-500 mb-2">Grado al que postula *</label>
+              <p className="text-[10px] text-gray-600 mb-3">
+                El balotario se asigna según el grado de postulación (ej. Capitán que postula a Mayor → Oficiales Superiores).
+              </p>
+              <div className="space-y-4">
+                {hierarchiesForTrack(form.trackType).map((h) => (
+                  <div key={h.value}>
+                    <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2">{h.label}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {gradesForHierarchy(h.value).map((g) => (
+                        <button
+                          key={g.value}
+                          type="button"
+                          onClick={() =>
+                            setForm({ ...form, promotionGrade: g.value, trackType: g.trackValue })
+                          }
+                          className="px-3 py-2 rounded-xl text-xs font-semibold transition-all border"
+                          style={{
+                            border: `2px solid ${form.promotionGrade === g.value ? NEON : 'var(--color-surface-border)'}`,
+                            backgroundColor:
+                              form.promotionGrade === g.value ? 'var(--color-primary-bg)' : SURFACE,
+                            color: form.promotionGrade === g.value ? NEON : 'var(--color-text-muted)',
+                          }}
+                        >
+                          {g.label}
+                        </button>
+                      ))}
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
+              <p className="text-xs mt-3 text-gray-500">
+                Balotario: <strong className="text-[var(--color-text-primary)]">{trackLabel(form.trackType)}</strong>
+                {' · '}
+                Jerarquía: <strong className="text-[var(--color-text-primary)]">{hierarchyLabel(PROMOTION_GRADE_OPTIONS.find((g) => g.value === form.promotionGrade)?.hierarchy ?? 1)}</strong>
+              </p>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-2">Plan de acceso *</label>
@@ -1067,8 +1130,8 @@ function AdminPageContent() {
             <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${purpleMix(25)}` }}>
               <h3 className="text-[var(--color-text-primary)] font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
               <p className="text-gray-500 text-xs mb-3">
-                Columnas: Nombre, DNI, Email, Contraseña, Grado, Unidad, Días (30/60/180), Balotario (opcional: Suboficiales/Oficiales).
-                Si no hay columna Balotario, se usa el seleccionado arriba ({trackLabel(form.trackType)}).
+                Columnas: Nombre, DNI, Email, Contraseña, Grado actual, Unidad, Días (30/60/180), Balotario (opcional), Grado postulación (ej. Mayor, Suboficial de 1.ª).
+                Si falta Grado postulación, se usa el seleccionado arriba ({promotionGradeLabel(form.promotionGrade)}).
               </p>
               <div className="flex gap-3 flex-wrap">
                 <button type="button" onClick={handleDownloadExcelTemplate}
@@ -1138,22 +1201,32 @@ function AdminPageContent() {
               onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-2">Balotario</label>
-            <div className="grid grid-cols-2 gap-2">
-              {ASCENSO_TRACK_OPTIONS.map((track) => (
-                <button
-                  key={track.value}
-                  type="button"
-                  onClick={() => setEditForm({ ...editForm, trackType: track.value })}
-                  className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
-                  style={{
-                    border: `1px solid ${editForm.trackType === track.value ? NEON : 'var(--color-surface-border)'}`,
-                    backgroundColor: editForm.trackType === track.value ? 'rgba(74,124,89,0.12)' : 'transparent',
-                    color: editForm.trackType === track.value ? NEON : '#9CA3AF',
-                  }}
-                >
-                  {track.label}
-                </button>
+            <label className="block text-xs text-gray-500 mb-2">Grado al que postula</label>
+            <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+              {hierarchiesForTrack(editForm.trackType).map((h) => (
+                <div key={h.value}>
+                  <p className="text-[10px] font-semibold text-gray-500 mb-1">{h.label}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {gradesForHierarchy(h.value).map((g) => (
+                      <button
+                        key={g.value}
+                        type="button"
+                        onClick={() =>
+                          setEditForm({ ...editForm, promotionGrade: g.value, trackType: g.trackValue })
+                        }
+                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all border"
+                        style={{
+                          border: `1px solid ${editForm.promotionGrade === g.value ? NEON : 'var(--color-surface-border)'}`,
+                          backgroundColor:
+                            editForm.promotionGrade === g.value ? 'rgba(74,124,89,0.12)' : 'transparent',
+                          color: editForm.promotionGrade === g.value ? NEON : '#9CA3AF',
+                        }}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -1271,7 +1344,8 @@ function AdminPageContent() {
             <div><span className="text-gray-500">Email: </span><strong className="text-[var(--color-text-primary)]">{form.email}</strong></div>
             <div><span className="text-gray-500">DNI: </span><strong className="text-[var(--color-text-primary)]">{form.dni}</strong></div>
             <div><span className="text-gray-500">Plan: </span><strong style={{ color: NEON }}>{form.planDays} días</strong></div>
-            <div><span className="text-gray-500">Balotario: </span><strong className="text-[var(--color-text-primary)]">{trackLabel(form.trackType)}</strong></div>
+            <div><span className="text-gray-500">Postula a: </span><strong className="text-[var(--color-text-primary)]">{promotionGradeLabel(form.promotionGrade)}</strong></div>
+            <div><span className="text-gray-500">Jerarquía: </span><strong className="text-[var(--color-text-primary)]">{hierarchyLabel(PROMOTION_GRADE_OPTIONS.find((g) => g.value === form.promotionGrade)?.hierarchy ?? 1)}</strong></div>
           </div>
           <p className="text-xs text-gray-500">El alumno deberá cambiar su contraseña al primer ingreso.</p>
         </div>

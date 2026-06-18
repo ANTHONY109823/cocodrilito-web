@@ -12,10 +12,13 @@ export interface QuestionCountsData {
   byCategory: { category: string; count: number; missingExplanation?: number }[]
 }
 
-export function useQuestionCounts(track?: string | null) {
+export function useQuestionCounts(track?: string | null, hierarchy?: string | number | null) {
   const trackKey = track?.trim() || null
+  const hierarchyKey = hierarchy != null && hierarchy !== '' ? String(hierarchy) : null
   const swrKey = trackKey
-    ? `/exams/question-counts?track=${encodeURIComponent(trackKey)}`
+    ? hierarchyKey
+      ? `/exams/question-counts?track=${encodeURIComponent(trackKey)}&hierarchy=${encodeURIComponent(hierarchyKey)}`
+      : `/exams/question-counts?track=${encodeURIComponent(trackKey)}`
     : '/exams/question-counts'
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<QuestionCountsData>(

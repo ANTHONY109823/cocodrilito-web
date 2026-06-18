@@ -14,6 +14,10 @@ import {
   trackKeyFromValue,
   trackLabel,
 } from '@/lib/constants/trackTypes'
+import {
+  defaultHierarchyForTrack,
+  hierarchyLabel,
+} from '@/lib/constants/promotionGrades'
 import { useQuestionCounts } from '@/hooks/useQuestionCounts'
 import {
   hasUsableExplanation,
@@ -64,11 +68,14 @@ export function useAdminQuestions({
   const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0])
   const [questionScope, setQuestionScope] = useState<'base' | 'own'>('base')
   const [activeTrackType, setActiveTrackType] = useState(DEFAULT_QUESTION_TRACK)
+  const [activeHierarchy, setActiveHierarchy] = useState(() =>
+    defaultHierarchyForTrack(DEFAULT_QUESTION_TRACK)
+  )
   const [explanationFilter, setExplanationFilter] = useState<ExplanationFilter>('all')
   const [qForm, setQForm] = useState<QuestionFormState>(EMPTY_QUESTION_FORM)
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  const bankCacheRef = useRef<Map<number, Question[]>>(new Map())
+  const bankCacheRef = useRef<Map<string, Question[]>>(new Map())
   const trackRequestRef = useRef(0)
   const categoryRequestRef = useRef(0)
   const { mutate: globalMutate } = useSWRConfig()
@@ -89,7 +96,11 @@ export function useAdminQuestions({
     needsReview: remoteNeedsReview,
     isLoading: countsLoading,
     refresh: refreshCounts,
-  } = useQuestionCounts(browseMode ? trackKey : null)
+  } = useQuestionCounts(browseMode ? trackKey : null, browseMode ? activeHierarchy : null)
+
+  useEffect(() => {
+    setActiveHierarchy(defaultHierarchyForTrack(activeTrackType))
+  }, [activeTrackType])
 
   useEffect(() => {
     if (!enabled || !browseMode) return
@@ -114,9 +125,10 @@ export function useAdminQuestions({
     }
   }, [metaLoaded])
 
-  const loadFullBank = useCallback(async (track: number) => {
+  const loadFullBank = useCallback(async (track: number, hierarchy: number) => {
+    const cacheKey = `${track}-${hierarchy}`
     const requestId = ++trackRequestRef.current
-    const cached = bankCacheRef.current.get(track)
+    const cached = bankCacheRef.current.get(cacheKey)
     if (cached) {
       setQuestions(cached)
       setBankLoading(false)
@@ -126,11 +138,11 @@ export function useAdminQuestions({
 
     try {
       const res = await apiClient.get(
-        `/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}&trackType=${track}`
+        `/admin/Questions?pageSize=${ADMIN_QUESTIONS_PAGE_SIZE}&trackType=${track}&promotionHierarchy=${hierarchy}`
       )
       if (requestId !== trackRequestRef.current) return
       const qs = parseQuestionsResponse(res.data)
-      bankCacheRef.current.set(track, qs)
+      bankCacheRef.current.set(cacheKey, qs)
       setQuestions(qs)
     } catch (err: unknown) {
       if (requestId !== trackRequestRef.current) return
@@ -140,7 +152,7 @@ export function useAdminQuestions({
     }
   }, [])
 
-  const loadCategoryQuestions = useCallback(async (category: string, track: number) => {
+  const loadCategoryQuestions = useCallback(async (category: string, track: number, hierarchy: number) => {
     if (!category) {
       setQuestions([])
       return
@@ -149,7 +161,7 @@ export function useAdminQuestions({
     setListLoading(true)
     try {
       const res = await apiClient.get(
-        `/admin/Questions?trackType=${track}&category=${encodeURIComponent(category)}&pageSize=${CATEGORY_QUESTIONS_MAX}`
+        `/admin/Questions?trackType=${track}&promotionHierarchy=${hierarchy}&category=${encodeURIComponent(category)}&pageSize=${CATEGORY_QUESTIONS_MAX}`
       )
       if (requestId !== categoryRequestRef.current) return
       setQuestions(parseQuestionsResponse(res.data))
@@ -170,15 +182,16 @@ export function useAdminQuestions({
     if (!enabled || !metaLoaded) return
     if (browseMode) {
       setBankLoading(false)
-      void loadCategoryQuestions(selectedCategory, resolvedTrackType)
+      void loadCategoryQuestions(selectedCategory, resolvedTrackType, activeHierarchy)
       return
     }
-    void loadFullBank(resolvedTrackType)
+    void loadFullBank(resolvedTrackType, activeHierarchy)
   }, [
     enabled,
     metaLoaded,
     browseMode,
     resolvedTrackType,
+    activeHierarchy,
     selectedCategory,
     loadFullBank,
     loadCategoryQuestions,
@@ -198,7 +211,7 @@ export function useAdminQuestions({
       const formData = new FormData()
       formData.append('file', file)
       const res = await apiClient.post(
-        `/admin/import/questions?categoria=${encodeURIComponent(category)}&trackType=${resolvedTrackType}&forOwnTenant=${questionScope === 'own'}`,
+        `/admin/import/questions?categoria=${encodeURIComponent(category)}&trackType=${resolvedTrackType}&promotionHierarchy=${activeHierarchy}&forOwnTenant=${questionScope === 'own'}`,
         formData
       )
       const imported = res.data.imported ?? 0
@@ -225,8 +238,8 @@ export function useAdminQuestions({
       }
       setTimeout(() => setMsg(null), totalErrors > 0 || imported === 0 ? 12000 : 4000)
       invalidateBankCaches()
-      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
-      else void loadFullBank(resolvedTrackType)
+      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType, activeHierarchy)
+      else void loadFullBank(resolvedTrackType, activeHierarchy)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorDetail(err, 'Error al subir'), ok: false })
     } finally {
@@ -237,7 +250,9 @@ export function useAdminQuestions({
 
   const handleDownloadTemplate = async (category?: string) => {
     try {
-      const params = category ? { categoria: category } : undefined
+      const params = category
+        ? { categoria: category, promotionHierarchy: activeHierarchy }
+        : { promotionHierarchy: activeHierarchy }
       const res = await apiClient.get('/admin/import/template', { responseType: 'blob', params })
       const contentType = String(res.headers['content-type'] ?? '')
       if (contentType.includes('application/json')) {
@@ -251,7 +266,7 @@ export function useAdminQuestions({
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }))
       const a = document.createElement('a')
       a.href = url
-      a.download = `plantilla_preguntas_${safeCat}.csv`
+      a.download = `plantilla_${hierarchyLabel(activeHierarchy).toLowerCase().replace(/\s+/g, '_')}_${safeCat}.csv`
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -282,11 +297,15 @@ export function useAdminQuestions({
   }
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    const trackSuffix = isSuperAdminMode || allowTrackSwitch ? ` del balotario ${trackLabel(activeTrackType)}` : ''
+    const trackSuffix = isSuperAdminMode || allowTrackSwitch
+      ? ` de ${hierarchyLabel(activeHierarchy)} (${trackLabel(activeTrackType)})`
+      : ''
     if (!confirm(`¿Eliminar las preguntas de "${name}"${trackSuffix}?${isSuperAdminMode ? ' La categoría solo se borra si queda vacía en todos los balotarios.' : ' También se eliminará la categoría si queda vacía.'}`)) return
     try {
       const trackQuery =
-        isSuperAdminMode || allowTrackSwitch ? `?trackType=${activeTrackType}` : ''
+        isSuperAdminMode || allowTrackSwitch
+          ? `?trackType=${activeTrackType}&promotionHierarchy=${activeHierarchy}`
+          : ''
       const res = await apiClient.delete(`/categories/${id}${trackQuery}`)
       setCategories((prev) => {
         const remaining = prev.filter((c) => c.id !== id)
@@ -296,8 +315,8 @@ export function useAdminQuestions({
         return res.data?.categoryDeactivated === false ? prev : remaining
       })
       invalidateBankCaches()
-      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
-      else void loadFullBank(resolvedTrackType)
+      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType, activeHierarchy)
+      else void loadFullBank(resolvedTrackType, activeHierarchy)
       const deletedCount = res.data?.deletedQuestions as number | undefined
       setMsg({
         text:
@@ -326,14 +345,15 @@ export function useAdminQuestions({
         orderIndex: qForm.orderIndex,
         explanation: qForm.explanation,
         trackType: resolvedTrackType,
+        promotionHierarchy: activeHierarchy,
         answerOptions: qForm.options,
       })
       setMsg({ text: '✅ Pregunta creada', ok: true })
       setQForm({ ...qForm, questionText: '', explanation: '', orderIndex: qForm.orderIndex + 1 })
       setShowAddForm(false)
       invalidateBankCaches()
-      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
-      else void loadFullBank(resolvedTrackType)
+      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType, activeHierarchy)
+      else void loadFullBank(resolvedTrackType, activeHierarchy)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
     } finally {
@@ -362,8 +382,8 @@ export function useAdminQuestions({
       setMsg({ text: '✅ Pregunta actualizada', ok: true })
       setEditingQuestion(null)
       invalidateBankCaches()
-      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
-      else void loadFullBank(resolvedTrackType)
+      if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType, activeHierarchy)
+      else void loadFullBank(resolvedTrackType, activeHierarchy)
     } catch {
       setMsg({ text: 'Error al actualizar', ok: false })
     } finally {
@@ -385,12 +405,16 @@ export function useAdminQuestions({
   }
 
   const handleDeleteAll = async () => {
-    const trackSuffix = isSuperAdminMode || allowTrackSwitch ? ` del balotario ${trackLabel(activeTrackType)}` : ''
+    const trackSuffix = isSuperAdminMode || allowTrackSwitch
+      ? ` de ${hierarchyLabel(activeHierarchy)} (${trackLabel(activeTrackType)})`
+      : ''
     if (!confirm(`⚠️ ¿Eliminar TODAS las preguntas${trackSuffix}?`)) return
     if (!confirm('¿Estás SEGURO? Esta acción no se puede deshacer.')) return
     try {
       const trackQuery =
-        isSuperAdminMode || allowTrackSwitch ? `&trackType=${activeTrackType}` : ''
+        isSuperAdminMode || allowTrackSwitch
+          ? `&trackType=${activeTrackType}&promotionHierarchy=${activeHierarchy}`
+          : ''
       const res = await apiClient.delete(
         `/admin/Questions/bulk?ownOnly=${questionScope === 'own'}${trackQuery}`
       )
@@ -401,8 +425,8 @@ export function useAdminQuestions({
       invalidateBankCaches()
       setTimeout(() => {
         setMsg(null)
-        if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType)
-        else void loadFullBank(resolvedTrackType)
+        if (browseMode) void loadCategoryQuestions(selectedCategory, resolvedTrackType, activeHierarchy)
+        else void loadFullBank(resolvedTrackType, activeHierarchy)
       }, 2000)
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error'), ok: false })
@@ -412,9 +436,9 @@ export function useAdminQuestions({
   const loadAll = useCallback(async () => {
     invalidateBankCaches()
     if (browseMode) {
-      await loadCategoryQuestions(selectedCategory, resolvedTrackType)
+      await loadCategoryQuestions(selectedCategory, resolvedTrackType, activeHierarchy)
     } else {
-      await loadFullBank(resolvedTrackType)
+      await loadFullBank(resolvedTrackType, activeHierarchy)
     }
   }, [
     browseMode,
@@ -422,6 +446,7 @@ export function useAdminQuestions({
     loadCategoryQuestions,
     loadFullBank,
     resolvedTrackType,
+    activeHierarchy,
     selectedCategory,
   ])
 
@@ -588,6 +613,8 @@ export function useAdminQuestions({
     setQuestionScope,
     activeTrackType,
     setActiveTrackType,
+    activeHierarchy,
+    setActiveHierarchy,
     explanationFilter,
     setExplanationFilter,
     explanationCoverage,

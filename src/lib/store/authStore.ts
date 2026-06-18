@@ -19,6 +19,8 @@ export interface AuthUser {
   tenantLogoUrl?: string | null
   allowedTrackTypes?: string[]
   activeTrackType?: string | null
+  promotionGrade?: string | null
+  promotionHierarchy?: string | null
   mustChangePassword?: boolean
 }
 
@@ -73,6 +75,8 @@ export function normalizeUser(data: Record<string, unknown>): AuthUser {
     tenantLogoUrl: data.tenantLogoUrl != null ? String(data.tenantLogoUrl) : null,
     allowedTrackTypes,
     activeTrackType,
+    promotionGrade: data.promotionGrade != null ? String(data.promotionGrade) : null,
+    promotionHierarchy: data.promotionHierarchy != null ? String(data.promotionHierarchy) : null,
     mustChangePassword: Boolean(data.mustChangePassword),
   }
 }
