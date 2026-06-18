@@ -27,7 +27,6 @@ const ROLE_OPTIONS = [
   { value: '', label: 'Todos los roles' },
   { value: 'Student', label: 'Alumnos' },
   { value: 'AdminAgencia', label: 'Admin agencia' },
-  { value: 'AdminAcademia', label: 'Admin agencia (legacy)' },
   { value: 'SuperAdmin', label: 'SuperAdmin' },
 ]
 

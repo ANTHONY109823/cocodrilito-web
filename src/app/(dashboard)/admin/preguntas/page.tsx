@@ -8,9 +8,8 @@ import {
   isSuperAdmin,
   isTenantAdmin,
   isAdminAgencia,
-  isAdminAcademia,
 } from '@/lib/auth/roles'
-import { trackLabel, QUESTION_TRACK_OPTIONS, DEFAULT_QUESTION_TRACK } from '@/lib/constants/trackTypes'
+import { trackLabel, DEFAULT_QUESTION_TRACK, resolveUserTrackKey } from '@/lib/constants/trackTypes'
 import { hierarchyLabel } from '@/lib/constants/promotionGrades'
 import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 import { useAdminQuestions } from '@/hooks/useAdminQuestions'
@@ -29,14 +28,11 @@ export default function PreguntasPage() {
 
   const isSuperAdminMode = pathname.startsWith('/superadmin/preguntas') || isSuperAdmin(user?.role)
   const isAgencia = isAdminAgencia(user?.role, user?.tenantType)
-  const isAcademia = isAdminAcademia(user?.role, user?.tenantType)
-  const showOwnScope = isSuperAdminMode || isAcademia
 
   const viewerTrackType =
-    QUESTION_TRACK_OPTIONS.find((t) => t.key === user?.activeTrackType)?.value ??
-    DEFAULT_QUESTION_TRACK
+    resolveUserTrackKey(user) === 'AscensosOficiales' ? 2 : DEFAULT_QUESTION_TRACK
 
-  const allowTrackSwitch = isAgencia || (isAcademia && !isSuperAdminMode)
+  const allowTrackSwitch = isAgencia && !isSuperAdminMode
 
   const q = useAdminQuestions({
     isSuperAdminMode,
@@ -45,9 +41,7 @@ export default function PreguntasPage() {
     allowTrackSwitch,
   })
 
-  const canEditCurrentScope =
-    isSuperAdminMode || (q.questionScope === 'own' && isAcademia)
-  const readOnly = isAgencia || !canEditCurrentScope
+  const readOnly = !isSuperAdminMode
 
   useEffect(() => {
     loadFromStorage()
@@ -147,30 +141,9 @@ export default function PreguntasPage() {
       </div>
 
       <div className="flex gap-2 mb-5 flex-wrap">
-        {[
-          { key: 'base' as const, label: '📚 Banco de ascenso', hint: 'Preguntas compartidas de la plataforma' },
-          ...(showOwnScope
-            ? [{ key: 'own' as const, label: '🏷️ Propias de agencia', hint: 'Preguntas de tu institución' }]
-            : []),
-        ].map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => {
-              q.setQuestionScope(s.key)
-              q.setPage(1)
-            }}
-            className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
-            title={s.hint}
-            style={{
-              backgroundColor: q.questionScope === s.key ? primaryMix(20) : SURFACE,
-              color: q.questionScope === s.key ? NEON : TEXT_MUTED,
-              border: `1px solid ${q.questionScope === s.key ? NEON : 'var(--color-surface-border)'}`,
-            }}
-          >
-            {s.label}
-          </button>
-        ))}
+        <span className="text-xs text-[var(--color-text-muted)] self-center">
+          📚 Banco global de ascenso PNP
+        </span>
         <span className="text-xs text-gray-600 self-center ml-auto">{q.categorizedCount} en esta vista</span>
       </div>
 

@@ -21,23 +21,19 @@ import { SUBSCRIPTION_PLANS, formatPlanPrice, getPriceForDays } from '@/lib/cons
 const TRACK_OPTIONS: { value: number; label: string }[] = [
   { value: 1, label: 'Ascenso Suboficiales' },
   { value: 2, label: 'Ascenso Oficiales' },
-  { value: 3, label: 'Postulantes Suboficiales' },
-  { value: 4, label: 'Postulantes Oficiales' },
 ]
 
 const TRACK_TYPE_VALUE: Record<string, number> = {
   AscensosSuboficiales: 1,
   AscensosOficiales: 2,
-  PostulantesSuboficiales: 3,
-  PostulantesOficiales: 4,
 }
 
 const trackLabel = (track: string) =>
   ({
     AscensosSuboficiales: 'Ascenso Suboficiales',
     AscensosOficiales: 'Ascenso Oficiales',
-    PostulantesSuboficiales: 'Postulantes Suboficiales',
-    PostulantesOficiales: 'Postulantes Oficiales',
+    PostulantesSuboficiales: 'Ascenso Suboficiales',
+    PostulantesOficiales: 'Ascenso Oficiales',
   } as Record<string, string>)[track] ?? track
 
 interface TenantPlansSectionProps {
@@ -59,7 +55,7 @@ export function TenantPlansSection({
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
   const [planForm, setPlanForm] = useState({
-    trackType: 3,
+    trackType: 1,
     name: '',
     price: getPriceForDays(30),
     durationDays: 30,
@@ -88,7 +84,7 @@ export function TenantPlansSection({
 
   const resetPlanForm = () => {
     setPlanForm({
-      trackType: 3,
+      trackType: 1,
       name: '',
       price: getPriceForDays(30),
       durationDays: 30,
@@ -188,8 +184,7 @@ export function TenantPlansSection({
             <div>
               <label className="block text-xs text-gray-500 mb-1">Tipo de preparación</label>
               <select
-                className="input-admin"
-                style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
+                className="input-admin select-dark"
                 value={planForm.trackType}
                 onChange={(e) => setPlanForm({ ...planForm, trackType: Number(e.target.value) })}
               >

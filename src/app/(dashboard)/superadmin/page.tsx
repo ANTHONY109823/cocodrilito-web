@@ -195,7 +195,7 @@ function SuperAdminPageContent() {
       if (user) {
         setUser(normalizeUser({
           ...user,
-          role: tenant.tenantType === 'Agencia' ? 'AdminAgencia' : 'AdminAcademia',
+          role: 'AdminAgencia',
           tenantId: tenant.id,
           tenantName: tenant.name,
           tenantSlug: tenant.slug,

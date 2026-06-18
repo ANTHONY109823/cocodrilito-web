@@ -187,6 +187,15 @@ h3 {
   color: var(--color-text-muted);
 }
 
+.select-dark option,
+.input-admin option,
+.input-q option,
+select.input-admin option,
+select.input-q option {
+  background-color: #0a0a0a;
+  color: #f3f4f6;
+}
+
 .textarea-admin {
   width: 100%;
   padding: 10px 14px;

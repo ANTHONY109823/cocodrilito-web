@@ -12,11 +12,17 @@ export function isTenantAdmin(role?: string | null): boolean {
 }
 
 export function isAdminAgencia(role?: string | null, tenantType?: string | null): boolean {
-  return role === 'AdminAgencia' || tenantType === 'Agencia'
+  return (
+    role === 'AdminAgencia' ||
+    role === 'AdminAcademia' ||
+    tenantType === 'Agencia' ||
+    tenantType === 'Academia'
+  )
 }
 
-export function isAdminAcademia(role?: string | null, tenantType?: string | null): boolean {
-  return role === 'AdminAcademia' || tenantType === 'Academia'
+/** @deprecated Solo agencias de ascenso; legacy academia se trata como agencia. */
+export function isAdminAcademia(_role?: string | null, _tenantType?: string | null): boolean {
+  return false
 }
 
 export type NavContext = 'student' | 'superadmin' | 'tenant-admin'

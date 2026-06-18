@@ -1,6 +1,6 @@
 'use client'
 
-import { QUESTION_TRACK_OPTIONS, trackLabel } from '@/lib/constants/trackTypes'
+import { ASCENSO_TRACK_OPTIONS, trackLabel } from '@/lib/constants/trackTypes'
 import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
 import type { QuestionFormState } from '@/components/admin/preguntas/types'
 import { OPTION_LETTERS } from '@/components/admin/preguntas/types'
@@ -180,12 +180,11 @@ export function TrackSelector({ activeTrackType, onChange }: TrackSelectorProps)
         <div className="w-full md:max-w-xs">
           <label className="block text-xs text-gray-500 mb-1.5">Balotario activo</label>
           <select
-            className="input-admin"
-            style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
+            className="input-admin select-dark"
             value={activeTrackType}
             onChange={(e) => onChange(Number(e.target.value))}
           >
-            {QUESTION_TRACK_OPTIONS.map((track) => (
+            {ASCENSO_TRACK_OPTIONS.map((track) => (
               <option key={track.value} value={track.value}>
                 {track.label}
               </option>
