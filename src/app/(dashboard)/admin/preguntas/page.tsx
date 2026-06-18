@@ -150,11 +150,15 @@ export default function PreguntasPage() {
       {allowTrackSwitch && (
         <TrackSwitchBar
           activeTrackType={q.activeTrackType}
-          onChange={(track) => {
-            q.setActiveTrackType(track)
-            q.setPage(1)
-          }}
+          onChange={q.changeActiveTrack}
           hint="Solo lectura — Simulacros.pe gestiona el banco. Tus alumnos ven el balotario según el grado al que postulan."
+        />
+      )}
+
+      {isSuperAdminMode && !readOnly && (
+        <TrackSelector
+          activeTrackType={q.activeTrackType}
+          onChange={q.changeActiveTrack}
         />
       )}
 
@@ -171,16 +175,6 @@ export default function PreguntasPage() {
             : 'Sube ~1500 preguntas por jerarquía. No mezcles grados ni jerarquías en un mismo CSV.'
         }
       />
-
-      {isSuperAdminMode && !readOnly && (
-        <TrackSelector
-          activeTrackType={q.activeTrackType}
-          onChange={(track) => {
-            q.setActiveTrackType(track)
-            q.setPage(1)
-          }}
-        />
-      )}
 
       {q.msg && (
         <div
