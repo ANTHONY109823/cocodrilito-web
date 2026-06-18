@@ -12,7 +12,16 @@ export interface QuestionCountsData {
   byCategory: { category: string; count: number; missingExplanation?: number }[]
 }
 
-export function useQuestionCounts(track?: string | null, hierarchy?: string | number | null) {
+export interface UseQuestionCountsOptions {
+  /** Evita mostrar totales de otra jerarquía/balotario mientras carga. */
+  keepPreviousData?: boolean
+}
+
+export function useQuestionCounts(
+  track?: string | null,
+  hierarchy?: string | number | null,
+  options?: UseQuestionCountsOptions
+) {
   const trackKey = track?.trim() || null
   const hierarchyKey = hierarchy != null && hierarchy !== '' ? String(hierarchy) : null
   const swrKey = trackKey
@@ -25,7 +34,7 @@ export function useQuestionCounts(track?: string | null, hierarchy?: string | nu
     swrKey,
     swrFetcher,
     {
-      keepPreviousData: true,
+      keepPreviousData: options?.keepPreviousData ?? true,
       revalidateOnFocus: false,
       dedupingInterval: 120_000,
       revalidateIfStale: false,

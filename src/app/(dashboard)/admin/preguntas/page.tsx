@@ -95,8 +95,8 @@ export default function PreguntasPage() {
           <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">Banco de Preguntas de Ascenso</h1>
           <p className="text-[var(--color-text-muted)] text-xs mt-0.5">
             {readOnly && isAgencia
-              ? `${q.categorizedCount} preguntas en vista · jerarquía: ${hierarchyLabel(q.activeHierarchy)}`
-              : `${q.categorizedCount} preguntas en vista · ${q.categories.length} categorías · ${hierarchyLabel(q.activeHierarchy)} · ${trackLabel(isSuperAdminMode ? q.activeTrackType : allowTrackSwitch ? q.activeTrackType : viewerTrackType)}`}
+              ? `${q.countsPending ? '…' : q.categorizedCount} preguntas en vista · jerarquía: ${hierarchyLabel(q.activeHierarchy)}`
+              : `${q.countsPending ? '…' : q.categorizedCount} preguntas en vista · ${q.categories.length} categorías · ${hierarchyLabel(q.activeHierarchy)} · ${trackLabel(isSuperAdminMode ? q.activeTrackType : allowTrackSwitch ? q.activeTrackType : viewerTrackType)}`}
           </p>
         </div>
         {!readOnly && (
@@ -144,7 +144,7 @@ export default function PreguntasPage() {
         <span className="text-xs text-[var(--color-text-muted)] self-center">
           📚 Banco global de ascenso PNP
         </span>
-        <span className="text-xs text-gray-600 self-center ml-auto">{q.categorizedCount} en esta vista</span>
+        <span className="text-xs text-gray-600 self-center ml-auto">{q.countsPending ? '…' : q.categorizedCount} en esta vista</span>
       </div>
 
       {allowTrackSwitch && (

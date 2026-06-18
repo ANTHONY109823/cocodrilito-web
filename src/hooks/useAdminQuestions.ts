@@ -122,6 +122,8 @@ export function useAdminQuestions({
 
   const bankScopeReady = syncedScopeKey === bankScopeKey && !bankLoading && !listLoading
 
+  const countsEnabled = enabled && metaLoaded && (isSuperAdminMode || allowTrackSwitch)
+
   const {
     total: remoteTotal,
     byCategory: remoteCounts,
@@ -130,8 +132,13 @@ export function useAdminQuestions({
     withoutExplanation: remoteWithoutExplanation,
     needsReview: remoteNeedsReview,
     isLoading: countsLoading,
+    isValidating: countsValidating,
     refresh: refreshCounts,
-  } = useQuestionCounts(browseMode ? trackKey : null, browseMode ? resolvedHierarchy : null)
+  } = useQuestionCounts(
+    countsEnabled ? trackKey : null,
+    countsEnabled ? resolvedHierarchy : null,
+    { keepPreviousData: false }
+  )
 
   useEffect(() => {
     if (resolvedHierarchy !== activeHierarchy) {
@@ -143,6 +150,11 @@ export function useAdminQuestions({
     if (!enabled || !browseMode) return
     prefetchAscensoQuestionCounts(globalMutate)
   }, [enabled, browseMode, globalMutate])
+
+  useEffect(() => {
+    if (!countsEnabled) return
+    void refreshCounts()
+  }, [countsEnabled, trackKey, resolvedHierarchy, refreshCounts])
 
   const loadMeta = useCallback(async () => {
     if (metaLoaded) return
@@ -185,15 +197,7 @@ export function useAdminQuestions({
   const loadFullBank = useCallback(async (track: number, hierarchy: number) => {
     const scopeKey = `${track}-${hierarchy}`
     const requestId = ++trackRequestRef.current
-    const cached = bankCacheRef.current.get(scopeKey)
-    if (cached) {
-      if (requestId !== trackRequestRef.current) return
-      setQuestions(cached)
-      setBankLoading(false)
-      markScopePartial(scopeKey, 'questions')
-    } else {
-      setBankLoading(true)
-    }
+    setBankLoading(true)
 
     try {
       const res = await apiClient.get(
@@ -571,11 +575,34 @@ export function useAdminQuestions({
     )
   }, [browseMode, categories, remoteCounts, scopedQuestions])
 
-  const categorizedCount = browseMode
-    ? remoteTotal || Object.values(counts).reduce((sum, n) => sum + n, 0)
-    : scopedQuestions.filter((q) =>
+  const countsPending = countsEnabled && (countsLoading || countsValidating)
+
+  const localCategorizedCount = useMemo(
+    () =>
+      scopedQuestions.filter((q) =>
         categories.some((cat) => categoryMatches(q.category, cat.name))
-      ).length
+      ).length,
+    [scopedQuestions, categories]
+  )
+
+  const categorizedCount = useMemo(() => {
+    if (countsPending) return 0
+    if (countsEnabled && remoteTotal > 0) return remoteTotal
+    if (!bankScopeReady) return 0
+    if (browseMode) {
+      const fromCategories = Object.values(counts).reduce((sum, n) => sum + n, 0)
+      return remoteTotal || fromCategories
+    }
+    return localCategorizedCount
+  }, [
+    countsPending,
+    countsEnabled,
+    remoteTotal,
+    bankScopeReady,
+    browseMode,
+    counts,
+    localCategorizedCount,
+  ])
 
   const uncategorizedCount =
     !bankScopeReady || browseMode
@@ -586,9 +613,14 @@ export function useAdminQuestions({
         ).length
 
   const explanationCoverage = useMemo(() => {
-    if (browseMode) {
+    const coverageTotal =
+      countsEnabled && remoteTotal > 0 && !countsPending
+        ? remoteTotal
+        : categorizedCount
+
+    if (browseMode || (countsEnabled && remoteTotal > 0 && !countsPending)) {
       return {
-        total: categorizedCount,
+        total: coverageTotal,
         withExplanation: remoteWithExplanation,
         withoutExplanation: remoteWithoutExplanation,
         needsReview: remoteNeedsReview,
@@ -607,7 +639,10 @@ export function useAdminQuestions({
     }
   }, [
     browseMode,
+    countsEnabled,
+    countsPending,
     categorizedCount,
+    remoteTotal,
     remoteWithExplanation,
     remoteWithoutExplanation,
     remoteNeedsReview,
@@ -671,7 +706,7 @@ export function useAdminQuestions({
     [selectedCategoryQuestions]
   )
 
-  const loading = !metaLoaded || (browseMode ? countsLoading && categorizedCount === 0 : bankLoading)
+  const loading = !metaLoaded || countsPending || (browseMode ? countsLoading && categorizedCount === 0 : bankLoading)
 
   return {
     questions,
@@ -715,6 +750,7 @@ export function useAdminQuestions({
     fileRefs,
     scopedQuestions,
     categorizedCount,
+    countsPending,
     uncategorizedCount,
     bankScopeReady,
     filtered,
