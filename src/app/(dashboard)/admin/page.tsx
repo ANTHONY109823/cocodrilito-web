@@ -134,6 +134,7 @@ function AdminPageContent() {
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const excelInputRef = useRef<HTMLInputElement>(null)
   const [uploadingExcel, setUploadingExcel] = useState(false)
+  const [importResult, setImportResult] = useState<{ created: number; failed: number; errors: string[] } | null>(null)
 
   const [editTarget, setEditTarget] = useState<User | null>(null)
   const [editForm, setEditForm] = useState({
@@ -227,17 +228,24 @@ function AdminPageContent() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingExcel(true)
+    setImportResult(null)
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await apiClient.post(
-        `/admin/users/import/excel?trackType=${form.trackType}`,
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      )
-      setMsg({ text: `✅ ${res.data.created} usuarios importados`, ok: true })
-      if (res.data.errors?.length > 0) console.warn('Errores:', res.data.errors)
-      void loadData()
+      const res = await apiClient.post('/admin/users/import/excel', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const data = res.data as { created?: number; failed?: number; errors?: string[]; message?: string }
+      const created = data.created ?? 0
+      const errors = data.errors ?? []
+      setImportResult({ created, failed: data.failed ?? errors.length, errors })
+      setMsg({
+        text: created > 0
+          ? `✅ ${created} usuarios importados${errors.length ? ` · ${errors.length} filas con error` : ''}`
+          : `⚠️ No se importó ningún usuario${errors.length ? ` · ${errors.length} errores` : ''}`,
+        ok: created > 0,
+      })
+      if (created > 0) void loadData()
     } catch (err: unknown) {
       setMsg({ text: getApiErrorMessage(err, 'Error al importar'), ok: false })
     } finally {
@@ -246,12 +254,18 @@ function AdminPageContent() {
     }
   }
 
-  const handleDownloadExcelTemplate = () => {
-    const csv = 'Nombres,Apellido paterno,Apellido materno,DNI,Grado actual,Días,Balotario,Grado postulación\nJuan,Peréz,Mayta,12345678,Alférez,180,Oficiales,Teniente\n'
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'plantilla_usuarios.csv'; a.click()
+  const handleDownloadExcelTemplate = async () => {
+    try {
+      const res = await apiClient.get('/admin/users/import/template', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(res.data as Blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'plantilla_usuarios_agencia.xlsx'
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'No se pudo descargar la plantilla'), ok: false })
+    }
   }
 
   useEffect(() => { loadFromStorage() }, [])
@@ -1168,10 +1182,37 @@ function AdminPageContent() {
             {/* IMPORTAR DESDE EXCEL */}
             <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${purpleMix(25)}` }}>
               <h3 className="text-[var(--color-text-primary)] font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
-              <p className="text-gray-500 text-xs mb-3">
-                Columnas: Nombres, Apellido paterno, Apellido materno, DNI, Grado actual, Días (30/60/180), Balotario (opcional), Grado postulación (opcional).
-                La contraseña inicial será el DNI de cada fila.
+              <p className="text-gray-500 text-xs mb-2">
+                Descargue la plantilla <strong className="text-[var(--color-text-secondary)]">.xlsx</strong>, complete una fila por alumno y súbala aquí.
+                Funciona igual para todas las agencias (Partner, etc.).
               </p>
+              <ul className="text-gray-500 text-xs mb-3 space-y-1 list-disc pl-4">
+                <li>Columnas: Nombres, Apellido paterno, Apellido materno, DNI, Grado actual, Días plan (30/60/180).</li>
+                <li>Usuario de acceso: inicial + apellido paterno (Juan Pérez → <strong className="text-[var(--color-text-secondary)]">JPEREZ</strong>).</li>
+                <li>Contraseña sugerida: el DNI. Sin correo electrónico.</li>
+                <li>El grado actual asigna automáticamente el balotario del ascenso siguiente.</li>
+              </ul>
+              {importResult && (
+                <div className="rounded-xl px-3 py-2 mb-3 text-xs"
+                  style={{
+                    background: importResult.created > 0 ? 'var(--color-primary-bg)' : 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
+                    border: `1px solid ${importResult.created > 0 ? primaryMix(35) : 'color-mix(in srgb, var(--color-danger) 35%, transparent)'}`,
+                  }}>
+                  <p className="font-semibold text-[var(--color-text-primary)] mb-1">
+                    Importados: {importResult.created} · Errores: {importResult.failed}
+                  </p>
+                  {importResult.errors.length > 0 && (
+                    <ul className="max-h-32 overflow-y-auto space-y-0.5 text-gray-400">
+                      {importResult.errors.slice(0, 20).map((err) => (
+                        <li key={err}>{err}</li>
+                      ))}
+                      {importResult.errors.length > 20 && (
+                        <li>… y {importResult.errors.length - 20} errores más</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              )}
               <div className="flex gap-3 flex-wrap">
                 <button type="button" onClick={handleDownloadExcelTemplate}
                   className="px-4 py-2 rounded-xl text-sm font-medium"
