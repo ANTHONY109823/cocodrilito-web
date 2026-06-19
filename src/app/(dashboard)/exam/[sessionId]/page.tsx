@@ -22,6 +22,7 @@ import {
 } from '@/lib/constants/theme'
 import { Modal, Button } from '@/components/ui'
 import { cn } from '@/lib/utils/cn'
+import { optionLetter } from '@/lib/utils/optionLetter'
 
 const ORANGE = '#FF8A3D'
 
@@ -241,7 +242,7 @@ export default function ExamPage() {
       ? session.questions.slice(0, currentIdx + 1).filter((item) => item.category === cat).length
       : 0
     const opts = q
-      ? [...q.options].sort((a, b) => a.optionIndex - b.optionIndex).slice(0, 4)
+      ? [...q.options].sort((a, b) => a.optionIndex - b.optionIndex)
       : []
     return { categoryQuestions: catQs, positionInCategory: pos, sortedOptions: opts, currentQ: q ?? null }
   }, [session, currentIdx])
@@ -349,7 +350,6 @@ export default function ExamPage() {
         <div className="space-y-3">
         {sortedOptions.map((opt, i) => {
               const isSelected = currentAnswer === opt.id
-              const letters = ['A', 'B', 'C', 'D']
               return (
                 <button
                   key={opt.id}
@@ -370,7 +370,7 @@ export default function ExamPage() {
                         : 'bg-white text-[#0A0A0A] border-[var(--color-surface-border)] dark:bg-[var(--color-surface-elevated)] dark:text-[var(--color-text-primary)]'
                     )}
                   >
-                    {letters[i]}
+                    {optionLetter(i)}
                   </span>
                   <span className="exam-option-text text-sm sm:text-base leading-relaxed pt-0.5 font-medium">
                     {opt.optionText}

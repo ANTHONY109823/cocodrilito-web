@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 import { ExplanationBlock } from '@/components/exam/ExplanationBlock'
+import { optionLetter } from '@/lib/utils/optionLetter'
+import { cn } from '@/lib/utils/cn'
 
 import {
   NEON,
@@ -94,6 +96,36 @@ export default function ResultPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      <style>{`
+        .result-option-text {
+          color: var(--color-text-primary) !important;
+        }
+        .result-option-row-correct {
+          background-color: #D1FAE5 !important;
+          border-color: #059669 !important;
+        }
+        .result-option-row-wrong {
+          background-color: #FEE2E2 !important;
+          border-color: #DC2626 !important;
+        }
+        .result-option-badge-correct {
+          background-color: #059669 !important;
+          color: #FFFFFF !important;
+        }
+        .result-option-badge-wrong {
+          background-color: #DC2626 !important;
+          color: #FFFFFF !important;
+        }
+        .result-option-badge-neutral {
+          background-color: #FFFFFF !important;
+          color: #0A0A0A !important;
+          border: 1px solid var(--color-surface-border);
+        }
+        [data-theme='dark'] .result-option-badge-neutral {
+          background-color: var(--color-surface-elevated) !important;
+          color: var(--color-text-primary) !important;
+        }
+      `}</style>
       {/* BOTÓN VOLVER */}
       <Link href="/exams"
         className="inline-flex items-center gap-1 text-gray-500 hover:text-[var(--color-text-primary)] text-sm mb-6 transition-colors">
@@ -187,7 +219,6 @@ export default function ResultPage() {
               No hay detalle de respuestas disponible para esta sesión.
             </p>
           ) : answerList.map((ans, i) => {
-            const letters = ['A', 'B', 'C', 'D']
             return (
               <div key={ans.questionId} className="rounded-2xl p-4"
                 style={{
@@ -208,24 +239,38 @@ export default function ResultPage() {
                       const isSelected = opt.id === ans.selectedOptionId
                       const isWrong = isSelected && !isCorrect
                       return (
-                        <div key={opt.id}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
-                          style={{
-                            backgroundColor: isCorrect ? `${primaryMix(12)}` : isWrong ? `${redBrightMix(12)}` : 'transparent',
-                            border: `1px solid ${isCorrect ? `${primaryMix(30)}` : isWrong ? `${redBrightMix(30)}` : 'transparent'}`
-                          }}>
-                          <span className="w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold shrink-0"
-                            style={{
-                              backgroundColor: isCorrect ? NEON : isWrong ? RED : 'var(--color-surface-border)',
-                              color: (isCorrect || isWrong) ? '#000' : '#6B7280'
-                            }}>
-                            {letters[j]}
+                        <div
+                          key={opt.id}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm border',
+                            isCorrect && 'result-option-row-correct',
+                            isWrong && 'result-option-row-wrong',
+                            !isCorrect && !isWrong && 'border-transparent'
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0',
+                              isCorrect && 'result-option-badge-correct',
+                              isWrong && 'result-option-badge-wrong',
+                              !isCorrect && !isWrong && 'result-option-badge-neutral'
+                            )}
+                          >
+                            {optionLetter(j)}
                           </span>
-                          <span style={{ color: isCorrect ? '#fff' : isWrong ? '#fff' : '#6B7280' }}>
+                          <span className="result-option-text flex-1 leading-relaxed font-medium">
                             {opt.optionText}
                           </span>
-                          {isCorrect && <span className="ml-auto text-xs font-bold" style={{ color: NEON }}>✓ correcta</span>}
-                          {isWrong && <span className="ml-auto text-xs font-bold" style={{ color: RED }}>✗ tu respuesta</span>}
+                          {isCorrect && (
+                            <span className="ml-auto text-xs font-bold shrink-0 text-emerald-700">
+                              ✓ correcta
+                            </span>
+                          )}
+                          {isWrong && (
+                            <span className="ml-auto text-xs font-bold shrink-0 text-red-600">
+                              ✗ tu respuesta
+                            </span>
+                          )}
                         </div>
                       )
                     })}

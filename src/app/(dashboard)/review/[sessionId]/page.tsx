@@ -5,8 +5,10 @@ import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 import { ExplanationBlock } from '@/components/exam/ExplanationBlock'
+import { optionLetter } from '@/lib/utils/optionLetter'
+import { cn } from '@/lib/utils/cn'
 
-import { NEON, INPUT_BG, SURFACE, TEXT_MUTED, TEXT_SECONDARY, primaryMix } from '@/lib/constants/theme'
+import { NEON, SURFACE, primaryMix } from '@/lib/constants/theme'
 
 interface ReviewQuestion {
   id: string
@@ -79,7 +81,6 @@ export default function ReviewPage() {
   }
 
   const currentQ = review.questions[currentIdx]
-  const letters = ['A', 'B', 'C', 'D']
   const isLast = currentIdx === review.questions.length - 1
 
   return (
@@ -87,6 +88,22 @@ export default function ReviewPage() {
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         .fade-in { animation: fadeIn 0.3s ease forwards; }
+        .review-option-text {
+          color: var(--color-text-primary) !important;
+        }
+        .review-option-row-correct {
+          background-color: #D1FAE5 !important;
+          border-color: #059669 !important;
+        }
+        .review-option-badge-correct {
+          background-color: #059669 !important;
+          color: #FFFFFF !important;
+        }
+        .review-option-badge-neutral {
+          background-color: #FFFFFF !important;
+          color: #0A0A0A !important;
+          border: 1px solid var(--color-surface-border);
+        }
       `}</style>
 
       {/* HEADER */}
@@ -134,34 +151,32 @@ export default function ReviewPage() {
             .sort((a, b) => a.optionIndex - b.optionIndex)
             .map((opt, i) => {
               const isCorrect = opt.isCorrect
-              let borderColor = 'var(--color-surface-border)'
-              let bgColor = INPUT_BG
-              let textColor = TEXT_SECONDARY
-
-              if (revealed) {
-                if (isCorrect) {
-                  borderColor = NEON
-                  bgColor = primaryMix(12)
-                  textColor = 'var(--color-text-primary)'
-                }
-              }
 
               return (
-                <div key={opt.id}
-                  className="rounded-xl p-3 flex items-start gap-3 transition-all"
-                  style={{ background: bgColor, border: `1px solid ${borderColor}` }}>
-                  <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
-                    style={{
-                      backgroundColor: revealed && isCorrect ? NEON : 'var(--color-surface-border)',
-                      color: revealed && isCorrect ? '#000000' : TEXT_MUTED,
-                    }}>
-                    {letters[i]}
+                <div
+                  key={opt.id}
+                  className={cn(
+                    'rounded-xl p-3 flex items-start gap-3 transition-all border-2',
+                    revealed && isCorrect
+                      ? 'review-option-row-correct'
+                      : 'bg-[var(--color-input-bg)] border-[var(--color-surface-border)]'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border',
+                      revealed && isCorrect
+                        ? 'review-option-badge-correct'
+                        : 'review-option-badge-neutral'
+                    )}
+                  >
+                    {optionLetter(i)}
                   </span>
-                  <span className="text-sm leading-relaxed" style={{ color: textColor }}>
+                  <span className="review-option-text text-sm sm:text-base leading-relaxed pt-0.5 font-medium flex-1">
                     {opt.optionText}
                   </span>
                   {revealed && isCorrect && (
-                    <span className="ml-auto text-xs font-bold shrink-0" style={{ color: NEON }}>
+                    <span className="ml-auto text-xs font-bold shrink-0 text-emerald-700">
                       ✓ correcta
                     </span>
                   )}
