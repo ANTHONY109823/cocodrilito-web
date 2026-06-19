@@ -62,9 +62,7 @@ export default function ExamPage() {
   const [questionTime, setQuestionTime] = useState(0)
   const [loading, setLoading] = useState(true)
   const [finishing, setFinishing] = useState(false)
-  const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [showFinishModal, setShowFinishModal] = useState(false)
-  const answeringRef = useRef(false)
   const pendingAnswersRef = useRef<Array<{
     questionId: string
     selectedOptionId: string | null
@@ -205,12 +203,11 @@ export default function ExamPage() {
   }, [session, handleFinish])
 
   const handleAnswer = (optionId: string) => {
-    if (!session || answeringRef.current || selectedOption) return
-    answeringRef.current = true
-
+    if (!session) return
     const q = session.questions[currentIdx]
+    if (!q) return
+
     const spentMs = questionTime
-    setSelectedOption(optionId)
     setAnswers((prev) => ({ ...prev, [q.id]: optionId }))
 
     void queueAnswer({
@@ -218,18 +215,6 @@ export default function ExamPage() {
       selectedOptionId: optionId,
       timeSpentMs: spentMs,
     })
-
-    const total = getEffectiveQuestionCount(session.totalQuestions, session.questions.length)
-    const isLast = currentIdx >= total - 1
-
-    window.setTimeout(() => {
-      if (!isLast) {
-        setCurrentIdx((prev) => prev + 1)
-        setQuestionTime(0)
-      }
-      setSelectedOption(null)
-      answeringRef.current = false
-    }, 220)
   }
 
   const formatTime = (s: number) => {
@@ -285,14 +270,14 @@ export default function ExamPage() {
 
   const goPrev = () => {
     setCurrentIdx((prev) => prev - 1)
-    setSelectedOption(answers[session.questions[currentIdx - 1]?.id] || null)
     setQuestionTime(0)
   }
   const goNext = () => {
     setCurrentIdx((prev) => prev + 1)
-    setSelectedOption(answers[session.questions[currentIdx + 1]?.id] || null)
     setQuestionTime(0)
   }
+
+  const currentAnswer = currentQ ? answers[currentQ.id] ?? null : null
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -311,12 +296,12 @@ export default function ExamPage() {
           {currentQ?.category ? (
             <div className="text-xs mt-0.5" style={{ color: NEON }}>
               {currentQ.category}
-              <span className="text-gray-500">
+              <span className="text-[var(--color-text-muted)]">
                 {' '}· Pregunta {positionInCategory} de {categoryQuestions.length} en esta categoría
               </span>
             </div>
           ) : null}
-          <div className="text-gray-500 text-xs mt-0.5">
+          <div className="text-[var(--color-text-muted)] text-xs mt-0.5">
             Pregunta {currentIdx + 1} de {effectiveTotal}
           </div>
         </div>
@@ -326,7 +311,7 @@ export default function ExamPage() {
             style={{ color: timerColor, textShadow: `0 0 15px ${timerColor}` }}>
             {formatTime(timeLeft)}
           </div>
-          <div className="text-xs text-gray-600">tiempo restante</div>
+          <div className="text-xs text-[var(--color-text-muted)]">tiempo restante</div>
         </div>
       </div>
 
@@ -339,7 +324,7 @@ export default function ExamPage() {
       {/* PREGUNTA */}
       <div className="rounded-2xl p-5 mb-4 fade-in" key={currentIdx}
         style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${primaryMix(15)}` }}>
-        <div className="text-xs text-gray-600 mb-3 uppercase tracking-wider">
+        <div className="text-xs text-[var(--color-text-muted)] mb-3 uppercase tracking-wider">
           Pregunta {currentIdx + 1}
         </div>
         <p className="text-[var(--color-text-primary)] text-base font-medium leading-relaxed mb-6">
@@ -348,29 +333,35 @@ export default function ExamPage() {
 
         <div className="space-y-3">
         {sortedOptions.map((opt, i) => {
-              const isSelected = selectedOption === opt.id
+              const isSelected = currentAnswer === opt.id
               const letters = ['A', 'B', 'C', 'D']
               return (
-                <button key={opt.id}
-                  onClick={() => !selectedOption && handleAnswer(opt.id)}
-                  disabled={!!selectedOption}
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => handleAnswer(opt.id)}
                   className="w-full text-left rounded-xl p-4 transition-all flex items-start gap-3"
                   style={{
                     background: isSelected ? primaryMix(12) : INPUT_BG,
                     border: `1px solid ${isSelected ? NEON : 'var(--color-surface-border)'}`,
                     boxShadow: isSelected ? `0 0 15px ${primaryMix(20)}` : 'none',
-                    cursor: selectedOption ? 'default' : 'pointer',
-                    transform: isSelected ? 'scale(1.01)' : 'scale(1)'
-                  }}>
-                  <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                    cursor: 'pointer',
+                    transform: isSelected ? 'scale(1.01)' : 'scale(1)',
+                  }}
+                >
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
                     style={{
                       backgroundColor: isSelected ? NEON : 'var(--color-surface-border)',
-                      color: isSelected ? '#000' : '#9CA3AF'
-                    }}>
+                      color: isSelected ? '#0A0A0A' : 'var(--color-text-primary)',
+                    }}
+                  >
                     {letters[i]}
                   </span>
-                  <span className="text-sm leading-relaxed"
-                    style={{ color: isSelected ? '#fff' : '#D1D5DB' }}>
+                  <span
+                    className="text-sm leading-relaxed"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
                     {opt.optionText}
                   </span>
                 </button>
@@ -383,34 +374,35 @@ export default function ExamPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <button
+            type="button"
             onClick={goPrev}
             disabled={currentIdx === 0}
             className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
             style={{
               backgroundColor: currentIdx === 0 ? SURFACE : 'var(--color-surface-elevated)',
-              color: currentIdx === 0 ? '#374151' : '#9CA3AF',
+              color: currentIdx === 0 ? 'var(--color-text-muted)' : 'var(--color-text-secondary)',
               border: '1px solid var(--color-surface-border)',
               cursor: currentIdx === 0 ? 'not-allowed' : 'pointer',
             }}>
             ← Anterior
           </button>
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-[var(--color-text-muted)]">
             {answeredCount} de {effectiveTotal} respondidas
           </div>
           {isLast ? (
             allAnswered ? (
-              <button onClick={() => setShowFinishModal(true)}
+              <button type="button" onClick={() => setShowFinishModal(true)}
                 className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
-                style={{ background: `linear-gradient(135deg, ${NEON}, ${POLICE_GREEN_DARK})`, color: 'var(--color-text-primary)', boxShadow: `0 0 20px ${primaryMix(40)}` }}>
+                style={{ background: `linear-gradient(135deg, ${NEON}, ${POLICE_GREEN_DARK})`, color: '#fff', boxShadow: `0 0 20px ${primaryMix(40)}` }}>
                 Ver resultado →
               </button>
             ) : (
-              <span className="px-5 py-2.5 text-xs text-gray-600">Última pregunta</span>
+              <span className="px-5 py-2.5 text-xs text-[var(--color-text-muted)]">Última pregunta</span>
             )
           ) : (
-            <button onClick={goNext}
+            <button type="button" onClick={goNext}
               className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-              style={{ backgroundColor: 'var(--color-surface-elevated)', color: 'var(--color-text-muted)', border: '1px solid var(--color-surface-border)' }}>
+              style={{ backgroundColor: 'var(--color-surface-elevated)', color: 'var(--color-text-primary)', border: '1px solid var(--color-surface-border)' }}>
               Siguiente →
             </button>
           )}
@@ -418,6 +410,7 @@ export default function ExamPage() {
 
         {/* Botón Finalizar: siempre visible, distinto de la navegación */}
         <button
+          type="button"
           onClick={() => setShowFinishModal(true)}
           disabled={finishing}
           className="w-full px-6 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90"
@@ -450,7 +443,7 @@ export default function ExamPage() {
           <div className="space-y-2">
             <div className="flex justify-between"><span>Respondidas:</span><strong className="text-[var(--color-text-primary)]">{answeredCount} de {effectiveTotal}</strong></div>
             <div className="flex justify-between"><span>Sin responder:</span><strong style={{ color: ORANGE }}>{unansweredCount} preguntas</strong></div>
-            <p className="pt-2 text-gray-400">
+            <p className="pt-2 text-[var(--color-text-muted)]">
               Las preguntas sin responder contarán como incorrectas en tu resultado. ¿Estás seguro de que
               quieres finalizar?
             </p>
