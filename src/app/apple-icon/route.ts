@@ -2,6 +2,6 @@ import { resolveTenantIconResponse } from '@/lib/tenant/resolveTenantIconRespons
 
 export const revalidate = 600
 
-export default async function AppleIcon() {
+export async function GET() {
   return resolveTenantIconResponse()
 }
