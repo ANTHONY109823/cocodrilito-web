@@ -1,3 +1,21 @@
+export function buildStudentFullName(
+  firstName: string,
+  paternalSurname: string,
+  maternalSurname?: string
+): string {
+  return [firstName, paternalSurname, maternalSurname ?? '']
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(' ')
+}
+
+export function generateStudentLoginUsernameFromParts(
+  firstName: string,
+  paternalSurname: string
+): string | null {
+  return generateStudentLoginUsername(buildStudentFullName(firstName, paternalSurname))
+}
+
 /**
  * Usuario de acceso alumno: inicial del nombre + apellido paterno (ej. Juan Pérez → JPEREZ).
  * Debe coincidir con StudentLoginUsernameHelper en el backend.

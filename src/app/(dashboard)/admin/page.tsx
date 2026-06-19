@@ -47,7 +47,11 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
-import { generateStudentLoginUsername } from '@/lib/utils/studentLoginUsername'
+import {
+  buildStudentFullName,
+  generateStudentLoginUsername,
+  generateStudentLoginUsernameFromParts,
+} from '@/lib/utils/studentLoginUsername'
 interface User {
   id: string
   fullName: string
@@ -149,12 +153,15 @@ function AdminPageContent() {
   const [modalLoading, setModalLoading] = useState(false)
   const [createConfirmOpen, setCreateConfirmOpen] = useState(false)
   const [createdUser, setCreatedUser] = useState<{
-    fullName: string; email: string; loginUsername?: string; dni: string; planDays: number; expiresAt?: string
+    fullName: string; loginUsername?: string; dni: string; temporaryPassword?: string; planDays: number; expiresAt?: string
     currentGradeLabel?: string; postulationGradeLabel?: string; trackLabel?: string
   } | null>(null)
 
   const [form, setForm] = useState({
-    fullName: '', dni: '', email: '', password: '',
+    firstName: '',
+    paternalSurname: '',
+    maternalSurname: '',
+    dni: '',
     currentGrade: null as number | null,
     planDays: 180,
     trackType: DEFAULT_QUESTION_TRACK,
@@ -240,7 +247,7 @@ function AdminPageContent() {
   }
 
   const handleDownloadExcelTemplate = () => {
-    const csv = 'Nombre Completo,DNI,Email,Contraseña,Grado actual,Días,Balotario,Grado postulación\nJuan Pérez Torres,12345678,juan@gmail.com,Ejemplo1234,Alférez,180,Oficiales,Teniente\n'
+    const csv = 'Nombres,Apellido paterno,Apellido materno,DNI,Grado actual,Días,Balotario,Grado postulación\nJuan,Peréz,Mayta,12345678,Alférez,180,Oficiales,Teniente\n'
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -261,13 +268,16 @@ function AdminPageContent() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
-    if (form.currentGrade == null) {
-      setMsg({ text: 'Selecciona el grado PNP actual', ok: false })
+    if (!form.firstName.trim() || !form.paternalSurname.trim()) {
+      setMsg({ text: 'Indica nombres y apellido paterno', ok: false })
       return
     }
-    const pwdError = validatePassword(form.password)
-    if (pwdError) {
-      setMsg({ text: pwdError, ok: false })
+    if (form.dni.length !== 8 || !/^\d+$/.test(form.dni)) {
+      setMsg({ text: 'El DNI debe tener 8 dígitos', ok: false })
+      return
+    }
+    if (form.currentGrade == null) {
+      setMsg({ text: 'Selecciona el grado PNP actual', ok: false })
       return
     }
     setCreateConfirmOpen(true)
@@ -279,12 +289,17 @@ function AdminPageContent() {
     setMsg(null)
     try {
       const savedForm = { ...form }
+      const fullName = buildStudentFullName(
+        savedForm.firstName,
+        savedForm.paternalSurname,
+        savedForm.maternalSurname
+      )
       const rank = rankLabelFromCurrentGrade(savedForm.currentGrade!)
       const res = await apiClient.post('/admin/users', {
-        fullName: savedForm.fullName,
+        fullName,
         dni: savedForm.dni,
-        email: savedForm.email,
-        password: savedForm.password,
+        email: '',
+        password: savedForm.dni,
         rank,
         unit: '',
         planDays: savedForm.planDays,
@@ -294,16 +309,19 @@ function AdminPageContent() {
       })
       const data = res.data as {
         fullName?: string
-        email?: string
         loginUsername?: string
+        temporaryPassword?: string
         expiresAt?: string
         planDays?: number
       }
       setCreatedUser({
-        fullName: data.fullName ?? savedForm.fullName,
-        email: data.email ?? savedForm.email,
-        loginUsername: data.loginUsername ?? generateStudentLoginUsername(savedForm.fullName) ?? undefined,
+        fullName: data.fullName ?? fullName,
+        loginUsername:
+          data.loginUsername ??
+          generateStudentLoginUsernameFromParts(savedForm.firstName, savedForm.paternalSurname) ??
+          undefined,
         dni: savedForm.dni,
+        temporaryPassword: data.temporaryPassword ?? savedForm.dni,
         planDays: data.planDays ?? savedForm.planDays,
         expiresAt: data.expiresAt,
         currentGradeLabel: CURRENT_GRADE_SELECT_OPTIONS.find((g) => g.value === savedForm.currentGrade)?.label,
@@ -311,7 +329,10 @@ function AdminPageContent() {
         trackLabel: trackLabel(savedForm.trackType),
       })
       setForm({
-        fullName: '', dni: '', email: '', password: '',
+        firstName: '',
+        paternalSurname: '',
+        maternalSurname: '',
+        dni: '',
         currentGrade: null,
         planDays: 180,
         trackType: DEFAULT_QUESTION_TRACK,
@@ -577,7 +598,8 @@ function AdminPageContent() {
     return d
   })()
 
-  const previewLoginUsername = generateStudentLoginUsername(form.fullName)
+  const previewFullName = buildStudentFullName(form.firstName, form.paternalSurname, form.maternalSurname)
+  const previewLoginUsername = generateStudentLoginUsernameFromParts(form.firstName, form.paternalSurname)
 
   const userSubTabs: { key: UserSubTab; label: string; count: number | null; href: string }[] = [
     { key: 'activos', label: 'Activos', count: activeUsers.length, href: '/admin?tab=users&sub=activos' },
@@ -768,8 +790,8 @@ function AdminPageContent() {
                     <span className="text-[var(--color-text-primary)] font-medium">{createdUser.fullName}</span>
                     <span className="text-gray-500">Usuario de acceso</span>
                     <span className="text-[var(--color-text-primary)] font-bold tracking-wide">{createdUser.loginUsername ?? '—'}</span>
-                    <span className="text-gray-500">Email (contacto)</span>
-                    <span className="text-[var(--color-text-primary)]">{createdUser.email}</span>
+                    <span className="text-gray-500">Contraseña sugerida</span>
+                    <span className="text-[var(--color-text-primary)] font-medium">{createdUser.temporaryPassword ?? createdUser.dni}</span>
                     <span className="text-gray-500">DNI</span>
                     <span className="text-[var(--color-text-primary)]">{createdUser.dni}</span>
                     {createdUser.currentGradeLabel && (
@@ -800,7 +822,7 @@ function AdminPageContent() {
                     )}
                   </div>
                   <p className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
-                    El alumno ingresa con su usuario y contraseña en la URL de la agencia.
+                    El alumno ingresa con su usuario y contraseña (sugerida: su DNI) en la URL de la agencia. Puede cambiar la contraseña cuando desee.
                   </p>
                 </div>
                 <button type="button" onClick={() => setCreatedUser(null)}
@@ -1063,19 +1085,29 @@ function AdminPageContent() {
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               {[
-                { label: 'Nombre completo *', key: 'fullName', placeholder: 'Juan Pérez Torres' },
-                { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '12345678' },
-                { label: 'Email (contacto) *', key: 'email', placeholder: 'juan@gmail.com', type: 'email' },
-                { label: 'Contraseña temporal *', key: 'password', placeholder: 'Mínimo 8 caracteres', type: 'password' },
+                { label: 'Nombre(s) *', key: 'firstName', placeholder: 'Juan' },
+                { label: 'Apellido paterno *', key: 'paternalSurname', placeholder: 'Pérez' },
+                { label: 'Apellido materno', key: 'maternalSurname', placeholder: 'Mayta' },
+                { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '12345678', maxLength: 8 },
               ].map(field => {
                 const fieldKey = field.key as keyof typeof form
                 return (
                 <div key={field.key}>
                   <label className="block text-xs text-gray-500 mb-1.5">{field.label}</label>
-                  <input className="input-admin" type={field.type || 'text'} placeholder={field.placeholder}
+                  <input
+                    className="input-admin"
+                    type="text"
+                    placeholder={field.placeholder}
+                    maxLength={field.maxLength}
                     value={String(form[fieldKey] ?? '')}
-                    onChange={e => setForm({ ...form, [fieldKey]: e.target.value })} required />
-                  {field.key === 'password' && <PasswordPolicyHint password={form.password} />}
+                    onChange={e => {
+                      const value = field.key === 'dni'
+                        ? e.target.value.replace(/\D/g, '').slice(0, 8)
+                        : e.target.value
+                      setForm({ ...form, [fieldKey]: value })
+                    }}
+                    required={field.key !== 'maternalSurname'}
+                  />
                 </div>
               )})}
               <div>
@@ -1141,8 +1173,8 @@ function AdminPageContent() {
             <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${purpleMix(25)}` }}>
               <h3 className="text-[var(--color-text-primary)] font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
               <p className="text-gray-500 text-xs mb-3">
-                Columnas: Nombre, DNI, Email, Contraseña, Grado actual, Días (30/60/180), Balotario (opcional), Grado postulación (opcional).
-                Si falta Grado postulación, se infiere del grado actual (ej. Capitán → Mayor).
+                Columnas: Nombres, Apellido paterno, Apellido materno, DNI, Grado actual, Días (30/60/180), Balotario (opcional), Grado postulación (opcional).
+                La contraseña inicial será el DNI de cada fila.
               </p>
               <div className="flex gap-3 flex-wrap">
                 <button type="button" onClick={handleDownloadExcelTemplate}
@@ -1330,16 +1362,16 @@ function AdminPageContent() {
         <div className="space-y-2 text-sm">
           <p>¿Crear acceso inmediato para este alumno?</p>
           <div className="rounded-lg border border-[var(--color-surface-border)] bg-[var(--color-primary-bg)] p-3 space-y-1">
-            <div><span className="text-gray-500">Nombre: </span><strong className="text-[var(--color-text-primary)]">{form.fullName}</strong></div>
+            <div><span className="text-gray-500">Nombre: </span><strong className="text-[var(--color-text-primary)]">{previewFullName || '—'}</strong></div>
             <div><span className="text-gray-500">Usuario: </span><strong className="text-[var(--color-text-primary)] tracking-wide">{previewLoginUsername ?? '—'}</strong></div>
-            <div><span className="text-gray-500">Email: </span><strong className="text-[var(--color-text-primary)]">{form.email}</strong></div>
+            <div><span className="text-gray-500">Contraseña sugerida: </span><strong className="text-[var(--color-text-primary)]">{form.dni || '—'}</strong> <span className="text-gray-500 text-xs">(su DNI)</span></div>
             <div><span className="text-gray-500">DNI: </span><strong className="text-[var(--color-text-primary)]">{form.dni}</strong></div>
             <div><span className="text-gray-500">Grado actual: </span><strong className="text-[var(--color-text-primary)]">{form.currentGrade != null ? CURRENT_GRADE_SELECT_OPTIONS.find((g) => g.value === form.currentGrade)?.label : '—'}</strong></div>
             <div><span className="text-gray-500">Postula a: </span><strong className="text-[var(--color-text-primary)]">{form.promotionGrade != null ? promotionGradeLabel(form.promotionGrade) : '—'}</strong></div>
             <div><span className="text-gray-500">Balotario: </span><strong className="text-[var(--color-text-primary)]">{trackLabel(form.trackType)}</strong></div>
             <div><span className="text-gray-500">Plan: </span><strong style={{ color: NEON }}>{form.planDays} días</strong></div>
           </div>
-          <p className="text-xs text-gray-500">El alumno deberá cambiar su contraseña al primer ingreso.</p>
+          <p className="text-xs text-gray-500">Sugerencia: el alumno puede cambiar su contraseña cuando desee desde su perfil.</p>
         </div>
       </Modal>
 
