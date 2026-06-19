@@ -6,7 +6,7 @@ const PLATFORM_FAVICON = '/favicon.svg'
 const TENANT_ICON = '/icon'
 const TENANT_APPLE_ICON = '/apple-icon'
 
-function upsertFaviconLink(rel: string, href: string, key: string) {
+function upsertFaviconLink(rel: string, href: string, key: string, type?: string) {
   const selector = `link[data-tenant-favicon="${key}"]`
   let link = document.querySelector<HTMLLinkElement>(selector)
   if (!link) {
@@ -16,40 +16,46 @@ function upsertFaviconLink(rel: string, href: string, key: string) {
   }
   link.rel = rel
   link.href = href
-  if (href.endsWith('.svg')) link.type = 'image/svg+xml'
-  else if (href === TENANT_ICON || href === TENANT_APPLE_ICON) link.removeAttribute('type')
-  else link.type = 'image/png'
+  if (type) link.type = type
+  else link.removeAttribute('type')
 }
 
-function clearTenantFaviconLinks() {
-  document.querySelectorAll('link[data-tenant-favicon]').forEach((node) => {
-    try {
-      node.remove()
-    } catch {
-      /* nodo ya desmontado */
-    }
-  })
+function detectIconType(href: string): string | undefined {
+  if (href.endsWith('.svg')) return 'image/svg+xml'
+  if (href.endsWith('.png')) return 'image/png'
+  if (href.endsWith('.webp')) return 'image/webp'
+  if (href.startsWith('/uploads/')) return 'image/png'
+  return undefined
 }
 
 /**
- * Refuerza el favicon de la agencia en cliente (navegación SPA).
- * Usa /icon del mismo subdominio — el servidor resuelve el logo de la agencia.
+ * Mantiene el favicon de la agencia en navegación SPA sin revertir al de plataforma/Vercel.
  */
-export function useTenantFavicon(hasTenant: boolean, pending = false) {
+export function useTenantFavicon(
+  tenantSlug: string | null,
+  logoHref: string | null,
+  onTenantHost: boolean,
+  pending = false
+) {
   useEffect(() => {
     if (typeof document === 'undefined') return
 
-    if (!hasTenant || pending) {
-      if (!hasTenant) {
-        clearTenantFaviconLinks()
-        upsertFaviconLink('icon', PLATFORM_FAVICON, 'platform-icon')
-      }
+    // En host de agencia: conservar el favicon SSR hasta tener logo (no tocar mientras carga).
+    if (onTenantHost && pending) return
+
+    const hasTenant = Boolean(tenantSlug || onTenantHost)
+
+    if (!hasTenant) {
+      upsertFaviconLink('icon', PLATFORM_FAVICON, 'icon', 'image/svg+xml')
       return
     }
 
-    clearTenantFaviconLinks()
-    upsertFaviconLink('icon', TENANT_ICON, 'icon')
-    upsertFaviconLink('shortcut icon', TENANT_ICON, 'shortcut')
-    upsertFaviconLink('apple-touch-icon', TENANT_APPLE_ICON, 'apple')
-  }, [hasTenant, pending])
+    const href = logoHref || TENANT_ICON
+    const type = detectIconType(href)
+    const appleHref = logoHref || TENANT_APPLE_ICON
+
+    upsertFaviconLink('icon', href, 'icon', type)
+    upsertFaviconLink('shortcut icon', href, 'shortcut', type)
+    upsertFaviconLink('apple-touch-icon', appleHref, 'apple', detectIconType(appleHref))
+  }, [tenantSlug, logoHref, onTenantHost, pending])
 }

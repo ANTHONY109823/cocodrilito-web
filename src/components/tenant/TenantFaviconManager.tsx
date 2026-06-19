@@ -5,6 +5,9 @@ import { useTenantSlug } from '@/hooks/useTenantSlug'
 import { useTenantConfig } from '@/hooks/useTenantConfig'
 import { useTenantFavicon } from '@/hooks/useTenantFavicon'
 import { useAuthStore } from '@/lib/store/authStore'
+import { getTenantSlugFromHost, isRootHost } from '@/lib/utils/tenantHost'
+import { readTenantSlugCookieClient } from '@/lib/utils/tenantSlugCookie'
+import { resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
 
 function TenantFaviconInner() {
   const hostSlug = useTenantSlug()
@@ -14,18 +17,21 @@ function TenantFaviconInner() {
     loadFromStorage()
   }, [loadFromStorage])
 
-  const tenantSlug = user?.tenantSlug ?? hostSlug
-  const { loading } = useTenantConfig(tenantSlug)
-  const pending = Boolean(tenantSlug) && loading
+  const tenantSlug = user?.tenantSlug ?? hostSlug ?? readTenantSlugCookieClient()
+  const onTenantHost =
+    Boolean(hostSlug) ||
+    Boolean(readTenantSlugCookieClient()) ||
+    (!isRootHost() && Boolean(getTenantSlugFromHost()))
 
-  useTenantFavicon(Boolean(tenantSlug), pending)
+  const { config, loading } = useTenantConfig(tenantSlug)
+  const logoHref = resolveTenantAssetUrl(config?.logoUrl)
+
+  useTenantFavicon(tenantSlug, logoHref, onTenantHost, Boolean(tenantSlug) && loading)
 
   return null
 }
 
-/**
- * Favicon de la agencia en todas las rutas del subdominio (login, admin, exámenes, etc.).
- */
+/** Refuerza favicon de agencia tras login y en navegación SPA del dashboard. */
 export function TenantFaviconManager() {
   return (
     <Suspense fallback={null}>
