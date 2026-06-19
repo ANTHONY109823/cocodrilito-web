@@ -284,6 +284,23 @@ export default function ExamPage() {
         .fade-in { animation: fadeIn 0.25s ease forwards; }
         @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(255,82,82,0.4)} 50%{box-shadow:0 0 0 8px rgba(255,82,82,0)} }
         .pulse-red { animation: pulse-red 1s infinite; }
+        .exam-option-row-selected {
+          background-color: #D1FAE5 !important;
+          border-color: #059669 !important;
+          box-shadow: 0 4px 14px rgba(5, 150, 105, 0.18);
+        }
+        [data-theme='dark'] .exam-option-row-selected {
+          background-color: rgba(5, 150, 105, 0.22) !important;
+          border-color: #34D399 !important;
+        }
+        .exam-option-badge-selected {
+          background-color: #059669 !important;
+          color: #FFFFFF !important;
+          border-color: #047857 !important;
+        }
+        .exam-option-text {
+          color: var(--color-text-primary) !important;
+        }
       `}</style>
 
       {/* HEADER */}
@@ -292,9 +309,9 @@ export default function ExamPage() {
         <div>
           <div className="text-[var(--color-text-primary)] font-bold text-sm">{session.examTitle}</div>
           {currentQ?.category ? (
-            <div className="text-xs mt-0.5" style={{ color: NEON }}>
+            <div className="text-xs mt-0.5 text-[var(--color-text-accent)] font-medium">
               {currentQ.category}
-              <span className="text-[var(--color-text-muted)]">
+              <span className="text-[var(--color-text-muted)] font-normal">
                 {' '}· Pregunta {positionInCategory} de {categoryQuestions.length} en esta categoría
               </span>
             </div>
@@ -341,28 +358,21 @@ export default function ExamPage() {
                   className={cn(
                     'w-full text-left rounded-xl p-4 transition-all duration-200 flex items-start gap-3 border-2',
                     isSelected
-                      ? 'bg-emerald-600 border-emerald-800 shadow-lg shadow-emerald-700/35 scale-[1.01]'
-                      : 'bg-[var(--color-input-bg)] border-[var(--color-surface-border)] hover:border-emerald-500/70 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/30'
+                      ? 'exam-option-row-selected scale-[1.01]'
+                      : 'bg-[var(--color-input-bg)] border-[var(--color-surface-border)] hover:border-emerald-400/80'
                   )}
                 >
                   <span
                     className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0',
+                      'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border',
                       isSelected
-                        ? 'bg-white text-emerald-800'
-                        : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300/60 dark:border-emerald-700'
+                        ? 'exam-option-badge-selected'
+                        : 'bg-white text-[#0A0A0A] border-[var(--color-surface-border)] dark:bg-[var(--color-surface-elevated)] dark:text-[var(--color-text-primary)]'
                     )}
                   >
                     {letters[i]}
                   </span>
-                  <span
-                    className={cn(
-                      'text-sm sm:text-base leading-relaxed pt-0.5',
-                      isSelected
-                        ? 'text-white font-semibold'
-                        : 'text-[var(--color-text-primary)] font-medium'
-                    )}
-                  >
+                  <span className="exam-option-text text-sm sm:text-base leading-relaxed pt-0.5 font-medium">
                     {opt.optionText}
                   </span>
                 </button>
