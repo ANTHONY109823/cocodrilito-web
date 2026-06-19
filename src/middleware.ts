@@ -76,6 +76,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  const isIconRequest =
+    pathname === '/favicon.ico' || pathname === '/icon' || pathname === '/apple-icon'
+
+  if (isIconRequest) {
+    if (!isRootDomain(host) && host.endsWith('.simulacros.pe')) {
+      const slug = host.replace('.simulacros.pe', '')
+      if (slug && slug !== 'www') {
+        const response = NextResponse.next()
+        applyTenantHeaders(response, slug, hostname)
+        return response
+      }
+    }
+
+    if (!isRootDomain(host) && host.endsWith('.localhost')) {
+      const slug = host.replace('.localhost', '')
+      if (slug) {
+        const response = NextResponse.next()
+        applyTenantHeaders(response, slug, hostname)
+        return response
+      }
+    }
+
+    if (!isRootDomain(host) && !host.endsWith('.simulacros.pe') && !host.endsWith('.localhost')) {
+      const slug = await resolveCustomDomainHost(host)
+      if (slug) {
+        const response = NextResponse.next()
+        applyTenantHeaders(response, slug, hostname)
+        response.headers.set('x-tenant-custom-domain', host)
+        return response
+      }
+    }
+  }
+
   if (isRootDomain(host) && pathname === '/login') {
     const legacySlug =
       request.nextUrl.searchParams.get('agencia') ??
@@ -147,6 +180,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

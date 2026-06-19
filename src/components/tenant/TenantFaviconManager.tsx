@@ -15,19 +15,16 @@ function TenantFaviconInner() {
   }, [loadFromStorage])
 
   const tenantSlug = user?.tenantSlug ?? hostSlug
-  const { config, loading } = useTenantConfig(tenantSlug)
+  const { loading } = useTenantConfig(tenantSlug)
+  const pending = Boolean(tenantSlug) && loading
 
-  const logoUrl = user?.tenantLogoUrl ?? config?.logoUrl ?? null
-  const pending = Boolean(tenantSlug) && loading && !logoUrl
-
-  useTenantFavicon(logoUrl, Boolean(tenantSlug), pending)
+  useTenantFavicon(Boolean(tenantSlug), pending)
 
   return null
 }
 
 /**
- * Favicon de la agencia/academia en todas las rutas del subdominio:
- * login, admin, dashboard de alumnos, exámenes, historial, ranking, etc.
+ * Favicon de la agencia en todas las rutas del subdominio (login, admin, exámenes, etc.).
  */
 export function TenantFaviconManager() {
   return (

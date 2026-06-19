@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import { BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { TenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { buildFaviconMetadata, resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
+import { buildTenantDynamicIconMetadata, resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
 
 export async function generateMetadata(): Promise<Metadata> {
   const slug = (await headers()).get('x-tenant-slug')
@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: `${config.name} — Iniciar sesión`,
-    icons: buildFaviconMetadata(config.logoUrl),
+    icons: buildTenantDynamicIconMetadata(),
   }
 }
 

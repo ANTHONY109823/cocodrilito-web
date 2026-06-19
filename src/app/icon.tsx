@@ -2,6 +2,6 @@ import { resolveTenantIconResponse } from '@/lib/tenant/resolveTenantIconRespons
 
 export const revalidate = 600
 
-export default function Icon() {
+export default async function Icon() {
   return resolveTenantIconResponse()
 }

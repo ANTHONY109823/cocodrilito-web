@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { buildFaviconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
+import { buildTenantDynamicIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
 import { DashboardClientLayout } from '@/components/layout/DashboardClientLayout'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: config.name,
-    icons: buildFaviconMetadata(config.logoUrl) ?? undefined,
+    icons: buildTenantDynamicIconMetadata(),
   }
 }
 

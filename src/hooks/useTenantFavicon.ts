@@ -1,16 +1,10 @@
 'use client'
 
 import { useEffect } from 'react'
-import { resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
 
 const PLATFORM_FAVICON = '/favicon.svg'
-
-function guessIconType(href: string) {
-  if (href.endsWith('.svg')) return 'image/svg+xml'
-  if (href.endsWith('.png')) return 'image/png'
-  if (href.endsWith('.webp')) return 'image/webp'
-  return 'image/jpeg'
-}
+const TENANT_ICON = '/icon'
+const TENANT_APPLE_ICON = '/apple-icon'
 
 function upsertFaviconLink(rel: string, href: string, key: string) {
   const selector = `link[data-tenant-favicon="${key}"]`
@@ -22,7 +16,9 @@ function upsertFaviconLink(rel: string, href: string, key: string) {
   }
   link.rel = rel
   link.href = href
-  link.type = guessIconType(href)
+  if (href.endsWith('.svg')) link.type = 'image/svg+xml'
+  else if (href === TENANT_ICON || href === TENANT_APPLE_ICON) link.removeAttribute('type')
+  else link.type = 'image/png'
 }
 
 function clearTenantFaviconLinks() {
@@ -37,30 +33,23 @@ function clearTenantFaviconLinks() {
 
 /**
  * Refuerza el favicon de la agencia en cliente (navegación SPA).
- * Solo toca links con data-tenant-favicon — no elimina iconos de Next/metadata.
+ * Usa /icon del mismo subdominio — el servidor resuelve el logo de la agencia.
  */
-export function useTenantFavicon(
-  logoUrl?: string | null,
-  enabled = true,
-  pending = false
-) {
+export function useTenantFavicon(hasTenant: boolean, pending = false) {
   useEffect(() => {
     if (typeof document === 'undefined') return
 
-    if (!enabled) {
-      clearTenantFaviconLinks()
-      upsertFaviconLink('icon', PLATFORM_FAVICON, 'platform-icon')
+    if (!hasTenant || pending) {
+      if (!hasTenant) {
+        clearTenantFaviconLinks()
+        upsertFaviconLink('icon', PLATFORM_FAVICON, 'platform-icon')
+      }
       return
     }
 
-    if (pending || !logoUrl) return
-
-    const href = resolveTenantAssetUrl(logoUrl)
-    if (!href) return
-
     clearTenantFaviconLinks()
-    upsertFaviconLink('icon', href, 'icon')
-    upsertFaviconLink('shortcut icon', href, 'shortcut')
-    upsertFaviconLink('apple-touch-icon', href, 'apple')
-  }, [logoUrl, enabled, pending])
+    upsertFaviconLink('icon', TENANT_ICON, 'icon')
+    upsertFaviconLink('shortcut icon', TENANT_ICON, 'shortcut')
+    upsertFaviconLink('apple-touch-icon', TENANT_APPLE_ICON, 'apple')
+  }, [hasTenant, pending])
 }
