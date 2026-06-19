@@ -26,12 +26,18 @@ function upsertFaviconLink(rel: string, href: string, key: string) {
 }
 
 function clearTenantFaviconLinks() {
-  document.querySelectorAll('link[data-tenant-favicon]').forEach((node) => node.remove())
+  document.querySelectorAll('link[data-tenant-favicon]').forEach((node) => {
+    try {
+      node.remove()
+    } catch {
+      /* nodo ya desmontado */
+    }
+  })
 }
 
 /**
  * Refuerza el favicon de la agencia en cliente (navegación SPA).
- * No quita el icono mientras carga config; no limpia al desmontar.
+ * Solo toca links con data-tenant-favicon — no elimina iconos de Next/metadata.
  */
 export function useTenantFavicon(
   logoUrl?: string | null,
@@ -52,12 +58,7 @@ export function useTenantFavicon(
     const href = resolveTenantAssetUrl(logoUrl)
     if (!href) return
 
-    document.querySelector('link[data-tenant-favicon="platform-icon"]')?.remove()
-
-    document
-      .querySelectorAll('link[rel*="icon"]:not([data-tenant-favicon])')
-      .forEach((node) => node.remove())
-
+    clearTenantFaviconLinks()
     upsertFaviconLink('icon', href, 'icon')
     upsertFaviconLink('shortcut icon', href, 'shortcut')
     upsertFaviconLink('apple-touch-icon', href, 'apple')

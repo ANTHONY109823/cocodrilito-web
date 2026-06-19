@@ -137,12 +137,19 @@ export default function ExamsPage() {
       })
       const sessionId = res.data?.sessionId ?? res.data?.SessionId
       if (!sessionId) {
+        startingRef.current = false
+        setStarting(null)
         setError('El servidor no devolvió un ID de sesión.')
         return
       }
       saveExamSessionMeta(sessionId, res.data ?? {}, options?.category)
-      router.push(`/exam/${sessionId}`)
+      startingRef.current = false
+      // Navegación completa evita errores removeChild de React 19 al desmontar /exams
+      window.location.assign(`/exam/${sessionId}`)
+      return
     } catch (err: unknown) {
+      startingRef.current = false
+      setStarting(null)
       const ax = err as {
         response?: { status?: number; data?: { message?: string; code?: string } }
         message?: string
@@ -155,9 +162,6 @@ export default function ExamsPage() {
         return
       }
       setError(status ? `[${status}] ${msg}` : msg)
-    } finally {
-      startingRef.current = false
-      setStarting(null)
     }
   }
 

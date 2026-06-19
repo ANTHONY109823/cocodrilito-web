@@ -3,7 +3,6 @@
 import { SWRConfig } from 'swr'
 import { swrFetcher } from '@/lib/swr/fetcher'
 import { ToastContainer } from '@/components/Toast'
-import { TenantFaviconManager } from '@/components/tenant/TenantFaviconManager'
 import { ColorSchemeProvider } from '@/components/ColorSchemeProvider'
 import { GlobalThemeToggle } from '@/components/GlobalThemeToggle'
 
@@ -19,7 +18,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       }}
     >
       <ColorSchemeProvider>
-        <TenantFaviconManager />
         {children}
         <GlobalThemeToggle />
         <ToastContainer />
