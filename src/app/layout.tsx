@@ -5,7 +5,7 @@ import { AppProviders } from '@/components/AppProviders'
 import { BRAND_DESCRIPTION, BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { buildTenantIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
-import { resolveRequestTenantSlug } from '@/lib/utils/tenantSlugCookie'
+import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
 
 const PLATFORM_ICONS: Metadata['icons'] = {
   icon: [{ url: '/icon', type: 'image/svg+xml', sizes: 'any' }],

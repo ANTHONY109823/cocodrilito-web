@@ -84,6 +84,25 @@ interface Subscription {
   createdAt: string
 }
 
+interface ExcelPreviewRow {
+  rowNumber: number
+  firstName: string
+  paternalSurname: string
+  maternalSurname?: string | null
+  dni: string
+  fullName: string
+  loginUsername: string
+  currentGradeLabel: string
+  postulationGradeLabel: string
+  trackLabel: string
+  planDays: number
+  promotionGrade: number
+  trackType: number
+  rankLabel: string
+  valid: boolean
+  error?: string | null
+}
+
 type AdminTab = 'dashboard' | 'users'
 type UserSubTab = 'activos' | 'inactivos' | 'crear'
 
@@ -132,9 +151,13 @@ function AdminPageContent() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
-  const excelInputRef = useRef<HTMLInputElement>(null)
-  const [uploadingExcel, setUploadingExcel] = useState(false)
+  const excelPreviewInputRef = useRef<HTMLInputElement>(null)
+  const [previewingExcel, setPreviewingExcel] = useState(false)
+  const [confirmingExcel, setConfirmingExcel] = useState(false)
   const [importResult, setImportResult] = useState<{ created: number; failed: number; errors: string[] } | null>(null)
+  const [excelPreviewOpen, setExcelPreviewOpen] = useState(false)
+  const [excelPreviewFileName, setExcelPreviewFileName] = useState('')
+  const [excelPreviewRows, setExcelPreviewRows] = useState<ExcelPreviewRow[]>([])
 
   const [editTarget, setEditTarget] = useState<User | null>(null)
   const [editForm, setEditForm] = useState({
@@ -224,16 +247,62 @@ function AdminPageContent() {
     }
   }, [tab, usersPage])
 
-  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelPreview = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploadingExcel(true)
+    setPreviewingExcel(true)
     setImportResult(null)
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await apiClient.post('/admin/users/import/excel', formData, {
+      const res = await apiClient.post('/admin/users/import/excel/preview', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const data = res.data as {
+        fileName?: string
+        rows?: ExcelPreviewRow[]
+        message?: string
+      }
+      const rows = data.rows ?? []
+      setExcelPreviewFileName(data.fileName ?? file.name)
+      setExcelPreviewRows(rows)
+      setExcelPreviewOpen(true)
+      setMsg({
+        text: rows.length > 0
+          ? `📋 ${rows.filter((r) => r.valid).length} filas listas · ${rows.filter((r) => !r.valid).length} con error — revise antes de grabar`
+          : '⚠️ El archivo no contiene filas de datos',
+        ok: rows.some((r) => r.valid),
+      })
+    } catch (err: unknown) {
+      setMsg({ text: getApiErrorMessage(err, 'Error al leer el Excel'), ok: false })
+    } finally {
+      setPreviewingExcel(false)
+      if (excelPreviewInputRef.current) excelPreviewInputRef.current.value = ''
+    }
+  }
+
+  const handleExcelConfirm = async () => {
+    const validRows = excelPreviewRows.filter((r) => r.valid)
+    if (validRows.length === 0) {
+      setMsg({ text: 'No hay filas válidas para importar', ok: false })
+      return
+    }
+    setConfirmingExcel(true)
+    try {
+      const res = await apiClient.post('/admin/users/import/excel/confirm', {
+        rows: validRows.map((r) => ({
+          rowNumber: r.rowNumber,
+          firstName: r.firstName,
+          paternalSurname: r.paternalSurname,
+          maternalSurname: r.maternalSurname,
+          dni: r.dni,
+          fullName: r.fullName,
+          loginUsername: r.loginUsername,
+          rankLabel: r.rankLabel,
+          planDays: r.planDays,
+          promotionGrade: r.promotionGrade,
+          trackType: r.trackType,
+        })),
       })
       const data = res.data as { created?: number; failed?: number; errors?: string[]; message?: string }
       const created = data.created ?? 0
@@ -241,16 +310,20 @@ function AdminPageContent() {
       setImportResult({ created, failed: data.failed ?? errors.length, errors })
       setMsg({
         text: created > 0
-          ? `✅ ${created} usuarios importados${errors.length ? ` · ${errors.length} filas con error` : ''}`
+          ? `✅ ${created} usuarios creados${errors.length ? ` · ${errors.length} filas con error` : ''}`
           : `⚠️ No se importó ningún usuario${errors.length ? ` · ${errors.length} errores` : ''}`,
         ok: created > 0,
       })
-      if (created > 0) void loadData()
+      if (created > 0) {
+        setExcelPreviewOpen(false)
+        setExcelPreviewRows([])
+        setExcelPreviewFileName('')
+        void loadData()
+      }
     } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error al importar'), ok: false })
+      setMsg({ text: getApiErrorMessage(err, 'Error al grabar usuarios'), ok: false })
     } finally {
-      setUploadingExcel(false)
-      if (excelInputRef.current) excelInputRef.current.value = ''
+      setConfirmingExcel(false)
     }
   }
 
@@ -1179,12 +1252,39 @@ function AdminPageContent() {
               </div>
             </div>
 
+            {/* Carga Excel con revisión previa */}
+            <div className="rounded-2xl p-4 panel-elevated" style={{ border: `1px dashed ${purpleMix(35)}` }}>
+              <p className="text-xs text-gray-500 mb-3">
+                Para varios alumnos: cargue el Excel, <strong className="text-[var(--color-text-secondary)]">revise todos los datos en la tabla</strong> y recién entonces grabe el bloque completo.
+              </p>
+              <button
+                type="button"
+                onClick={() => excelPreviewInputRef.current?.click()}
+                disabled={previewingExcel || confirmingExcel}
+                className="w-full py-3 rounded-xl text-sm font-bold transition-opacity"
+                style={{
+                  background: `linear-gradient(135deg, ${PURPLE}, #7C3AED)`,
+                  color: '#fff',
+                  opacity: previewingExcel ? 0.7 : 1,
+                }}
+              >
+                {previewingExcel ? 'Leyendo Excel...' : '📋 Cargar Excel y revisar datos'}
+              </button>
+              <input
+                ref={excelPreviewInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={handleExcelPreview}
+              />
+            </div>
+
             {/* IMPORTAR DESDE EXCEL */}
             <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${purpleMix(25)}` }}>
               <h3 className="text-[var(--color-text-primary)] font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
               <p className="text-gray-500 text-xs mb-2">
-                Descargue la plantilla <strong className="text-[var(--color-text-secondary)]">.xlsx</strong>, complete una fila por alumno y súbala aquí.
-                Funciona igual para todas las agencias (Partner, etc.).
+                Descargue la plantilla <strong className="text-[var(--color-text-secondary)]">.xlsx</strong> y complete una fila por alumno.
+                Use el botón de arriba para cargar, revisar y grabar.
               </p>
               <ul className="text-gray-500 text-xs mb-3 space-y-1 list-disc pl-4">
                 <li>Columnas: Nombres, Apellido paterno, Apellido materno, DNI, Grado actual, Días plan (30/60/180).</li>
@@ -1219,12 +1319,6 @@ function AdminPageContent() {
                   style={{ backgroundColor: `${skyMix(15)}`, color: NEON2, border: `1px solid ${skyMix(25)}` }}>
                   ⬇️ Descargar plantilla Excel
                 </button>
-                <button type="button" onClick={() => excelInputRef.current?.click()} disabled={uploadingExcel}
-                  className="px-4 py-2 rounded-xl text-sm font-bold"
-                  style={{ background: `linear-gradient(135deg, ${PURPLE}, #7C3AED)`, color: '#fff', opacity: uploadingExcel ? 0.7 : 1 }}>
-                  {uploadingExcel ? 'Importando...' : '📁 Subir Excel'}
-                </button>
-                <input ref={excelInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
               </div>
             </div>
 
@@ -1238,6 +1332,92 @@ function AdminPageContent() {
       )}
         </div>
       )}
+
+      <Modal
+        open={excelPreviewOpen}
+        onClose={() => { if (!confirmingExcel) setExcelPreviewOpen(false) }}
+        title="📋 Revisar usuarios del Excel"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={confirmingExcel}
+              onClick={() => setExcelPreviewOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              loading={confirmingExcel}
+              disabled={!excelPreviewRows.some((r) => r.valid)}
+              onClick={handleExcelConfirm}
+            >
+              Grabar {excelPreviewRows.filter((r) => r.valid).length} usuarios
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500">
+            Archivo: <strong className="text-[var(--color-text-secondary)]">{excelPreviewFileName || '—'}</strong>
+            {' · '}
+            {excelPreviewRows.filter((r) => r.valid).length} válidos
+            {' · '}
+            {excelPreviewRows.filter((r) => !r.valid).length} con error
+          </p>
+          <div className="overflow-x-auto rounded-xl border border-[var(--color-surface-border)] max-h-[55vh] overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 z-10" style={{ backgroundColor: SURFACE }}>
+                <tr className="text-left text-gray-500">
+                  <th className="px-2 py-2 font-medium">#</th>
+                  <th className="px-2 py-2 font-medium">Nombres</th>
+                  <th className="px-2 py-2 font-medium">Ap. paterno</th>
+                  <th className="px-2 py-2 font-medium">DNI</th>
+                  <th className="px-2 py-2 font-medium">Usuario</th>
+                  <th className="px-2 py-2 font-medium">Grado</th>
+                  <th className="px-2 py-2 font-medium">Postula</th>
+                  <th className="px-2 py-2 font-medium">Plan</th>
+                  <th className="px-2 py-2 font-medium">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {excelPreviewRows.map((row) => (
+                  <tr
+                    key={row.rowNumber}
+                    style={{
+                      backgroundColor: row.valid
+                        ? 'transparent'
+                        : 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
+                    }}
+                  >
+                    <td className="px-2 py-2 text-gray-500">{row.rowNumber}</td>
+                    <td className="px-2 py-2 text-[var(--color-text-primary)]">{row.firstName}</td>
+                    <td className="px-2 py-2 text-[var(--color-text-primary)]">{row.paternalSurname}</td>
+                    <td className="px-2 py-2 font-mono">{row.dni}</td>
+                    <td className="px-2 py-2 font-mono text-[var(--color-text-secondary)]">{row.loginUsername || '—'}</td>
+                    <td className="px-2 py-2">{row.currentGradeLabel || row.rankLabel}</td>
+                    <td className="px-2 py-2">{row.postulationGradeLabel}</td>
+                    <td className="px-2 py-2">{row.planDays} d</td>
+                    <td className="px-2 py-2">
+                      {row.valid ? (
+                        <span style={{ color: NEON }}>OK</span>
+                      ) : (
+                        <span style={{ color: RED }} title={row.error ?? undefined}>{row.error ?? 'Error'}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {excelPreviewRows.some((r) => !r.valid) && (
+            <p className="text-xs text-gray-500">
+              Las filas con error no se grabarán. Corrija el Excel y vuelva a cargar, o grabe solo las filas válidas.
+            </p>
+          )}
+        </div>
+      </Modal>
 
       <Modal
         open={editTarget != null}
