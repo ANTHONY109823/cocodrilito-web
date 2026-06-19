@@ -19,11 +19,9 @@ import {
   GOLD_BRIGHT as GOLD,
   primaryMix,
   SURFACE,
-  SURFACE_CARD,
-  TEXT_MUTED,
-  INPUT_BG,
 } from '@/lib/constants/theme'
 import { Modal, Button } from '@/components/ui'
+import { cn } from '@/lib/utils/cn'
 
 const ORANGE = '#FF8A3D'
 
@@ -327,7 +325,7 @@ export default function ExamPage() {
         <div className="text-xs text-[var(--color-text-muted)] mb-3 uppercase tracking-wider">
           Pregunta {currentIdx + 1}
         </div>
-        <p className="text-[var(--color-text-primary)] text-base font-medium leading-relaxed mb-6">
+        <p className="text-[var(--color-text-primary)] text-base sm:text-lg font-semibold leading-relaxed mb-6">
           {currentQ?.questionText}
         </p>
 
@@ -340,27 +338,30 @@ export default function ExamPage() {
                   key={opt.id}
                   type="button"
                   onClick={() => handleAnswer(opt.id)}
-                  className="w-full text-left rounded-xl p-4 transition-all flex items-start gap-3"
-                  style={{
-                    background: isSelected ? primaryMix(12) : INPUT_BG,
-                    border: `1px solid ${isSelected ? NEON : 'var(--color-surface-border)'}`,
-                    boxShadow: isSelected ? `0 0 15px ${primaryMix(20)}` : 'none',
-                    cursor: 'pointer',
-                    transform: isSelected ? 'scale(1.01)' : 'scale(1)',
-                  }}
+                  className={cn(
+                    'w-full text-left rounded-xl p-4 transition-all duration-200 flex items-start gap-3 border-2',
+                    isSelected
+                      ? 'bg-emerald-600 border-emerald-800 shadow-lg shadow-emerald-700/35 scale-[1.01]'
+                      : 'bg-[var(--color-input-bg)] border-[var(--color-surface-border)] hover:border-emerald-500/70 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/30'
+                  )}
                 >
                   <span
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
-                    style={{
-                      backgroundColor: isSelected ? NEON : 'var(--color-surface-border)',
-                      color: isSelected ? '#0A0A0A' : 'var(--color-text-primary)',
-                    }}
+                    className={cn(
+                      'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0',
+                      isSelected
+                        ? 'bg-white text-emerald-800'
+                        : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300/60 dark:border-emerald-700'
+                    )}
                   >
                     {letters[i]}
                   </span>
                   <span
-                    className="text-sm leading-relaxed"
-                    style={{ color: 'var(--color-text-primary)' }}
+                    className={cn(
+                      'text-sm sm:text-base leading-relaxed pt-0.5',
+                      isSelected
+                        ? 'text-white font-semibold'
+                        : 'text-[var(--color-text-primary)] font-medium'
+                    )}
                   >
                     {opt.optionText}
                   </span>
