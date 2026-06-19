@@ -21,7 +21,7 @@ import {
   SURFACE,
 } from '@/lib/constants/theme'
 import { Modal, Button } from '@/components/ui'
-import { cn } from '@/lib/utils/cn'
+import { QuizOption } from '@/components/exam/QuizOption'
 import { optionLetter } from '@/lib/utils/optionLetter'
 
 const ORANGE = '#FF8A3D'
@@ -285,23 +285,6 @@ export default function ExamPage() {
         .fade-in { animation: fadeIn 0.25s ease forwards; }
         @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(255,82,82,0.4)} 50%{box-shadow:0 0 0 8px rgba(255,82,82,0)} }
         .pulse-red { animation: pulse-red 1s infinite; }
-        .exam-option-row-selected {
-          background-color: #D1FAE5 !important;
-          border-color: #059669 !important;
-          box-shadow: 0 4px 14px rgba(5, 150, 105, 0.18);
-        }
-        [data-theme='dark'] .exam-option-row-selected {
-          background-color: rgba(5, 150, 105, 0.22) !important;
-          border-color: #34D399 !important;
-        }
-        .exam-option-badge-selected {
-          background-color: #059669 !important;
-          color: #FFFFFF !important;
-          border-color: #047857 !important;
-        }
-        .exam-option-text {
-          color: var(--color-text-primary) !important;
-        }
       `}</style>
 
       {/* HEADER */}
@@ -348,36 +331,15 @@ export default function ExamPage() {
         </p>
 
         <div className="space-y-3">
-        {sortedOptions.map((opt, i) => {
-              const isSelected = currentAnswer === opt.id
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => handleAnswer(opt.id)}
-                  className={cn(
-                    'w-full text-left rounded-xl p-4 transition-all duration-200 flex items-start gap-3 border-2',
-                    isSelected
-                      ? 'exam-option-row-selected scale-[1.01]'
-                      : 'bg-[var(--color-input-bg)] border-[var(--color-surface-border)] hover:border-emerald-400/80'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border',
-                      isSelected
-                        ? 'exam-option-badge-selected'
-                        : 'bg-white text-[#0A0A0A] border-[var(--color-surface-border)] dark:bg-[var(--color-surface-elevated)] dark:text-[var(--color-text-primary)]'
-                    )}
-                  >
-                    {optionLetter(i)}
-                  </span>
-                  <span className="exam-option-text text-sm sm:text-base leading-relaxed pt-0.5 font-medium">
-                    {opt.optionText}
-                  </span>
-                </button>
-              )
-            })}
+        {sortedOptions.map((opt, i) => (
+              <QuizOption
+                key={opt.id}
+                letter={optionLetter(i)}
+                text={opt.optionText}
+                variant={currentAnswer === opt.id ? 'selected' : 'neutral'}
+                onClick={() => handleAnswer(opt.id)}
+              />
+            ))}
         </div>
       </div>
 

@@ -55,7 +55,7 @@ export default function RankingPage() {
           ← Inicio
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-white sm:text-2xl">Ranking PNP 🏆</h1>
+          <h1 className="text-xl font-bold text-theme-primary sm:text-2xl">Ranking PNP 🏆</h1>
           <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">Los mejores efectivos del simulacro</p>
         </div>
       </div>
@@ -106,7 +106,7 @@ export default function RankingPage() {
                 <div className="mb-1 text-2xl">
                   {actualPos === 1 ? '🥇' : actualPos === 2 ? '🥈' : '🥉'}
                 </div>
-                <div className="truncate text-xs font-bold text-white">{entry.fullName.split(' ')[0]}</div>
+                <div className="truncate text-xs font-bold text-theme-primary">{entry.fullName.split(' ')[0]}</div>
                 <div className={cn('mt-0.5 text-xs', podiumScoreColor[actualPos])}>
                   {entry.averageScore}% prom.
                 </div>
@@ -153,7 +153,7 @@ export default function RankingPage() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-white">{entry.fullName}</span>
+                      <span className="truncate text-sm font-semibold text-theme-primary">{entry.fullName}</span>
                       {isMe && <Badge color="green">tú</Badge>}
                     </div>
                     <div className="truncate text-xs text-[var(--color-text-muted)]">

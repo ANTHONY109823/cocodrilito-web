@@ -128,7 +128,7 @@ export default function ProfilePage() {
           ← Inicio
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-white sm:text-2xl">Mi perfil</h1>
+          <h1 className="text-xl font-bold text-theme-primary sm:text-2xl">Mi perfil</h1>
           <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
             Administra tu cuenta de estudiante
           </p>
@@ -214,7 +214,7 @@ export default function ProfilePage() {
       </Card>
 
       <Card padding="sm" className="mb-4 rounded-xl">
-        <h2 className="mb-4 text-base font-bold text-white">Actualizar datos</h2>
+        <h2 className="mb-4 text-base font-bold text-theme-primary">Actualizar datos</h2>
         <form onSubmit={handleUpdateProfile} className="space-y-3">
           <Input
             label="Grado PNP"
@@ -238,7 +238,7 @@ export default function ProfilePage() {
       </Card>
 
       <Card padding="sm" className="rounded-xl">
-        <h2 className="mb-4 text-base font-bold text-white">Cambiar contraseña</h2>
+        <h2 className="mb-4 text-base font-bold text-theme-primary">Cambiar contraseña</h2>
         <form onSubmit={handleChangePassword} className="space-y-3">
           <Input
             label="Contraseña actual"

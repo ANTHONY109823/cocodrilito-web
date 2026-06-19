@@ -10,11 +10,9 @@ interface ExplanationBlockProps {
 export function ExplanationBlock({ explanation, className = '' }: ExplanationBlockProps) {
   if (hasUsableExplanation(explanation)) {
     return (
-      <div
-        className={`rounded-xl border border-[rgba(79,195,247,0.2)] bg-[rgba(79,195,247,0.06)] p-3 ${className}`}
-      >
-        <div className="mb-1 text-xs font-semibold text-[#4FC3F7]">💡 Explicación</div>
-        <p className="text-sm leading-relaxed text-gray-300">{explanation}</p>
+      <div className={`quiz-explain-box ${className}`}>
+        <div className="quiz-explain-title">💡 Explicación</div>
+        <p className="quiz-explain-body">{explanation}</p>
       </div>
     )
   }
@@ -22,10 +20,12 @@ export function ExplanationBlock({ explanation, className = '' }: ExplanationBlo
   if (needsExplanationReview(explanation)) {
     return (
       <div
-        className={`rounded-xl border border-[rgba(201,148,58,0.25)] bg-[rgba(201,148,58,0.08)] p-3 ${className}`}
+        className={`rounded-xl border border-[color-mix(in_srgb,var(--color-warning)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-warning)_10%,transparent)] p-3 ${className}`}
       >
-        <div className="mb-1 text-xs font-semibold text-[#C9943A]">⚠️ Pendiente de revisión editorial</div>
-        <p className="text-sm leading-relaxed text-gray-400">
+        <div className="mb-1 text-xs font-semibold text-[var(--color-warning)]">
+          ⚠️ Pendiente de revisión editorial
+        </div>
+        <p className="quiz-explain-muted">
           Esta pregunta está marcada para revisión por el equipo de contenido. Consulta con tu
           instructor mientras se completa la explicación oficial.
         </p>
@@ -35,10 +35,12 @@ export function ExplanationBlock({ explanation, className = '' }: ExplanationBlo
 
   return (
     <div
-      className={`rounded-xl border border-[rgba(189,255,223,0.12)] bg-[rgba(255,255,255,0.03)] p-3 ${className}`}
+      className={`rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-input-bg)] p-3 ${className}`}
     >
-      <div className="mb-1 text-xs font-semibold text-[var(--color-text-muted)]">📋 Sin explicación oficial</div>
-      <p className="text-sm leading-relaxed text-gray-500">
+      <div className="mb-1 text-xs font-semibold text-[var(--color-text-muted)]">
+        📋 Sin explicación oficial
+      </div>
+      <p className="quiz-explain-muted">
         Esta pregunta aún no tiene explicación curada en el banco. Anótala y consúltala con tu
         instructor o material de estudio.
       </p>

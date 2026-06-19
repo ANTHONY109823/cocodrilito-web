@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { examsApi } from '@/lib/api/exams'
 import Link from 'next/link'
 import { ExplanationBlock } from '@/components/exam/ExplanationBlock'
+import { QuizOption } from '@/components/exam/QuizOption'
 import { optionLetter } from '@/lib/utils/optionLetter'
-import { cn } from '@/lib/utils/cn'
 
 import { NEON, SURFACE, primaryMix } from '@/lib/constants/theme'
 
@@ -69,8 +69,8 @@ export default function ReviewPage() {
     return (
       <div className="max-w-xl mx-auto text-center py-16">
         <div className="text-6xl mb-4">🏆</div>
-        <h2 className="text-xl font-bold text-white mb-3">¡Sin errores que repasar!</h2>
-        <p className="text-gray-400 text-sm mb-6">Respondiste todo correctamente en este simulacro.</p>
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-3">¡Sin errores que repasar!</h2>
+        <p className="text-[var(--color-text-muted)] text-sm mb-6">Respondiste todo correctamente en este simulacro.</p>
         <Link href="/history"
           className="inline-flex px-6 py-3 rounded-xl font-bold text-sm"
           style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)' }}>
@@ -88,32 +88,16 @@ export default function ReviewPage() {
       <style>{`
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         .fade-in { animation: fadeIn 0.3s ease forwards; }
-        .review-option-text {
-          color: var(--color-text-primary) !important;
-        }
-        .review-option-row-correct {
-          background-color: #D1FAE5 !important;
-          border-color: #059669 !important;
-        }
-        .review-option-badge-correct {
-          background-color: #059669 !important;
-          color: #FFFFFF !important;
-        }
-        .review-option-badge-neutral {
-          background-color: #FFFFFF !important;
-          color: #0A0A0A !important;
-          border: 1px solid var(--color-surface-border);
-        }
       `}</style>
 
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/history" className="text-gray-500 hover:text-[var(--color-text-primary)] text-sm transition-colors">
+        <Link href="/history" className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-sm transition-colors">
           ← Historial
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-white">Modo repaso 📚</h1>
-          <p className="text-gray-500 text-sm">{review.totalToReview} preguntas incorrectas para repasar</p>
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Modo repaso 📚</h1>
+          <p className="text-[var(--color-text-muted)] text-sm">{review.totalToReview} preguntas incorrectas para repasar</p>
         </div>
       </div>
 
@@ -149,40 +133,15 @@ export default function ReviewPage() {
         <div className="space-y-2">
           {currentQ.options
             .sort((a, b) => a.optionIndex - b.optionIndex)
-            .map((opt, i) => {
-              const isCorrect = opt.isCorrect
-
-              return (
-                <div
-                  key={opt.id}
-                  className={cn(
-                    'rounded-xl p-3 flex items-start gap-3 transition-all border-2',
-                    revealed && isCorrect
-                      ? 'review-option-row-correct'
-                      : 'bg-[var(--color-input-bg)] border-[var(--color-surface-border)]'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border',
-                      revealed && isCorrect
-                        ? 'review-option-badge-correct'
-                        : 'review-option-badge-neutral'
-                    )}
-                  >
-                    {optionLetter(i)}
-                  </span>
-                  <span className="review-option-text text-sm sm:text-base leading-relaxed pt-0.5 font-medium flex-1">
-                    {opt.optionText}
-                  </span>
-                  {revealed && isCorrect && (
-                    <span className="ml-auto text-xs font-bold shrink-0 text-emerald-700">
-                      ✓ correcta
-                    </span>
-                  )}
-                </div>
-              )
-            })}
+            .map((opt, i) => (
+              <QuizOption
+                key={opt.id}
+                letter={optionLetter(i)}
+                text={opt.optionText}
+                variant={revealed && opt.isCorrect ? 'correct' : 'neutral'}
+                tag={revealed && opt.isCorrect ? '✓ correcta' : null}
+              />
+            ))}
         </div>
 
         {/* EXPLICACIÓN */}

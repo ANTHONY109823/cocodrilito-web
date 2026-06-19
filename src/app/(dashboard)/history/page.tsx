@@ -66,7 +66,7 @@ export default function HistoryPage() {
           ← Inicio
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-white sm:text-2xl">
+          <h1 className="text-xl font-bold text-theme-primary sm:text-2xl">
             Historial de simulacros
           </h1>
           <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">Todos tus exámenes anteriores</p>
