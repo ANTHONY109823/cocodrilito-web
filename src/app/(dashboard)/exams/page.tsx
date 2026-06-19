@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useSWRConfig } from 'swr'
-import { getApiErrorMessage } from '@/lib/api/errors'
+import { getApiErrorDetail } from '@/lib/api/errors'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import {
@@ -85,8 +85,8 @@ export default function ExamsPage() {
     isLoading: countsLoading,
     error: countsError,
   } = useQuestionCounts(
-    previewMode ? effectiveTrackKey : null,
-    previewMode ? categoryHierarchy : null
+    previewMode ? effectiveTrackKey : studentTrackKey,
+    categoryHierarchy
   )
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
@@ -103,11 +103,14 @@ export default function ExamsPage() {
 
   useEffect(() => {
     const err = examsError || catsError || countsError
-    if (!err) return
+    if (!err) {
+      setError(null)
+      return
+    }
     if (axios.isAxiosError(err) && err.response?.status === 403) {
       setBlocked(true)
     } else {
-      setError(getApiErrorMessage(err, 'Error al cargar simulacros'))
+      setError(getApiErrorDetail(err, 'Error al cargar simulacros'))
     }
   }, [examsError, catsError, countsError])
 
