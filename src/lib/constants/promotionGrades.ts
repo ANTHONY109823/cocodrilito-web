@@ -140,6 +140,58 @@ export function postulationGradeFromCurrent(currentGradeValue: number): number |
   return POSTULATION_BY_CURRENT[currentGradeValue] ?? null
 }
 
+/** Grados PNP actuales en menú desplegable (orden descendente). */
+export const CURRENT_GRADE_SELECT_OPTIONS = [
+  { value: 6, label: 'CORONEL' },
+  { value: 5, label: 'COMANDANTE' },
+  { value: 4, label: 'MAYOR' },
+  { value: 3, label: 'CAPITAN' },
+  { value: 2, label: 'TENIENTE' },
+  { value: 1, label: 'ALFEREZ' },
+  { value: 7, label: 'SUPERIOR' },
+  { value: 8, label: 'BRIGADIER' },
+  { value: 9, label: 'TECNICO DE 1RA' },
+  { value: 10, label: 'TECNICO DE 2DA' },
+  { value: 11, label: 'TECNICO DE 3RA' },
+  { value: 12, label: 'SUBOFICIAL DE 1RA' },
+  { value: 13, label: 'SUBOFICIAL DE 2DA' },
+  { value: 14, label: 'SUBOFICIAL DE 3RA' },
+] as const
+
+/** Grado actual → meta de postulación y balotario (Coronel/Superior = tope de escalera). */
+export function resolvePostulationFromCurrentGrade(currentGradeValue: number): number | null {
+  const next = postulationGradeFromCurrent(currentGradeValue)
+  if (next != null) return next
+  const grade = PROMOTION_GRADE_OPTIONS.find((g) => g.value === currentGradeValue)
+  if (grade?.postulationTarget) return currentGradeValue
+  return null
+}
+
+export function rankLabelFromCurrentGrade(currentGradeValue: number): string {
+  return promotionGradeLabel(currentGradeValue)
+}
+
+export function applyCurrentGradeSelection(currentGradeValue: number) {
+  const postulation = resolvePostulationFromCurrentGrade(currentGradeValue)
+  if (postulation == null) return null
+  return {
+    currentGrade: currentGradeValue,
+    rank: rankLabelFromCurrentGrade(currentGradeValue),
+    promotionGrade: postulation,
+    trackType: trackFromGrade(postulation),
+  }
+}
+
+/** Infiere grado actual a partir del grado de postulación (edición de usuarios). */
+export function inferCurrentGradeFromPostulation(postulationValue: number): number | null {
+  for (const [currentStr, next] of Object.entries(POSTULATION_BY_CURRENT)) {
+    if (next === postulationValue) return Number(currentStr)
+  }
+  const grade = PROMOTION_GRADE_OPTIONS.find((g) => g.value === postulationValue)
+  if (grade?.postulationTarget) return postulationValue
+  return null
+}
+
 export function postulationGradeFromCurrentRankText(rank: string | null | undefined): number | null {
   const current = parseCurrentGradeFromText(rank)
   if (current == null) return null
