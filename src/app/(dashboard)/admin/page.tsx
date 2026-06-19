@@ -137,7 +137,7 @@ function AdminPageContent() {
 
   const [editTarget, setEditTarget] = useState<User | null>(null)
   const [editForm, setEditForm] = useState({
-    fullName: '', email: '', dni: '',
+    fullName: '', dni: '',
     currentGrade: null as number | null,
     trackType: DEFAULT_QUESTION_TRACK,
     promotionGrade: null as number | null,
@@ -298,7 +298,6 @@ function AdminPageContent() {
       const res = await apiClient.post('/admin/users', {
         fullName,
         dni: savedForm.dni,
-        email: '',
         password: savedForm.dni,
         rank,
         unit: '',
@@ -518,7 +517,6 @@ function AdminPageContent() {
       (promotionValue != null ? inferCurrentGradeFromPostulation(promotionValue) : null)
     setEditForm({
       fullName: u.fullName,
-      email: u.email,
       dni: u.dni,
       currentGrade,
       trackType: trackValue,
@@ -537,7 +535,6 @@ function AdminPageContent() {
       const rank = rankLabelFromCurrentGrade(editForm.currentGrade)
       await apiClient.put(`/admin/users/${editTarget.id}`, {
         fullName: editForm.fullName,
-        email: editForm.email,
         dni: editForm.dni,
         rank,
         trackType: trackFromGrade(editForm.promotionGrade),
@@ -554,7 +551,6 @@ function AdminPageContent() {
             ? {
                 ...u,
                 fullName: editForm.fullName,
-                email: editForm.email,
                 dni: editForm.dni,
                 rank,
                 activeTrackType: trackKey ?? u.activeTrackType,
@@ -886,7 +882,7 @@ function AdminPageContent() {
                       </div>
                       <div className="text-gray-500 text-xs mt-1">
                         Usuario <span className="text-[var(--color-text-primary)] font-medium">{u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'}</span>
-                        {' · '}{u.email} · DNI {u.dni} · {u.rank} · {u.unit}
+                        {' · '}DNI {u.dni} · {u.rank} · {u.unit}
                       </div>
                       {u.subscription && (
                         <div className="text-xs mt-1.5 font-medium"
@@ -1023,7 +1019,7 @@ function AdminPageContent() {
                         )}
                       </div>
                       <div className="text-gray-600 text-xs mt-1">
-                        {u.email} · DNI {u.dni} · {u.rank} · {u.unit}
+                        Usuario {u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'} · DNI {u.dni} · {u.rank} · {u.unit}
                       </div>
                       {u.subscription ? (
                         <div className="text-xs mt-1.5 font-medium text-gray-500">
@@ -1222,11 +1218,6 @@ function AdminPageContent() {
             <label className="block text-xs text-gray-500 mb-1">Nombre completo</label>
             <input className="input-admin" value={editForm.fullName}
               onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Email</label>
-            <input type="email" className="input-admin" value={editForm.email}
-              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">DNI</label>
