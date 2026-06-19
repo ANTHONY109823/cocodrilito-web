@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-function getApiBase(): string {
-  const raw = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5034/api'
-  return raw.replace(/\/$/, '')
-}
+import { fetchBackend, getBackendApiBase } from '@/lib/server/apiProxy'
 
 const HOP_BY_HOP = new Set([
   'connection',
@@ -52,8 +48,12 @@ function resolveClientIp(request: NextRequest): string | null {
   )
 }
 
+function proxyErrorResponse(status: number, message: string) {
+  return NextResponse.json({ message, code: 'PROXY_ERROR' }, { status })
+}
+
 async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
-  const targetUrl = `${getApiBase()}/${pathSegments.join('/')}${request.nextUrl.search}`
+  const targetUrl = `${getBackendApiBase()}/${pathSegments.join('/')}${request.nextUrl.search}`
   const cacheableGet = request.method === 'GET' && isCacheablePublicGet(pathSegments)
 
   const headers = new Headers()
@@ -76,16 +76,32 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
   const hasBody = !['GET', 'HEAD'].includes(method)
   const body = hasBody ? await request.arrayBuffer() : undefined
 
-  const upstream = await fetch(targetUrl, {
-    method,
-    headers,
-    body,
-    redirect: 'manual',
-    cache: cacheableGet ? 'force-cache' : 'no-store',
-    ...(cacheableGet ? { next: { revalidate: 600 } } : {}),
-  })
+  let upstream: Response
+  try {
+    upstream = await fetchBackend(targetUrl, {
+      method,
+      headers,
+      body,
+      redirect: 'manual',
+      cache: cacheableGet ? 'force-cache' : 'no-store',
+      ...(cacheableGet ? { next: { revalidate: 600 } } : {}),
+    })
+  } catch (err) {
+    const timedOut = err instanceof Error && err.name === 'TimeoutError'
+    return proxyErrorResponse(
+      timedOut ? 504 : 502,
+      timedOut
+        ? 'El servidor tardó demasiado en responder. Intenta de nuevo.'
+        : 'No se pudo conectar con el servidor. Intenta de nuevo.'
+    )
+  }
 
-  const responseBody = await upstream.arrayBuffer()
+  let responseBody: ArrayBuffer
+  try {
+    responseBody = await upstream.arrayBuffer()
+  } catch {
+    return proxyErrorResponse(502, 'Error al leer la respuesta del servidor.')
+  }
 
   const responseHeaders = new Headers()
   upstream.headers.forEach((value, key) => {
@@ -121,9 +137,17 @@ async function proxyToBackend(request: NextRequest, pathSegments: string[]) {
 
 type RouteContext = { params: Promise<{ path: string[] }> }
 
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
 async function handle(request: NextRequest, context: RouteContext) {
-  const { path } = await context.params
-  return proxyToBackend(request, path)
+  try {
+    const { path } = await context.params
+    return await proxyToBackend(request, path)
+  } catch (err) {
+    console.error('[api proxy]', err)
+    return proxyErrorResponse(500, 'Error interno del proxy.')
+  }
 }
 
 export const GET = handle
