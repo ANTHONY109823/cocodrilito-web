@@ -4,7 +4,8 @@ import './globals.css'
 import { AppProviders } from '@/components/AppProviders'
 import { BRAND_DESCRIPTION, BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { buildTenantDynamicIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
+import { buildTenantIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
+import { resolveRequestTenantSlug } from '@/lib/utils/tenantSlugCookie'
 
 const PLATFORM_ICONS: Metadata['icons'] = {
   icon: [{ url: '/icon', type: 'image/svg+xml', sizes: 'any' }],
@@ -13,11 +14,11 @@ const PLATFORM_ICONS: Metadata['icons'] = {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const slug = (await headers()).get('x-tenant-slug')
+  const slug = await resolveRequestTenantSlug()
 
   if (slug) {
     const config = await fetchTenantConfigServer(slug)
-    const tenantIcons = buildTenantDynamicIconMetadata()
+    const tenantIcons = buildTenantIconMetadata(config?.logoUrl)
 
     if (config?.name) {
       return {

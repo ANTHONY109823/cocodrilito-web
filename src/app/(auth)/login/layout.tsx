@@ -3,10 +3,11 @@ import { headers } from 'next/headers'
 import { BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { TenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { buildTenantDynamicIconMetadata, resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
+import { buildTenantIconMetadata, resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
+import { resolveRequestTenantSlug } from '@/lib/utils/tenantSlugCookie'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const slug = (await headers()).get('x-tenant-slug')
+  const slug = await resolveRequestTenantSlug()
   if (!slug) return { title: BRAND_PAGE_TITLE }
 
   const config = await fetchTenantConfigServer(slug)
@@ -14,13 +15,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: `${config.name} — Iniciar sesión`,
-    icons: buildTenantDynamicIconMetadata(),
+    icons: buildTenantIconMetadata(config.logoUrl),
   }
 }
 
 export default async function LoginLayout({ children }: { children: React.ReactNode }) {
-  const requestHeaders = await headers()
-  const slug = requestHeaders.get('x-tenant-slug')
+  const slug = await resolveRequestTenantSlug()
   const initialConfig = slug ? await fetchTenantConfigServer(slug) : null
   const logoUrl = resolveTenantAssetUrl(initialConfig?.logoUrl)
   const backgroundUrl = resolveTenantAssetUrl(initialConfig?.loginBackgroundUrl)

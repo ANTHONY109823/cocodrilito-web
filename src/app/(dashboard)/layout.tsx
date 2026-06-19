@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { buildTenantDynamicIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
+import { buildTenantIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
+import { resolveRequestTenantSlug } from '@/lib/utils/tenantSlugCookie'
 import { DashboardClientLayout } from '@/components/layout/DashboardClientLayout'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const slug = (await headers()).get('x-tenant-slug')
+  const slug = await resolveRequestTenantSlug()
   if (!slug) return {}
 
   const config = await fetchTenantConfigServer(slug)
@@ -13,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: config.name,
-    icons: buildTenantDynamicIconMetadata(),
+    icons: buildTenantIconMetadata(config.logoUrl),
   }
 }
 

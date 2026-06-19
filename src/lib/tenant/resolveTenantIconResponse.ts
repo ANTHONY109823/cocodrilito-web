@@ -4,6 +4,8 @@ import { headers } from 'next/headers'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
 
+import { parseTenantSlugFromCookie } from '@/lib/utils/tenantSlugCookie'
+
 function getUploadFetchUrl(resolvedPath: string): string {
   if (resolvedPath.startsWith('http')) return resolvedPath
 
@@ -30,7 +32,10 @@ async function loadPlatformIconResponse(): Promise<Response> {
 
 /** Icono de pestaña según subdominio (agencia) o Simulacros.pe por defecto. */
 export async function resolveTenantIconResponse(): Promise<Response> {
-  const slug = (await headers()).get('x-tenant-slug')
+  const headerStore = await headers()
+  const slug =
+    headerStore.get('x-tenant-slug') ??
+    parseTenantSlugFromCookie(headerStore.get('cookie'))
   if (!slug) return loadPlatformIconResponse()
 
   const config = await fetchTenantConfigServer(slug)

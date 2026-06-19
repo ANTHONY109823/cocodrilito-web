@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { TENANT_SLUG_COOKIE } from '@/lib/utils/tenantSlugCookie'
 
 const ROOT_DOMAINS = [
   'simulacros.pe',
@@ -50,6 +51,33 @@ function applyTenantHeaders(response: NextResponse, slug: string, hostname: stri
   response.headers.set('x-tenant-host', hostname)
 }
 
+function setTenantSlugCookie(response: NextResponse, slug: string, hostname: string) {
+  response.cookies.set(TENANT_SLUG_COOKIE, slug, {
+    path: '/',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 30,
+    secure: !hostname.includes('localhost'),
+  })
+}
+
+function clearTenantSlugCookie(response: NextResponse) {
+  response.cookies.delete(TENANT_SLUG_COOKIE)
+}
+
+function withTenantContext(
+  response: NextResponse,
+  slug: string,
+  hostname: string,
+  opts?: { customDomain?: string }
+) {
+  applyTenantHeaders(response, slug, hostname)
+  setTenantSlugCookie(response, slug, hostname)
+  if (opts?.customDomain) {
+    response.headers.set('x-tenant-custom-domain', opts.customDomain)
+  }
+  return response
+}
+
 async function resolveCustomDomainHost(host: string): Promise<string | null> {
   const apiBase = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL
   if (!apiBase) return null
@@ -67,6 +95,24 @@ async function resolveCustomDomainHost(host: string): Promise<string | null> {
   }
 }
 
+async function resolveSlugForHost(host: string): Promise<string | null> {
+  if (!isRootDomain(host) && host.endsWith('.simulacros.pe')) {
+    const slug = host.replace('.simulacros.pe', '')
+    if (slug && slug !== 'www') return slug
+  }
+
+  if (!isRootDomain(host) && host.endsWith('.localhost')) {
+    const slug = host.replace('.localhost', '')
+    if (slug) return slug
+  }
+
+  if (!isRootDomain(host) && !host.endsWith('.simulacros.pe') && !host.endsWith('.localhost')) {
+    return resolveCustomDomainHost(host)
+  }
+
+  return null
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
   const host = normalizeHost(hostname)
@@ -76,37 +122,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  const tenantSlug = await resolveSlugForHost(host)
   const isIconRequest =
     pathname === '/favicon.ico' || pathname === '/icon' || pathname === '/apple-icon'
 
-  if (isIconRequest) {
-    if (!isRootDomain(host) && host.endsWith('.simulacros.pe')) {
-      const slug = host.replace('.simulacros.pe', '')
-      if (slug && slug !== 'www') {
-        const response = NextResponse.next()
-        applyTenantHeaders(response, slug, hostname)
-        return response
-      }
-    }
-
-    if (!isRootDomain(host) && host.endsWith('.localhost')) {
-      const slug = host.replace('.localhost', '')
-      if (slug) {
-        const response = NextResponse.next()
-        applyTenantHeaders(response, slug, hostname)
-        return response
-      }
-    }
-
-    if (!isRootDomain(host) && !host.endsWith('.simulacros.pe') && !host.endsWith('.localhost')) {
-      const slug = await resolveCustomDomainHost(host)
-      if (slug) {
-        const response = NextResponse.next()
-        applyTenantHeaders(response, slug, hostname)
-        response.headers.set('x-tenant-custom-domain', host)
-        return response
-      }
-    }
+  if (isIconRequest && tenantSlug) {
+    const customDomain =
+      !host.endsWith('.simulacros.pe') && !host.endsWith('.localhost') ? host : undefined
+    return withTenantContext(NextResponse.next(), tenantSlug, hostname, { customDomain })
   }
 
   if (isRootDomain(host) && pathname === '/login') {
@@ -141,41 +164,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (!isRootDomain(host) && host.endsWith('.simulacros.pe')) {
-    const slug = host.replace('.simulacros.pe', '')
-    if (slug && slug !== 'www') {
-      const url = request.nextUrl.clone()
-      url.searchParams.set('tenant_slug', slug)
-      const response = NextResponse.rewrite(url)
-      applyTenantHeaders(response, slug, hostname)
-      return response
-    }
+  if (tenantSlug) {
+    const url = request.nextUrl.clone()
+    url.searchParams.set('tenant_slug', tenantSlug)
+    const response = NextResponse.rewrite(url)
+    const customDomain =
+      !host.endsWith('.simulacros.pe') && !host.endsWith('.localhost') ? host : undefined
+    return withTenantContext(response, tenantSlug, hostname, { customDomain })
   }
 
-  if (!isRootDomain(host) && host.endsWith('.localhost')) {
-    const slug = host.replace('.localhost', '')
-    if (slug) {
-      const url = request.nextUrl.clone()
-      url.searchParams.set('tenant_slug', slug)
-      const response = NextResponse.rewrite(url)
-      applyTenantHeaders(response, slug, hostname)
-      return response
-    }
-  }
-
-  if (!isRootDomain(host) && !host.endsWith('.simulacros.pe') && !host.endsWith('.localhost')) {
-    const slug = await resolveCustomDomainHost(host)
-    if (slug) {
-      const url = request.nextUrl.clone()
-      url.searchParams.set('tenant_slug', slug)
-      const response = NextResponse.rewrite(url)
-      applyTenantHeaders(response, slug, hostname)
-      response.headers.set('x-tenant-custom-domain', host)
-      return response
-    }
-  }
-
-  return NextResponse.next()
+  const response = NextResponse.next()
+  if (isRootDomain(host)) clearTenantSlugCookie(response)
+  return response
 }
 
 export const config = {

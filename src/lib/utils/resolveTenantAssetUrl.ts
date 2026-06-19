@@ -41,8 +41,28 @@ export function buildTenantDynamicIconMetadata() {
   }
 }
 
-/** @deprecated Use buildTenantDynamicIconMetadata — el logo se resuelve en /icon según subdominio. */
+/** Favicon estable: logo same-origin de la agencia (no depende de hidratación cliente). */
+export function buildTenantIconMetadata(logoUrl?: string | null) {
+  const href = resolveTenantAssetUrl(logoUrl)
+  if (!href) return buildTenantDynamicIconMetadata()
+
+  const type = href.endsWith('.svg')
+    ? 'image/svg+xml'
+    : href.endsWith('.png')
+      ? 'image/png'
+      : href.endsWith('.webp')
+        ? 'image/webp'
+        : 'image/jpeg'
+
+  return {
+    icon: [{ url: href, type, sizes: 'any' }],
+    apple: [{ url: href, type }],
+    shortcut: [{ url: href, type }],
+  }
+}
+
+/** @deprecated Use buildTenantIconMetadata */
 export function buildFaviconMetadata(logoUrl?: string | null) {
   if (!logoUrl?.trim()) return undefined
-  return buildTenantDynamicIconMetadata()
+  return buildTenantIconMetadata(logoUrl)
 }
