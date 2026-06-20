@@ -213,8 +213,8 @@ function LoginForm() {
 
   const loginFieldLabel = isPlatformLogin ? 'Correo electrónico' : 'Usuario'
   const loginFieldPlaceholder = isPlatformLogin
-    ? 'admin@simulacros.pe'
-    : 'Ej. JPEREZ'
+    ? 'correo@ejemplo.com'
+    : 'Ej. usuario de acceso'
 
   return (
     <ThemeProvider config={config}>
@@ -354,7 +354,7 @@ function LoginForm() {
                   : isPlatformLogin
                     ? 'Solo administradores de plataforma. Agencias y alumnos: usa tu-agencia.simulacros.pe'
                     : resolvedTenantSlug
-                      ? `Alumnos: usuario (ej. JPEREZ) y contraseña = DNI de 8 dígitos. Admins: su correo.`
+                      ? `Alumnos: usuario de acceso y contraseña = DNI de 8 dígitos. Admins: su correo.`
                       : 'Acceso de institución'}
               </p>
 

@@ -1290,7 +1290,7 @@ function AdminPageContent() {
                 { label: 'Nombre(s) *', key: 'firstName', placeholder: 'Juan' },
                 { label: 'Apellido paterno *', key: 'paternalSurname', placeholder: 'Pérez' },
                 { label: 'Apellido materno', key: 'maternalSurname', placeholder: 'Mayta' },
-                { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '12345678', maxLength: 8 },
+                { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '00000000', maxLength: 8 },
               ].map(field => {
                 const fieldKey = field.key as keyof typeof form
                 return (
@@ -1424,7 +1424,7 @@ function AdminPageContent() {
               </p>
               <ul className="text-gray-500 text-xs mb-3 space-y-1 list-disc pl-4">
                 <li>Columnas: Nombres, Apellido paterno, Apellido materno, DNI, Grado actual, Días plan (30/60/180).</li>
-                <li>Usuario de acceso: inicial + apellido paterno (Juan Pérez → <strong className="text-[var(--color-text-secondary)]">JPEREZ</strong>).</li>
+                <li>Usuario de acceso: inicial + apellido paterno (ej. Juan García → <strong className="text-[var(--color-text-secondary)]">JGARCIA</strong>).</li>
                 <li>Contraseña sugerida: el DNI. Sin correo electrónico.</li>
                 <li>El grado actual asigna automáticamente el balotario del ascenso siguiente.</li>
               </ul>

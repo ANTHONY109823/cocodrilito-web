@@ -17,7 +17,7 @@ export function generateStudentLoginUsernameFromParts(
 }
 
 /**
- * Usuario de acceso alumno: inicial del nombre + apellido paterno (ej. Juan Pérez → JPEREZ).
+ * Usuario de acceso alumno: inicial del nombre + apellido paterno (ej. Juan García → JGARCIA).
  * Debe coincidir con StudentLoginUsernameHelper en el backend.
  */
 export function generateStudentLoginUsername(fullName: string): string | null {
