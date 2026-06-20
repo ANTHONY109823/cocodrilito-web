@@ -143,7 +143,7 @@ function revalidatePreviewRow(row: ExcelPreviewRow, allRows: ExcelPreviewRow[]):
   }
 
   if (row.dni.length !== 8 || !/^\d+$/.test(row.dni)) {
-    return { ...row, valid: false, error: 'DNI debe tener 8 dígitos (clave de acceso)' }
+    return { ...row, valid: false, error: 'DNI debe tener 8 dígitos (será la contraseña)' }
   }
 
   if (!row.loginUsername.trim()) {

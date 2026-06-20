@@ -1410,7 +1410,7 @@ function AdminPageContent() {
             {excelPreviewRows.filter((r) => !r.valid).length} con error
           </p>
           <p className="text-xs text-gray-500 rounded-lg px-3 py-2" style={{ backgroundColor: `${primaryMix(8)}`, border: `1px solid ${primaryMix(20)}` }}>
-            <strong className="text-[var(--color-text-secondary)]">Claves de acceso:</strong> el <strong>Usuario</strong> y el <strong>DNI</strong> (contraseña inicial).
+            <strong className="text-[var(--color-text-secondary)]">Acceso:</strong> ingresa con el <strong>Usuario</strong> y la contraseña es el <strong>DNI</strong> (8 dígitos).
             El grado actual define postulación, <strong>categoría</strong>, <strong>jerarquía</strong> y balotario de preguntas.
           </p>
           <div className="overflow-auto rounded-xl border border-[var(--color-surface-border)] max-h-[min(70vh,640px)]">
@@ -1421,8 +1421,8 @@ function AdminPageContent() {
                   <th className="px-2 py-2 font-medium min-w-[100px]">Nombres</th>
                   <th className="px-2 py-2 font-medium min-w-[100px]">Ap. paterno</th>
                   <th className="px-2 py-2 font-medium min-w-[90px]">Ap. materno</th>
-                  <th className="px-2 py-2 font-medium min-w-[90px]">DNI (clave)</th>
-                  <th className="px-2 py-2 font-medium min-w-[90px]">Usuario (clave)</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">DNI (contraseña)</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">Usuario</th>
                   <th className="px-2 py-2 font-medium min-w-[140px]">Grado actual</th>
                   <th className="px-2 py-2 font-medium min-w-[90px]">Postula</th>
                   <th className="px-2 py-2 font-medium min-w-[110px]">Categoría</th>
