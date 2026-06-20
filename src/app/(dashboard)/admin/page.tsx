@@ -36,11 +36,15 @@ import {
   CURRENT_GRADE_SELECT_OPTIONS,
   promotionGradeLabel,
   PROMOTION_GRADE_OPTIONS,
+  PROMOTION_HIERARCHY_OPTIONS,
+  hierarchyFromGrade,
   trackFromGrade,
   applyCurrentGradeSelection,
   rankLabelFromCurrentGrade,
   parseCurrentGradeFromText,
   inferCurrentGradeFromPostulation,
+  studentClassificationFromCurrentGrade,
+  resolveUserClassificationLabels,
 } from '@/lib/constants/promotionGrades'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
@@ -165,6 +169,7 @@ function AdminPageContent() {
   const [createdUser, setCreatedUser] = useState<{
     fullName: string; loginUsername?: string; dni: string; temporaryPassword?: string; planDays: number; expiresAt?: string
     currentGradeLabel?: string; postulationGradeLabel?: string; trackLabel?: string
+    hierarchyLabel?: string; categoryLabel?: string
   } | null>(null)
 
   const [form, setForm] = useState({
@@ -404,6 +409,8 @@ function AdminPageContent() {
         currentGradeLabel: CURRENT_GRADE_SELECT_OPTIONS.find((g) => g.value === savedForm.currentGrade)?.label,
         postulationGradeLabel: promotionGradeLabel(savedForm.promotionGrade!),
         trackLabel: trackLabel(savedForm.trackType),
+        hierarchyLabel: studentClassificationFromCurrentGrade(savedForm.currentGrade)?.hierarchyLabel,
+        categoryLabel: studentClassificationFromCurrentGrade(savedForm.currentGrade)?.categoryLabel,
       })
       setForm({
         firstName: '',
@@ -583,22 +590,29 @@ function AdminPageContent() {
 
   const openEditUser = (u: User) => {
     setEditTarget(u)
-    const trackValue =
-      ASCENSO_TRACK_OPTIONS.find((t) => t.key === u.activeTrackType)?.value ??
-      DEFAULT_QUESTION_TRACK
     const promotionValue =
-      PROMOTION_GRADE_OPTIONS.find((g) => g.key === u.promotionGrade)?.value ??
-      PROMOTION_GRADE_OPTIONS.find((g) => g.trackValue === trackValue)?.value ??
-      null
+      PROMOTION_GRADE_OPTIONS.find((g) => g.key === u.promotionGrade)?.value ?? null
     const currentGrade =
       parseCurrentGradeFromText(u.rank) ??
       (promotionValue != null ? inferCurrentGradeFromPostulation(promotionValue) : null)
+
+    let trackType = DEFAULT_QUESTION_TRACK
+    let promotionGrade: number | null = null
+
+    if (currentGrade != null) {
+      const applied = applyCurrentGradeSelection(currentGrade)
+      if (applied) {
+        trackType = applied.trackType
+        promotionGrade = applied.promotionGrade
+      }
+    }
+
     setEditForm({
       fullName: u.fullName,
       dni: u.dni,
       currentGrade,
-      trackType: trackValue,
-      promotionGrade: promotionValue,
+      trackType,
+      promotionGrade,
     })
   }
 
@@ -615,14 +629,19 @@ function AdminPageContent() {
         fullName: editForm.fullName,
         dni: editForm.dni,
         rank,
-        trackType: trackFromGrade(editForm.promotionGrade),
         promotionGrade: editForm.promotionGrade,
       })
-      const trackKey = ASCENSO_TRACK_OPTIONS.find((t) => t.value === editForm.trackType)?.key
       const gradeKey =
         editForm.promotionGrade != null
           ? PROMOTION_GRADE_OPTIONS.find((g) => g.value === editForm.promotionGrade)?.key ?? null
           : null
+      const hierarchyKey =
+        editForm.promotionGrade != null
+          ? PROMOTION_HIERARCHY_OPTIONS.find(
+              (h) => h.value === hierarchyFromGrade(editForm.promotionGrade!)
+            )?.key ?? null
+          : null
+      const trackKey = ASCENSO_TRACK_OPTIONS.find((t) => t.value === trackFromGrade(editForm.promotionGrade!))?.key
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editTarget.id
@@ -633,6 +652,7 @@ function AdminPageContent() {
                 rank,
                 activeTrackType: trackKey ?? u.activeTrackType,
                 promotionGrade: gradeKey,
+                promotionHierarchy: hierarchyKey,
               }
             : u
         )
@@ -880,6 +900,18 @@ function AdminPageContent() {
                         <span className="text-[var(--color-text-primary)]">{createdUser.postulationGradeLabel}</span>
                       </>
                     )}
+                    {createdUser.hierarchyLabel && (
+                      <>
+                        <span className="text-gray-500">Jerarquía</span>
+                        <span className="text-[var(--color-text-primary)]">{createdUser.hierarchyLabel}</span>
+                      </>
+                    )}
+                    {createdUser.categoryLabel && (
+                      <>
+                        <span className="text-gray-500">Categoría</span>
+                        <span className="text-[var(--color-text-primary)]">{createdUser.categoryLabel}</span>
+                      </>
+                    )}
                     {createdUser.trackLabel && (
                       <>
                         <span className="text-gray-500">Balotario</span>
@@ -960,7 +992,11 @@ function AdminPageContent() {
                       </div>
                       <div className="text-gray-500 text-xs mt-1">
                         Usuario <span className="text-[var(--color-text-primary)] font-medium">{u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'}</span>
-                        {' · '}DNI {u.dni} · {u.rank} · {u.unit}
+                        {' · '}DNI {u.dni} · {u.rank}
+                        {u.promotionGrade ? (
+                          <> · {resolveUserClassificationLabels(u).hierarchyLabel}</>
+                        ) : null}
+                        {' · '}{u.unit}
                       </div>
                       {u.subscription && (
                         <div className="text-xs mt-1.5 font-medium"
@@ -1097,7 +1133,11 @@ function AdminPageContent() {
                         )}
                       </div>
                       <div className="text-gray-600 text-xs mt-1">
-                        Usuario {u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'} · DNI {u.dni} · {u.rank} · {u.unit}
+                        Usuario {u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'} · DNI {u.dni} · {u.rank}
+                        {u.promotionGrade ? (
+                          <> · {resolveUserClassificationLabels(u).hierarchyLabel}</>
+                        ) : null}
+                        {' · '}{u.unit}
                       </div>
                       {u.subscription ? (
                         <div className="text-xs mt-1.5 font-medium text-gray-500">
@@ -1197,13 +1237,20 @@ function AdminPageContent() {
                     <option key={g.value} value={g.value}>{g.label}</option>
                   ))}
                 </select>
-                {form.promotionGrade != null && (
+                {form.promotionGrade != null && (() => {
+                  const cls = studentClassificationFromCurrentGrade(form.currentGrade)
+                  return (
                   <p className="text-xs mt-2 text-gray-500">
                     Postula a: <strong className="text-[var(--color-text-primary)]">{promotionGradeLabel(form.promotionGrade)}</strong>
                     {' · '}
+                    Categoría: <strong className="text-[var(--color-text-primary)]">{cls?.categoryLabel ?? '—'}</strong>
+                    {' · '}
+                    Jerarquía: <strong className="text-[var(--color-text-primary)]">{cls?.hierarchyLabel ?? '—'}</strong>
+                    {' · '}
                     Balotario: <strong className="text-[var(--color-text-primary)]">{trackLabel(form.trackType)}</strong>
                   </p>
-                )}
+                  )
+                })()}
               </div>
             </div>
             <div>
@@ -1519,13 +1566,20 @@ function AdminPageContent() {
                 <option key={g.value} value={g.value}>{g.label}</option>
               ))}
             </select>
-            {editForm.promotionGrade != null && (
+            {editForm.promotionGrade != null && (() => {
+              const cls = studentClassificationFromCurrentGrade(editForm.currentGrade)
+              return (
               <p className="text-xs mt-2 text-gray-500">
                 Postula a: <strong className="text-[var(--color-text-primary)]">{promotionGradeLabel(editForm.promotionGrade)}</strong>
                 {' · '}
+                Categoría: <strong className="text-[var(--color-text-primary)]">{cls?.categoryLabel ?? '—'}</strong>
+                {' · '}
+                Jerarquía: <strong className="text-[var(--color-text-primary)]">{cls?.hierarchyLabel ?? '—'}</strong>
+                {' · '}
                 Balotario: <strong className="text-[var(--color-text-primary)]">{trackLabel(editForm.trackType)}</strong>
               </p>
-            )}
+              )
+            })()}
           </div>
         </div>
       </Modal>
@@ -1642,6 +1696,12 @@ function AdminPageContent() {
             <div><span className="text-gray-500">DNI: </span><strong className="text-[var(--color-text-primary)]">{form.dni}</strong></div>
             <div><span className="text-gray-500">Grado actual: </span><strong className="text-[var(--color-text-primary)]">{form.currentGrade != null ? CURRENT_GRADE_SELECT_OPTIONS.find((g) => g.value === form.currentGrade)?.label : '—'}</strong></div>
             <div><span className="text-gray-500">Postula a: </span><strong className="text-[var(--color-text-primary)]">{form.promotionGrade != null ? promotionGradeLabel(form.promotionGrade) : '—'}</strong></div>
+            {form.promotionGrade != null && (
+              <>
+                <div><span className="text-gray-500">Categoría: </span><strong className="text-[var(--color-text-primary)]">{studentClassificationFromCurrentGrade(form.currentGrade)?.categoryLabel ?? '—'}</strong></div>
+                <div><span className="text-gray-500">Jerarquía: </span><strong className="text-[var(--color-text-primary)]">{studentClassificationFromCurrentGrade(form.currentGrade)?.hierarchyLabel ?? '—'}</strong></div>
+              </>
+            )}
             <div><span className="text-gray-500">Balotario: </span><strong className="text-[var(--color-text-primary)]">{trackLabel(form.trackType)}</strong></div>
             <div><span className="text-gray-500">Plan: </span><strong style={{ color: NEON }}>{form.planDays} días</strong></div>
           </div>

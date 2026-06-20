@@ -5,6 +5,7 @@ import {
   hierarchyLabelFromPostulationGrade,
   parseCurrentGradeFromText,
   promotionGradeLabel,
+  studentClassificationFromPostulationGrade,
 } from '@/lib/constants/promotionGrades'
 import { trackLabel } from '@/lib/constants/trackTypes'
 import { SUBSCRIPTION_PLANS } from '@/lib/constants/subscriptionPlans'
@@ -82,8 +83,10 @@ export function applyGradeToPreviewRow(row: ExcelPreviewRow, currentGrade: numbe
     trackType: applied.trackType,
     postulationGradeLabel: promotionGradeLabel(applied.promotionGrade),
     trackLabel: trackLabel(applied.trackType),
-    hierarchyLabel: hierarchyLabelFromPostulationGrade(applied.promotionGrade),
-    categoryLabel: categoryLabelFromTrack(applied.trackType),
+    ...(() => {
+      const c = studentClassificationFromPostulationGrade(applied.promotionGrade)
+      return { hierarchyLabel: c?.hierarchyLabel ?? '', categoryLabel: c?.categoryLabel ?? '' }
+    })(),
   }
 }
 
@@ -184,8 +187,10 @@ function revalidatePreviewRow(row: ExcelPreviewRow, allRows: ExcelPreviewRow[]):
     trackType: applied.trackType,
     postulationGradeLabel: promotionGradeLabel(applied.promotionGrade),
     trackLabel: trackLabel(applied.trackType),
-    hierarchyLabel: hierarchyLabelFromPostulationGrade(applied.promotionGrade),
-    categoryLabel: categoryLabelFromTrack(applied.trackType),
+    ...(() => {
+      const c = studentClassificationFromPostulationGrade(applied.promotionGrade)
+      return { hierarchyLabel: c?.hierarchyLabel ?? '', categoryLabel: c?.categoryLabel ?? '' }
+    })(),
     valid: true,
     error: null,
   }

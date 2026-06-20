@@ -1,4 +1,6 @@
 /** Jerarquías del balotario (~1500 preguntas c/u). Orden: mayor a menor jerarquía. */
+import { trackLabel } from './trackTypes'
+
 export const PROMOTION_HIERARCHY_OPTIONS = [
   { value: 2, key: 'OficialesSuperiores', label: 'Oficiales Superiores', trackValue: 2 },
   { value: 1, key: 'OficialesSubalternos', label: 'Oficiales Subalternos', trackValue: 2 },
@@ -91,6 +93,32 @@ export function hierarchyLabelFromPostulationGrade(gradeValue: number): string {
 /** Categoría PNP según balotario. */
 export function categoryLabelFromTrack(trackValue: number): string {
   return trackValue === 2 ? 'Oficiales de Armas' : 'Suboficiales de Armas'
+}
+
+/** Clasificación completa desde grado de postulación. */
+export function studentClassificationFromPostulationGrade(promotionGrade: number | null | undefined) {
+  if (promotionGrade == null) return null
+  const trackType = trackFromGrade(promotionGrade)
+  return {
+    promotionGrade,
+    trackType,
+    postulationLabel: promotionGradeLabel(promotionGrade),
+    hierarchyLabel: hierarchyLabelFromPostulationGrade(promotionGrade),
+    categoryLabel: categoryLabelFromTrack(trackType),
+    trackLabel: trackLabel(trackType),
+  }
+}
+
+/** Clasificación desde grado PNP actual (alta/edición admin). */
+export function studentClassificationFromCurrentGrade(currentGrade: number | null | undefined) {
+  if (currentGrade == null) return null
+  const applied = applyCurrentGradeSelection(currentGrade)
+  if (!applied) return null
+  return {
+    currentGrade,
+    rankLabel: applied.rank,
+    ...studentClassificationFromPostulationGrade(applied.promotionGrade),
+  }
 }
 
 export function trackFromGrade(gradeValue: number) {
@@ -209,10 +237,11 @@ export function postulationGradeFromCurrentRankText(rank: string | null | undefi
   return postulationGradeFromCurrent(current)
 }
 
-/** Jerarquía del balotario para listar categorías según perfil del alumno. */
+/** Jerarquía del balotario para exámenes y preguntas según perfil del alumno. */
 export function resolveUserHierarchyValue(user?: {
   promotionHierarchy?: string | null
   promotionGrade?: string | null
+  rank?: string | null
   activeTrackType?: string | null
 } | null): number {
   const fromHierarchy = parseHierarchyKey(user?.promotionHierarchy ?? null)
@@ -224,9 +253,32 @@ export function resolveUserHierarchyValue(user?: {
     if (h) return h
   }
 
+  const postulationFromRank = postulationGradeFromCurrentRankText(user?.rank)
+  if (postulationFromRank != null) {
+    const h = hierarchyFromGrade(postulationFromRank)
+    if (h) return h
+  }
+
   const trackValue =
     user?.activeTrackType === 'AscensosOficiales' || user?.activeTrackType === '2' ? 2 : 1
   return defaultHierarchyForTrack(trackValue)
+}
+
+export function resolveUserClassificationLabels(user?: {
+  promotionHierarchy?: string | null
+  promotionGrade?: string | null
+  rank?: string | null
+  activeTrackType?: string | null
+} | null) {
+  const hierarchyValue = resolveUserHierarchyValue(user)
+  const trackValue = trackValueForHierarchy(hierarchyValue)
+  const grade = parseGradeKey(user?.promotionGrade ?? null)
+  return {
+    hierarchyLabel: hierarchyLabel(hierarchyValue),
+    categoryLabel: categoryLabelFromTrack(trackValue),
+    postulationLabel: grade != null ? promotionGradeLabel(grade) : '—',
+    trackLabel: trackLabel(trackValue),
+  }
 }
 
 export function trackValueForHierarchy(hierarchyValue: number): number {
