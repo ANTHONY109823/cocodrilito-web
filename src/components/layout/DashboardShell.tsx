@@ -28,6 +28,8 @@ import { NavigationProgressBar } from '@/components/navigation/NavigationProgres
 import { useDashboardRoutePrefetch } from '@/hooks/useDashboardRoutePrefetch'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useNavigationStore } from '@/lib/store/navigationStore'
+import { displayStudentGrade } from '@/lib/utils/displayStudentGrade'
+import type { AuthUser } from '@/lib/store/authStore'
 
 function roleLabel(role?: string) {
   if (!role) return 'Estudiante'
@@ -36,6 +38,13 @@ function roleLabel(role?: string) {
     return 'Admin Agencia'
   }
   return 'Estudiante'
+}
+
+function userProfileSubtitle(user?: AuthUser | null): string {
+  if (!user?.role || user.role === 'Student') {
+    return displayStudentGrade(user?.rank)
+  }
+  return roleLabel(user.role)
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -145,7 +154,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="min-w-0">
                 <div className="truncate text-xs font-semibold text-[var(--color-text-primary)]">{user?.fullName}</div>
-                <div className="text-[10px] text-[var(--color-text-accent)]">{roleLabel(user?.role)}</div>
+                <div className="text-[10px] text-[var(--color-text-accent)]">{userProfileSubtitle(user)}</div>
               </div>
             </div>
             <button
