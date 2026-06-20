@@ -124,23 +124,6 @@ export async function middleware(request: NextRequest) {
 
   const tenantSlug = await resolveSlugForHost(host)
 
-  if (pathname === '/favicon.ico') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/brand/icon'
-    url.search = ''
-    const requestHeaders = new Headers(request.headers)
-    if (tenantSlug) {
-      requestHeaders.set('x-tenant-slug', tenantSlug)
-      requestHeaders.set('x-tenant-host', hostname)
-      const customDomain =
-        !host.endsWith('.simulacros.pe') && !host.endsWith('.localhost') ? host : undefined
-      if (customDomain) requestHeaders.set('x-tenant-custom-domain', customDomain)
-      const response = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
-      return withTenantContext(response, tenantSlug, hostname, { customDomain })
-    }
-    return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
-  }
-
   const isIconRequest = pathname === '/brand/icon' || pathname === '/brand/apple-icon'
 
   if (isIconRequest && tenantSlug) {

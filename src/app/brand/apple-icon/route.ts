@@ -1,7 +1,7 @@
-import { resolveTenantIconResponse } from '@/lib/tenant/resolveTenantIconResponse'
+import { resolveTenantAppleIconResponse } from '@/lib/tenant/resolveTenantIconResponse'
 
-export const revalidate = 600
+export const revalidate = 86400
 
 export async function GET() {
-  return resolveTenantIconResponse()
+  return resolveTenantAppleIconResponse()
 }

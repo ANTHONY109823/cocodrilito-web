@@ -1,8 +1,13 @@
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { resolveTenantSlugFromHeaders } from '@/lib/tenant/resolveTenantSlugFromHeaders'
-import { resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
+import {
+  APPLE_ICON_WIDTH,
+  buildTenantFaviconHref,
+  FAVICON_WIDTH,
+} from '@/lib/utils/resolveTenantAssetUrl'
 
 export function iconMimeType(href: string): string {
+  if (href.includes('/_next/image')) return 'image/png'
   if (href.endsWith('.svg')) return 'image/svg+xml'
   if (href.endsWith('.png')) return 'image/png'
   if (href.endsWith('.webp')) return 'image/webp'
@@ -25,13 +30,14 @@ export async function getTenantIconLinksForRequest(): Promise<TenantIconLinks> {
   }
 
   const config = await fetchTenantConfigServer(slug)
-  const logoHref = resolveTenantAssetUrl(config?.logoUrl)
-  if (logoHref) {
+  const iconHref = buildTenantFaviconHref(config?.logoUrl, FAVICON_WIDTH)
+  const appleHref = buildTenantFaviconHref(config?.logoUrl, APPLE_ICON_WIDTH)
+  if (iconHref) {
     return {
       slug,
-      iconHref: logoHref,
-      appleHref: logoHref,
-      type: iconMimeType(logoHref),
+      iconHref,
+      appleHref: appleHref ?? iconHref,
+      type: iconMimeType(iconHref),
     }
   }
 

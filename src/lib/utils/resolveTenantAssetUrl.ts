@@ -33,6 +33,26 @@ export function resolveTenantAssetUrl(url?: string | null): string | null {
   return `${origin}${path}`
 }
 
+const FAVICON_WIDTH = 32
+const APPLE_ICON_WIDTH = 180
+
+/**
+ * Favicon optimizado vía Next Image (~32px). Evita descargar logos de varios MB en la pestaña.
+ */
+export function buildTenantFaviconHref(
+  assetUrl?: string | null,
+  size: number = FAVICON_WIDTH
+): string | null {
+  const href = resolveTenantAssetUrl(assetUrl)
+  if (!href) return null
+  if (href.startsWith('/uploads/')) {
+    return `/_next/image?url=${encodeURIComponent(href)}&w=${size}&q=75`
+  }
+  return href
+}
+
+export { FAVICON_WIDTH, APPLE_ICON_WIDTH }
+
 export function buildTenantDynamicIconMetadata() {
   return {
     icon: [{ url: '/brand/icon', sizes: 'any' }],
@@ -41,23 +61,16 @@ export function buildTenantDynamicIconMetadata() {
   }
 }
 
-/** Favicon estable: logo same-origin de la agencia (no depende de hidratación cliente). */
+/** Favicon estable: logo optimizado same-origin (32px, no proxy server-side). */
 export function buildTenantIconMetadata(logoUrl?: string | null) {
-  const href = resolveTenantAssetUrl(logoUrl)
+  const href = buildTenantFaviconHref(logoUrl, FAVICON_WIDTH)
+  const appleHref = buildTenantFaviconHref(logoUrl, APPLE_ICON_WIDTH)
   if (!href) return buildTenantDynamicIconMetadata()
 
-  const type = href.endsWith('.svg')
-    ? 'image/svg+xml'
-    : href.endsWith('.png')
-      ? 'image/png'
-      : href.endsWith('.webp')
-        ? 'image/webp'
-        : 'image/jpeg'
-
   return {
-    icon: [{ url: href, type, sizes: 'any' }],
-    apple: [{ url: href, type }],
-    shortcut: [{ url: href, type }],
+    icon: [{ url: href, type: 'image/png', sizes: '32x32' }],
+    apple: [{ url: appleHref ?? href, type: 'image/png' }],
+    shortcut: [{ url: href, type: 'image/png' }],
   }
 }
 
