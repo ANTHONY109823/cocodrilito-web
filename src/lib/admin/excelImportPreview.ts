@@ -1,10 +1,10 @@
 import {
   applyCurrentGradeSelection,
+  categoryLabelFromTrack,
   CURRENT_GRADE_SELECT_OPTIONS,
-  hierarchyLabel,
+  hierarchyLabelFromPostulationGrade,
   parseCurrentGradeFromText,
   promotionGradeLabel,
-  trackFromGrade,
 } from '@/lib/constants/promotionGrades'
 import { trackLabel } from '@/lib/constants/trackTypes'
 import { SUBSCRIPTION_PLANS } from '@/lib/constants/subscriptionPlans'
@@ -29,6 +29,8 @@ export interface ExcelPreviewRow {
   promotionGrade: number
   trackType: number
   rankLabel: string
+  hierarchyLabel: string
+  categoryLabel: string
   valid: boolean
   error?: string | null
 }
@@ -80,6 +82,8 @@ export function applyGradeToPreviewRow(row: ExcelPreviewRow, currentGrade: numbe
     trackType: applied.trackType,
     postulationGradeLabel: promotionGradeLabel(applied.promotionGrade),
     trackLabel: trackLabel(applied.trackType),
+    hierarchyLabel: hierarchyLabelFromPostulationGrade(applied.promotionGrade),
+    categoryLabel: categoryLabelFromTrack(applied.trackType),
   }
 }
 
@@ -180,11 +184,13 @@ function revalidatePreviewRow(row: ExcelPreviewRow, allRows: ExcelPreviewRow[]):
     trackType: applied.trackType,
     postulationGradeLabel: promotionGradeLabel(applied.promotionGrade),
     trackLabel: trackLabel(applied.trackType),
+    hierarchyLabel: hierarchyLabelFromPostulationGrade(applied.promotionGrade),
+    categoryLabel: categoryLabelFromTrack(applied.trackType),
     valid: true,
     error: null,
   }
 }
 
 export function hierarchyLabelForRow(row: ExcelPreviewRow): string {
-  return hierarchyLabel(trackFromGrade(row.promotionGrade))
+  return row.hierarchyLabel || hierarchyLabelFromPostulationGrade(row.promotionGrade)
 }

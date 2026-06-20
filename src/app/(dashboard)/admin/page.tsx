@@ -56,7 +56,6 @@ import {
   type ExcelPreviewRow,
   normalizePreviewRowsFromApi,
   updatePreviewRowField,
-  hierarchyLabelForRow,
 } from '@/lib/admin/excelImportPreview'
 interface User {
   id: string
@@ -1365,10 +1364,10 @@ function AdminPageContent() {
           </p>
           <p className="text-xs text-gray-500 rounded-lg px-3 py-2" style={{ backgroundColor: `${primaryMix(8)}`, border: `1px solid ${primaryMix(20)}` }}>
             <strong className="text-[var(--color-text-secondary)]">Claves de acceso:</strong> el <strong>Usuario</strong> y el <strong>DNI</strong> (contraseña inicial).
-            El grado actual asigna automáticamente postulación, jerarquía y balotario de preguntas.
+            El grado actual define postulación, <strong>categoría</strong>, <strong>jerarquía</strong> y balotario de preguntas.
           </p>
           <div className="overflow-auto rounded-xl border border-[var(--color-surface-border)] max-h-[min(70vh,640px)]">
-            <table className="w-full text-xs min-w-[1100px]">
+            <table className="w-full text-xs min-w-[1200px]">
               <thead className="sticky top-0 z-10" style={{ backgroundColor: SURFACE }}>
                 <tr className="text-left text-gray-500">
                   <th className="px-2 py-2 font-medium w-10">#</th>
@@ -1379,6 +1378,7 @@ function AdminPageContent() {
                   <th className="px-2 py-2 font-medium min-w-[90px]">Usuario (clave)</th>
                   <th className="px-2 py-2 font-medium min-w-[140px]">Grado actual</th>
                   <th className="px-2 py-2 font-medium min-w-[90px]">Postula</th>
+                  <th className="px-2 py-2 font-medium min-w-[110px]">Categoría</th>
                   <th className="px-2 py-2 font-medium min-w-[100px]">Jerarquía</th>
                   <th className="px-2 py-2 font-medium min-w-[110px]">Balotario</th>
                   <th className="px-2 py-2 font-medium min-w-[80px]">Plan</th>
@@ -1445,7 +1445,8 @@ function AdminPageContent() {
                       </select>
                     </td>
                     <td className="px-2 py-2 align-top text-[var(--color-text-secondary)]">{row.postulationGradeLabel}</td>
-                    <td className="px-2 py-2 align-top text-gray-400">{hierarchyLabelForRow(row)}</td>
+                    <td className="px-2 py-2 align-top text-gray-400">{row.categoryLabel}</td>
+                    <td className="px-2 py-2 align-top text-gray-400">{row.hierarchyLabel}</td>
                     <td className="px-2 py-2 align-top text-gray-400">{row.trackLabel}</td>
                     <td className="px-1 py-1 align-top">
                       <select

@@ -82,6 +82,17 @@ export function hierarchyFromGrade(gradeValue: number) {
   return PROMOTION_GRADE_OPTIONS.find((g) => g.value === gradeValue)?.hierarchy ?? null
 }
 
+/** Jerarquía del balotario según grado al que postula (determina las preguntas). */
+export function hierarchyLabelFromPostulationGrade(gradeValue: number): string {
+  const hierarchy = hierarchyFromGrade(gradeValue)
+  return hierarchy != null ? hierarchyLabel(hierarchy) : '—'
+}
+
+/** Categoría PNP según balotario. */
+export function categoryLabelFromTrack(trackValue: number): string {
+  return trackValue === 2 ? 'Oficiales de Armas' : 'Suboficiales de Armas'
+}
+
 export function trackFromGrade(gradeValue: number) {
   return PROMOTION_GRADE_OPTIONS.find((g) => g.value === gradeValue)?.trackValue ?? 1
 }
