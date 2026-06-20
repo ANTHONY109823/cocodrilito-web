@@ -58,9 +58,13 @@ import {
 } from '@/lib/utils/studentLoginUsername'
 import {
   type ExcelPreviewRow,
+  applyBackendImportErrors,
+  buildExcelConfirmRow,
   normalizePreviewRowsFromApi,
+  revalidatePreviewRows,
   updatePreviewRowField,
 } from '@/lib/admin/excelImportPreview'
+import { getTenantAccessUrl } from '@/lib/utils/tenantUrl'
 interface User {
   id: string
   fullName: string
@@ -148,6 +152,15 @@ function AdminPageContent() {
   const [excelPreviewOpen, setExcelPreviewOpen] = useState(false)
   const [excelPreviewFileName, setExcelPreviewFileName] = useState('')
   const [excelPreviewRows, setExcelPreviewRows] = useState<ExcelPreviewRow[]>([])
+  const [excelConfirmNotice, setExcelConfirmNotice] = useState<{ ok: boolean; text: string } | null>(null)
+  const [excelImportCreatedUsers, setExcelImportCreatedUsers] = useState<Array<{
+    fullName: string
+    loginUsername: string
+    dni: string
+    temporaryPassword: string
+    planDays: number
+    expiresAt?: string
+  }> | null>(null)
 
   const [editTarget, setEditTarget] = useState<User | null>(null)
   const [editForm, setEditForm] = useState({
@@ -189,6 +202,13 @@ function AdminPageContent() {
     else if (rawTab === 'create') router.replace('/admin?tab=users&sub=crear')
     else if (rawTab === 'subscriptions' || rawTab === 'ventas' || rawTab === 'plans') router.replace('/admin')
   }, [rawTab, router])
+
+  useEffect(() => {
+    if (tab !== 'users' || tenantProfile) return
+    void tenantAdminApi.getProfile()
+      .then((res) => setTenantProfile(res.data))
+      .catch(() => { /* perfil opcional para URL de acceso */ })
+  }, [tab, tenantProfile])
 
   const handleCurrentGradeChange = (value: number) => {
     const applied = applyCurrentGradeSelection(value)
@@ -257,6 +277,7 @@ function AdminPageContent() {
       const rows = normalizePreviewRowsFromApi(data.rows ?? [])
       setExcelPreviewFileName(data.fileName ?? file.name)
       setExcelPreviewRows(rows)
+      setExcelConfirmNotice(null)
       setExcelPreviewOpen(true)
       setMsg({
         text: rows.length > 0
@@ -273,47 +294,84 @@ function AdminPageContent() {
   }
 
   const handleExcelConfirm = async () => {
-    const validRows = excelPreviewRows.filter((r) => r.valid)
+    const revalidated = revalidatePreviewRows(excelPreviewRows)
+    setExcelPreviewRows(revalidated)
+    const validRows = revalidated.filter((r) => r.valid)
     if (validRows.length === 0) {
-      setMsg({ text: 'No hay filas válidas para importar', ok: false })
+      setExcelConfirmNotice({ ok: false, text: 'No hay filas válidas para importar. Corrija los errores en la tabla.' })
       return
     }
-    setConfirmingExcel(true)
+
+    let payloadRows
     try {
-      const res = await apiClient.post('/admin/users/import/excel/confirm', {
-        rows: validRows.map((r) => ({
-          rowNumber: r.rowNumber,
-          firstName: r.firstName,
-          paternalSurname: r.paternalSurname,
-          maternalSurname: r.maternalSurname,
-          dni: r.dni,
-          fullName: r.fullName,
-          loginUsername: r.loginUsername,
-          rankLabel: r.rankLabel,
-          planDays: r.planDays,
-          promotionGrade: r.promotionGrade,
-          currentPromotionGrade: r.currentGrade,
-          trackType: r.trackType,
-        })),
+      payloadRows = validRows.map((r) => buildExcelConfirmRow(r))
+    } catch (err: unknown) {
+      setExcelConfirmNotice({
+        ok: false,
+        text: err instanceof Error ? err.message : 'Hay filas con datos incompletos',
       })
-      const data = res.data as { created?: number; failed?: number; errors?: string[]; message?: string }
+      return
+    }
+
+    setConfirmingExcel(true)
+    setExcelConfirmNotice(null)
+    try {
+      const res = await apiClient.post('/admin/users/import/excel/confirm', { rows: payloadRows })
+      const data = res.data as {
+        created?: number
+        failed?: number
+        errors?: string[]
+        message?: string
+        createdUsers?: Array<{
+          fullName: string
+          loginUsername: string
+          dni: string
+          temporaryPassword: string
+          planDays: number
+          expiresAt?: string
+        }>
+      }
       const created = data.created ?? 0
       const errors = data.errors ?? []
+      const createdUsers = data.createdUsers ?? []
+
       setImportResult({ created, failed: data.failed ?? errors.length, errors })
-      setMsg({
-        text: created > 0
-          ? `✅ ${created} usuarios creados${errors.length ? ` · ${errors.length} filas con error` : ''}`
-          : `⚠️ No se importó ningún usuario${errors.length ? ` · ${errors.length} errores` : ''}`,
-        ok: created > 0,
-      })
+
       if (created > 0) {
         setExcelPreviewOpen(false)
         setExcelPreviewRows([])
         setExcelPreviewFileName('')
+        setExcelImportCreatedUsers(createdUsers.map((u) => ({
+          fullName: u.fullName,
+          loginUsername: u.loginUsername,
+          dni: u.dni,
+          temporaryPassword: u.temporaryPassword ?? u.dni,
+          planDays: u.planDays,
+          expiresAt: u.expiresAt,
+        })))
+        setMsg({
+          text: `✅ ${created} usuarios creados con acceso por usuario + DNI${errors.length ? ` · ${errors.length} filas con error` : ''}`,
+          ok: true,
+        })
+        router.push('/admin?tab=users&sub=activos')
         void loadData()
+      } else {
+        setExcelPreviewRows((rows) => applyBackendImportErrors(rows, errors))
+        setExcelConfirmNotice({
+          ok: false,
+          text: errors.length > 0
+            ? `No se grabó ningún usuario. ${errors.length} error(es) — revise la columna Estado.`
+            : data.message ?? 'No se importó ningún usuario',
+        })
+        setMsg({
+          text: errors[0] ?? data.message ?? 'No se importó ningún usuario',
+          ok: false,
+        })
       }
     } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error al grabar usuarios'), ok: false })
+      const text = getApiErrorMessage(err, 'Error al grabar usuarios')
+      setExcelConfirmNotice({ ok: false, text })
+      setMsg({ text, ok: false })
     } finally {
       setConfirmingExcel(false)
     }
@@ -1402,6 +1460,20 @@ function AdminPageContent() {
         }
       >
         <div className="space-y-3">
+          {excelConfirmNotice && (
+            <div
+              className="rounded-xl px-3 py-2 text-xs font-medium"
+              style={{
+                backgroundColor: excelConfirmNotice.ok
+                  ? 'var(--color-primary-bg)'
+                  : 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
+                border: `1px solid ${excelConfirmNotice.ok ? primaryMix(35) : 'color-mix(in srgb, var(--color-danger) 35%, transparent)'}`,
+                color: excelConfirmNotice.ok ? NEON : RED,
+              }}
+            >
+              {excelConfirmNotice.text}
+            </div>
+          )}
           <p className="text-xs text-gray-500">
             Archivo: <strong className="text-[var(--color-text-secondary)]">{excelPreviewFileName || '—'}</strong>
             {' · '}
@@ -1525,6 +1597,54 @@ function AdminPageContent() {
               Corrija las filas en rojo en la tabla. Solo se grabarán las filas válidas.
             </p>
           )}
+        </div>
+      </Modal>
+
+      <Modal
+        open={excelImportCreatedUsers != null && excelImportCreatedUsers.length > 0}
+        onClose={() => setExcelImportCreatedUsers(null)}
+        title="✅ Usuarios creados — credenciales de acceso"
+        maxWidth="max-w-lg"
+        footer={
+          <Button size="sm" onClick={() => setExcelImportCreatedUsers(null)}>
+            Entendido
+          </Button>
+        }
+      >
+        <div className="space-y-3 text-sm">
+          <p className="text-xs text-gray-500">
+            Cada alumno ingresa en la URL de su agencia con su <strong className="text-[var(--color-text-secondary)]">Usuario</strong> y
+            contraseña <strong className="text-[var(--color-text-secondary)]">DNI</strong> (8 dígitos).
+          </p>
+          {tenantProfile && (
+            <div className="rounded-xl px-3 py-2" style={{ backgroundColor: `${primaryMix(8)}`, border: `1px solid ${primaryMix(25)}` }}>
+              <p className="text-xs text-gray-500 mb-1">Enlace de la agencia</p>
+              <TenantAccessUrl slug={tenantProfile.slug} customDomain={tenantProfile.customDomain} compact />
+            </div>
+          )}
+          {!tenantProfile && user?.tenantSlug && (
+            <p className="text-xs text-gray-500 break-all">
+              URL: <strong className="text-[var(--color-text-secondary)]">{getTenantAccessUrl(user.tenantSlug)}</strong>
+            </p>
+          )}
+          <div className="space-y-2 max-h-[min(50vh,360px)] overflow-y-auto">
+            {excelImportCreatedUsers?.map((u) => (
+              <div
+                key={`${u.loginUsername}-${u.dni}`}
+                className="rounded-xl px-3 py-2 text-xs grid grid-cols-2 gap-x-3 gap-y-1"
+                style={{ backgroundColor: SURFACE, border: '1px solid var(--color-surface-border)' }}
+              >
+                <span className="text-gray-500">Nombre</span>
+                <span className="text-[var(--color-text-primary)] font-medium">{u.fullName}</span>
+                <span className="text-gray-500">Usuario</span>
+                <span className="text-[var(--color-text-primary)] font-bold tracking-wide">{u.loginUsername}</span>
+                <span className="text-gray-500">Contraseña</span>
+                <span className="text-[var(--color-text-primary)] font-mono">{u.temporaryPassword}</span>
+                <span className="text-gray-500">Plan</span>
+                <span style={{ color: NEON }}>{u.planDays} días</span>
+              </div>
+            ))}
+          </div>
         </div>
       </Modal>
 

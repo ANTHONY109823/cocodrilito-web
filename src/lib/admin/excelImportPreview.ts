@@ -133,6 +133,45 @@ export function updatePreviewRowField(
   return revalidatePreviewRows(updated)
 }
 
+export function buildExcelConfirmRow(row: ExcelPreviewRow) {
+  if (row.currentGrade == null) {
+    throw new Error(`Fila ${row.rowNumber}: grado actual requerido`)
+  }
+  const applied = applyCurrentGradeSelection(row.currentGrade)
+  if (!applied) {
+    throw new Error(`Fila ${row.rowNumber}: grado sin postulación válida`)
+  }
+
+  return {
+    rowNumber: row.rowNumber,
+    firstName: row.firstName.trim(),
+    paternalSurname: row.paternalSurname.trim(),
+    maternalSurname: row.maternalSurname?.trim() || null,
+    dni: row.dni.trim(),
+    fullName: buildStudentFullName(row.firstName, row.paternalSurname, row.maternalSurname ?? ''),
+    loginUsername: row.loginUsername.trim().toUpperCase(),
+    rankLabel: applied.rank,
+    planDays: row.planDays,
+    promotionGrade: applied.promotionGrade,
+    currentPromotionGrade: applied.currentGrade,
+    trackType: applied.trackType,
+  }
+}
+
+export function applyBackendImportErrors(rows: ExcelPreviewRow[], errors: string[]): ExcelPreviewRow[] {
+  if (errors.length === 0) return rows
+
+  return rows.map((row) => {
+    const match = errors.find((e) => e.startsWith(`Fila ${row.rowNumber}:`))
+    if (!match) return row
+    return {
+      ...row,
+      valid: false,
+      error: match.replace(`Fila ${row.rowNumber}: `, '').trim(),
+    }
+  })
+}
+
 export function revalidatePreviewRows(rows: ExcelPreviewRow[]): ExcelPreviewRow[] {
   return rows.map((row) => revalidatePreviewRow(row, rows))
 }
