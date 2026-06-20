@@ -1252,23 +1252,32 @@ function AdminPageContent() {
               </div>
             </div>
 
-            {/* Carga Excel con revisión previa */}
-            <div className="rounded-2xl p-4 panel-elevated" style={{ border: `1px dashed ${purpleMix(35)}` }}>
-              <p className="text-xs text-gray-500 mb-3">
-                Para varios alumnos: cargue el Excel, <strong className="text-[var(--color-text-secondary)]">revise todos los datos en la tabla</strong> y recién entonces grabe el bloque completo.
-              </p>
+            {/* Acciones: usuario individual o carga masiva */}
+            <div className="grid md:grid-cols-2 gap-3 pt-1">
+              <button
+                type="submit"
+                disabled={saving || previewingExcel || confirmingExcel}
+                className="w-full py-3.5 rounded-xl font-bold text-sm transition-opacity"
+                style={{
+                  background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
+                  color: 'var(--color-text-primary)',
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving ? 'Grabando...' : '➕ Grabar usuario con acceso inmediato'}
+              </button>
               <button
                 type="button"
                 onClick={() => excelPreviewInputRef.current?.click()}
-                disabled={previewingExcel || confirmingExcel}
-                className="w-full py-3 rounded-xl text-sm font-bold transition-opacity"
+                disabled={saving || previewingExcel || confirmingExcel}
+                className="w-full py-3.5 rounded-xl text-sm font-bold transition-opacity"
                 style={{
                   background: `linear-gradient(135deg, ${PURPLE}, #7C3AED)`,
                   color: '#fff',
                   opacity: previewingExcel ? 0.7 : 1,
                 }}
               >
-                {previewingExcel ? 'Leyendo Excel...' : '📋 Cargar Excel y revisar datos'}
+                {previewingExcel ? 'Leyendo Excel...' : '📋 Carga masiva Excel — revisar y grabar'}
               </button>
               <input
                 ref={excelPreviewInputRef}
@@ -1283,8 +1292,9 @@ function AdminPageContent() {
             <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${purpleMix(25)}` }}>
               <h3 className="text-[var(--color-text-primary)] font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
               <p className="text-gray-500 text-xs mb-2">
-                Descargue la plantilla <strong className="text-[var(--color-text-secondary)]">.xlsx</strong> y complete una fila por alumno.
-                Use el botón de arriba para cargar, revisar y grabar.
+                Para varios alumnos use el botón morado de arriba: cargue el Excel,{' '}
+                <strong className="text-[var(--color-text-secondary)]">revise la tabla</strong> y grabe el bloque completo.
+                También puede descargar la plantilla aquí.
               </p>
               <ul className="text-gray-500 text-xs mb-3 space-y-1 list-disc pl-4">
                 <li>Columnas: Nombres, Apellido paterno, Apellido materno, DNI, Grado actual, Días plan (30/60/180).</li>
@@ -1321,12 +1331,6 @@ function AdminPageContent() {
                 </button>
               </div>
             </div>
-
-            <button type="submit" disabled={saving}
-              className="w-full py-3 rounded-xl font-bold text-sm"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)', opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'Creando...' : '➕ Crear usuario con acceso inmediato'}
-            </button>
           </form>
         </div>
       )}
