@@ -61,7 +61,7 @@ const nextConfig: NextConfig = {
       .replace(/\/$/, '')
 
     return [
-      { source: '/favicon.ico', destination: '/icon' },
+      { source: '/favicon.ico', destination: '/brand/icon' },
       { source: '/uploads/:path*', destination: `${apiOrigin}/uploads/:path*` },
     ]
   },

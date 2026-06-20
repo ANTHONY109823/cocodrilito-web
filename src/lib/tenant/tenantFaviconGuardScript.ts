@@ -11,7 +11,7 @@ function pin(){
   document.querySelectorAll('link[rel*="icon"],link[rel="shortcut icon"]').forEach(function(n){
     var u=n.getAttribute('href')||'';
     if(u===H||n.getAttribute('data-pinned-tenant-icon')){ok=true;return;}
-    if(u.indexOf('/icon?')>-1||u==='/favicon.ico'||u==='/favicon.svg'||u.indexOf('vercel')>-1){
+    if(u.indexOf('/icon?')===0||u.indexOf('/favicon.ico')===0||u==='/icon'||u==='/favicon.svg'||u.indexOf('vercel')>-1){
       n.parentNode&&n.parentNode.removeChild(n);
     }
   });

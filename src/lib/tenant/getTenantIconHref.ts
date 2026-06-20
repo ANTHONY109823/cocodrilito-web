@@ -21,7 +21,7 @@ export type TenantIconLinks = {
 export async function getTenantIconLinksForRequest(): Promise<TenantIconLinks> {
   const slug = await resolveTenantSlugFromHeaders()
   if (!slug) {
-    return { slug: null, iconHref: '/favicon.svg', appleHref: '/apple-icon' }
+    return { slug: null, iconHref: '/favicon.svg', appleHref: '/favicon.svg' }
   }
 
   const config = await fetchTenantConfigServer(slug)
@@ -35,5 +35,5 @@ export async function getTenantIconLinksForRequest(): Promise<TenantIconLinks> {
     }
   }
 
-  return { slug, iconHref: '/icon', appleHref: '/apple-icon' }
+  return { slug, iconHref: '/brand/icon', appleHref: '/brand/apple-icon' }
 }

@@ -2,6 +2,7 @@ import { resolveTenantIconResponse } from '@/lib/tenant/resolveTenantIconRespons
 
 export const revalidate = 600
 
+/** Icono dinámico por tenant (fuera de app/icon para evitar favicon.ico estático de Next). */
 export async function GET() {
   return resolveTenantIconResponse()
 }

@@ -8,8 +8,8 @@ import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
 import { TenantHeadIcons } from '@/components/tenant/TenantHeadIcons'
 
 const PLATFORM_ICONS: Metadata['icons'] = {
-  icon: [{ url: '/icon', type: 'image/svg+xml', sizes: 'any' }],
-  apple: [{ url: '/apple-icon', type: 'image/svg+xml' }],
+  icon: [{ url: '/favicon.svg', type: 'image/svg+xml', sizes: 'any' }],
+  apple: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   shortcut: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
 }
 

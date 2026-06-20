@@ -35,9 +35,9 @@ export function resolveTenantAssetUrl(url?: string | null): string | null {
 
 export function buildTenantDynamicIconMetadata() {
   return {
-    icon: [{ url: '/icon', sizes: 'any' }],
-    apple: [{ url: '/apple-icon' }],
-    shortcut: [{ url: '/icon' }],
+    icon: [{ url: '/brand/icon', sizes: 'any' }],
+    apple: [{ url: '/brand/apple-icon' }],
+    shortcut: [{ url: '/brand/icon' }],
   }
 }
 
