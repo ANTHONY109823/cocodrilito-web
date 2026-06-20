@@ -63,6 +63,7 @@ import {
   normalizePreviewRowsFromApi,
   revalidatePreviewRows,
   updatePreviewRowField,
+  validateExcelUploadFile,
 } from '@/lib/admin/excelImportPreview'
 import { getTenantAccessUrl } from '@/lib/utils/tenantUrl'
 interface User {
@@ -264,6 +265,12 @@ function AdminPageContent() {
     setPreviewingExcel(true)
     setImportResult(null)
     try {
+      const fileError = await validateExcelUploadFile(file)
+      if (fileError) {
+        setMsg({ text: fileError, ok: false })
+        return
+      }
+
       const formData = new FormData()
       formData.append('file', file)
       const res = await apiClient.post('/admin/users/import/excel/preview', formData, {
@@ -286,7 +293,11 @@ function AdminPageContent() {
         ok: rows.some((r) => r.valid),
       })
     } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error al leer el Excel'), ok: false })
+      const raw = getApiErrorMessage(err, 'Error al leer el Excel')
+      const text = raw.toLowerCase().includes('corrupted')
+        ? 'Archivo Excel inválido. Descargue la plantilla .xlsx de este panel, complétela y vuelva a subirla (no use .xls ni CSV).'
+        : raw
+      setMsg({ text, ok: false })
     } finally {
       setPreviewingExcel(false)
       if (excelPreviewInputRef.current) excelPreviewInputRef.current.value = ''
@@ -384,7 +395,26 @@ function AdminPageContent() {
   const handleDownloadExcelTemplate = async () => {
     try {
       const res = await apiClient.get('/admin/users/import/template', { responseType: 'blob' })
-      const url = window.URL.createObjectURL(res.data as Blob)
+      const blob = res.data as Blob
+
+      const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer())
+      const isValidXlsx = header.length >= 2 && header[0] === 0x50 && header[1] === 0x4b
+      if (blob.size < 512 || !isValidXlsx) {
+        const text = await blob.text()
+        if (text.trimStart().startsWith('{')) {
+          try {
+            const json = JSON.parse(text) as { message?: string }
+            throw new Error(json.message ?? 'No se pudo descargar la plantilla')
+          } catch (parseErr) {
+            if (parseErr instanceof Error && parseErr.message !== 'Unexpected token') {
+              throw parseErr
+            }
+          }
+        }
+        throw new Error('La plantilla descargada no es válida. Recargue la página e intente de nuevo.')
+      }
+
+      const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = 'plantilla_usuarios_agencia.xlsx'
@@ -1378,7 +1408,7 @@ function AdminPageContent() {
               <input
                 ref={excelPreviewInputRef}
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 className="hidden"
                 onChange={handleExcelPreview}
               />

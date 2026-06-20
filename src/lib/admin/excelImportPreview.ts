@@ -133,6 +133,27 @@ export function updatePreviewRowField(
   return revalidatePreviewRows(updated)
 }
 
+export async function validateExcelUploadFile(file: File): Promise<string | null> {
+  const name = file.name.toLowerCase()
+  if (!name.endsWith('.xlsx')) {
+    if (name.endsWith('.xls')) {
+      return 'El formato .xls (Excel antiguo) no es compatible. Abra el archivo en Excel y guárdelo como .xlsx, o descargue la plantilla de este panel.'
+    }
+    if (name.endsWith('.csv')) {
+      return 'No se admiten archivos CSV. Descargue la plantilla Excel (.xlsx) desde este panel.'
+    }
+    return 'Solo se admiten archivos .xlsx. Descargue la plantilla oficial desde este panel.'
+  }
+
+  const header = new Uint8Array(await file.slice(0, 4).arrayBuffer())
+  const isZipXlsx = header.length >= 2 && header[0] === 0x50 && header[1] === 0x4b
+  if (!isZipXlsx) {
+    return 'El archivo no es un Excel .xlsx válido. Descargue la plantilla oficial, complétela y vuelva a subirla.'
+  }
+
+  return null
+}
+
 export function buildExcelConfirmRow(row: ExcelPreviewRow) {
   if (row.currentGrade == null) {
     throw new Error(`Fila ${row.rowNumber}: grado actual requerido`)
