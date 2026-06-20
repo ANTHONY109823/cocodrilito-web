@@ -52,6 +52,12 @@ import {
   generateStudentLoginUsername,
   generateStudentLoginUsernameFromParts,
 } from '@/lib/utils/studentLoginUsername'
+import {
+  type ExcelPreviewRow,
+  normalizePreviewRowsFromApi,
+  updatePreviewRowField,
+  hierarchyLabelForRow,
+} from '@/lib/admin/excelImportPreview'
 interface User {
   id: string
   fullName: string
@@ -82,25 +88,6 @@ interface Subscription {
   paymentReference: string
   status: string
   createdAt: string
-}
-
-interface ExcelPreviewRow {
-  rowNumber: number
-  firstName: string
-  paternalSurname: string
-  maternalSurname?: string | null
-  dni: string
-  fullName: string
-  loginUsername: string
-  currentGradeLabel: string
-  postulationGradeLabel: string
-  trackLabel: string
-  planDays: number
-  promotionGrade: number
-  trackType: number
-  rankLabel: string
-  valid: boolean
-  error?: string | null
 }
 
 type AdminTab = 'dashboard' | 'users'
@@ -263,7 +250,7 @@ function AdminPageContent() {
         rows?: ExcelPreviewRow[]
         message?: string
       }
-      const rows = data.rows ?? []
+      const rows = normalizePreviewRowsFromApi(data.rows ?? [])
       setExcelPreviewFileName(data.fileName ?? file.name)
       setExcelPreviewRows(rows)
       setExcelPreviewOpen(true)
@@ -301,6 +288,7 @@ function AdminPageContent() {
           rankLabel: r.rankLabel,
           planDays: r.planDays,
           promotionGrade: r.promotionGrade,
+          currentPromotionGrade: r.currentGrade,
           trackType: r.trackType,
         })),
       })
@@ -325,6 +313,10 @@ function AdminPageContent() {
     } finally {
       setConfirmingExcel(false)
     }
+  }
+
+  const patchExcelPreviewRow = (rowNumber: number, field: keyof ExcelPreviewRow, value: string | number) => {
+    setExcelPreviewRows((rows) => updatePreviewRowField(rows, rowNumber, field, value))
   }
 
   const handleDownloadExcelTemplate = async () => {
@@ -1340,7 +1332,8 @@ function AdminPageContent() {
       <Modal
         open={excelPreviewOpen}
         onClose={() => { if (!confirmingExcel) setExcelPreviewOpen(false) }}
-        title="📋 Revisar usuarios del Excel"
+        title="📋 Revisar y editar usuarios del Excel"
+        maxWidth="max-w-[min(96vw,1280px)]"
         footer={
           <>
             <Button
@@ -1370,19 +1363,26 @@ function AdminPageContent() {
             {' · '}
             {excelPreviewRows.filter((r) => !r.valid).length} con error
           </p>
-          <div className="overflow-x-auto rounded-xl border border-[var(--color-surface-border)] max-h-[55vh] overflow-y-auto">
-            <table className="w-full text-xs">
+          <p className="text-xs text-gray-500 rounded-lg px-3 py-2" style={{ backgroundColor: `${primaryMix(8)}`, border: `1px solid ${primaryMix(20)}` }}>
+            <strong className="text-[var(--color-text-secondary)]">Claves de acceso:</strong> el <strong>Usuario</strong> y el <strong>DNI</strong> (contraseña inicial).
+            El grado actual asigna automáticamente postulación, jerarquía y balotario de preguntas.
+          </p>
+          <div className="overflow-auto rounded-xl border border-[var(--color-surface-border)] max-h-[min(70vh,640px)]">
+            <table className="w-full text-xs min-w-[1100px]">
               <thead className="sticky top-0 z-10" style={{ backgroundColor: SURFACE }}>
                 <tr className="text-left text-gray-500">
-                  <th className="px-2 py-2 font-medium">#</th>
-                  <th className="px-2 py-2 font-medium">Nombres</th>
-                  <th className="px-2 py-2 font-medium">Ap. paterno</th>
-                  <th className="px-2 py-2 font-medium">DNI</th>
-                  <th className="px-2 py-2 font-medium">Usuario</th>
-                  <th className="px-2 py-2 font-medium">Grado</th>
-                  <th className="px-2 py-2 font-medium">Postula</th>
-                  <th className="px-2 py-2 font-medium">Plan</th>
-                  <th className="px-2 py-2 font-medium">Estado</th>
+                  <th className="px-2 py-2 font-medium w-10">#</th>
+                  <th className="px-2 py-2 font-medium min-w-[100px]">Nombres</th>
+                  <th className="px-2 py-2 font-medium min-w-[100px]">Ap. paterno</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">Ap. materno</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">DNI (clave)</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">Usuario (clave)</th>
+                  <th className="px-2 py-2 font-medium min-w-[140px]">Grado actual</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">Postula</th>
+                  <th className="px-2 py-2 font-medium min-w-[100px]">Jerarquía</th>
+                  <th className="px-2 py-2 font-medium min-w-[110px]">Balotario</th>
+                  <th className="px-2 py-2 font-medium min-w-[80px]">Plan</th>
+                  <th className="px-2 py-2 font-medium min-w-[120px]">Estado</th>
                 </tr>
               </thead>
               <tbody>
@@ -1395,19 +1395,76 @@ function AdminPageContent() {
                         : 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
                     }}
                   >
-                    <td className="px-2 py-2 text-gray-500">{row.rowNumber}</td>
-                    <td className="px-2 py-2 text-[var(--color-text-primary)]">{row.firstName}</td>
-                    <td className="px-2 py-2 text-[var(--color-text-primary)]">{row.paternalSurname}</td>
-                    <td className="px-2 py-2 font-mono">{row.dni}</td>
-                    <td className="px-2 py-2 font-mono text-[var(--color-text-secondary)]">{row.loginUsername || '—'}</td>
-                    <td className="px-2 py-2">{row.currentGradeLabel || row.rankLabel}</td>
-                    <td className="px-2 py-2">{row.postulationGradeLabel}</td>
-                    <td className="px-2 py-2">{row.planDays} d</td>
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2 text-gray-500 align-top">{row.rowNumber}</td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[90px]"
+                        value={row.firstName}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'firstName', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[90px]"
+                        value={row.paternalSurname}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'paternalSurname', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[80px]"
+                        value={row.maternalSurname ?? ''}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'maternalSurname', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[80px] font-mono"
+                        maxLength={8}
+                        value={row.dni}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'dni', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[80px] font-mono"
+                        value={row.loginUsername}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'loginUsername', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <select
+                        className="input-admin text-xs w-full min-w-[130px]"
+                        value={row.currentGrade ?? ''}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'currentGrade', Number(e.target.value))}
+                      >
+                        <option value="" disabled>Grado PNP</option>
+                        {CURRENT_GRADE_SELECT_OPTIONS.map((g) => (
+                          <option key={g.value} value={g.value}>{g.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-2 py-2 align-top text-[var(--color-text-secondary)]">{row.postulationGradeLabel}</td>
+                    <td className="px-2 py-2 align-top text-gray-400">{hierarchyLabelForRow(row)}</td>
+                    <td className="px-2 py-2 align-top text-gray-400">{row.trackLabel}</td>
+                    <td className="px-1 py-1 align-top">
+                      <select
+                        className="input-admin text-xs w-full"
+                        value={row.planDays}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'planDays', Number(e.target.value))}
+                      >
+                        {SUBSCRIPTION_PLANS.map((p) => (
+                          <option key={p.days} value={p.days}>{p.days} d</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-2 py-2 align-top">
                       {row.valid ? (
                         <span style={{ color: NEON }}>OK</span>
                       ) : (
-                        <span style={{ color: RED }} title={row.error ?? undefined}>{row.error ?? 'Error'}</span>
+                        <span className="text-[11px] leading-snug block max-w-[140px]" style={{ color: RED }} title={row.error ?? undefined}>
+                          {row.error ?? 'Error'}
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -1417,7 +1474,7 @@ function AdminPageContent() {
           </div>
           {excelPreviewRows.some((r) => !r.valid) && (
             <p className="text-xs text-gray-500">
-              Las filas con error no se grabarán. Corrija el Excel y vuelva a cargar, o grabe solo las filas válidas.
+              Corrija las filas en rojo en la tabla. Solo se grabarán las filas válidas.
             </p>
           )}
         </div>
