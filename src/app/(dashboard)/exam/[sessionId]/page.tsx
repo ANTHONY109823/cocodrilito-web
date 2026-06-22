@@ -69,14 +69,23 @@ export default function ExamPage() {
     timeSpentMs: number
   }>>([])
   const flushInFlightRef = useRef(false)
+  const finishingRef = useRef(false)
+
+  const waitForFlushSlot = useCallback(async (maxMs = 22_000) => {
+    const started = Date.now()
+    while (flushInFlightRef.current && Date.now() - started < maxMs) {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 50))
+    }
+    if (flushInFlightRef.current) {
+      flushInFlightRef.current = false
+    }
+  }, [])
 
   const flushAnswers = useCallback(async (opts?: { maxAttempts?: number }) => {
     const maxAttempts = opts?.maxAttempts ?? 4
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      while (flushInFlightRef.current) {
-        await new Promise<void>((resolve) => window.setTimeout(resolve, 50))
-      }
+      await waitForFlushSlot()
 
       const batch = pendingAnswersRef.current.splice(0)
       if (batch.length === 0) return
@@ -96,7 +105,7 @@ export default function ExamPage() {
       if (pendingAnswersRef.current.length > 0) continue
       return
     }
-  }, [sessionId])
+  }, [sessionId, waitForFlushSlot])
 
   const queueAnswer = useCallback((answer: {
     questionId: string
@@ -108,18 +117,44 @@ export default function ExamPage() {
   }, [flushAnswers])
 
   const handleFinish = useCallback(async () => {
-    if (finishing) return
+    if (finishingRef.current) return
+    finishingRef.current = true
     setFinishing(true)
     setFinishError(null)
+
+    const goToResult = () => {
+      router.replace(`/result/${sessionId}`)
+    }
+
     try {
       await flushAnswers({ maxAttempts: 5 })
-      await examsApi.finish(sessionId)
-      router.push(`/result/${sessionId}`)
+
+      await Promise.race([
+        examsApi.finish(sessionId),
+        new Promise<void>((_, reject) =>
+          window.setTimeout(() => reject(new Error('finish_timeout')), 18_000)
+        ),
+      ])
+
+      goToResult()
     } catch {
+      // Si finish tardó o falló, la sesión pudo haberse cerrado igual: ir al resultado.
+      try {
+        const res = await examsApi.getResult(sessionId)
+        const status = (res.data?.status ?? res.data?.Status ?? '').toString().toLowerCase()
+        if (status === 'completed' || status === 'timedout') {
+          goToResult()
+          return
+        }
+      } catch {
+        // ignore
+      }
+
+      finishingRef.current = false
       setFinishing(false)
       setFinishError('No se pudo finalizar el examen. Intenta de nuevo.')
     }
-  }, [finishing, sessionId, router, flushAnswers])
+  }, [sessionId, router, flushAnswers])
 
   const applySessionPayload = useCallback((data: Record<string, unknown>, fallbackId: string) => {
     const meta = normalizeExamSessionPayload(data)
