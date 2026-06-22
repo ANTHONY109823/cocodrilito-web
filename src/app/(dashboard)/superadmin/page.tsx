@@ -62,7 +62,7 @@ function SuperAdminPageContent() {
         : 'inicio'
 
   const { user, loadFromStorage, setUser } = useAuthStore()
-  const { startImpersonation } = useImpersonationStore()
+  const { startImpersonation, active: impersonating } = useImpersonationStore()
 
   const [dashboard, setDashboard] = useState<DashboardStats | null>(null)
   const [tenants, setTenants] = useState<TenantSummary[]>([])
@@ -86,6 +86,13 @@ function SuperAdminPageContent() {
       router.push('/dashboard')
     }
   }, [user, router])
+
+  useEffect(() => {
+    if (impersonating) {
+      toast('Salga del modo impersonación para usar el panel SuperAdmin', 'info')
+      router.replace('/admin')
+    }
+  }, [impersonating, router])
 
   const loadTabData = useCallback(async () => {
     if (tab === 'agencias' && tenantsCacheRef.current.length > 0) {
@@ -186,13 +193,16 @@ function SuperAdminPageContent() {
 
   const handleImpersonate = async (tenant: TenantSummary) => {
     try {
-      await superadminApi.impersonateTenant(tenant.id)
+      const res = await superadminApi.impersonateTenant(tenant.id)
+      const responseUser = (res.data as { user?: Record<string, unknown> }).user
       startImpersonation({
         tenantId: tenant.id,
         tenantName: tenant.name,
         tenantType: tenant.tenantType,
       })
-      if (user) {
+      if (responseUser) {
+        setUser(normalizeUser(responseUser))
+      } else if (user) {
         setUser(normalizeUser({
           ...user,
           role: 'AdminAgencia',
@@ -202,7 +212,7 @@ function SuperAdminPageContent() {
           tenantType: tenant.tenantType,
         }))
       }
-      toast(`Impersonando ${tenant.name}`, 'info')
+      toast(`Ingresando como ${tenant.name}`, 'info')
       router.push('/admin')
     } catch (err: unknown) {
       const ax = err as { response?: { status?: number; data?: { message?: string; detail?: string } } }
