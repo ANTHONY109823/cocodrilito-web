@@ -61,6 +61,7 @@ export default function ExamPage() {
   const [questionTime, setQuestionTime] = useState(0)
   const [loading, setLoading] = useState(true)
   const [finishing, setFinishing] = useState(false)
+  const [finishError, setFinishError] = useState<string | null>(null)
   const [showFinishModal, setShowFinishModal] = useState(false)
   const pendingAnswersRef = useRef<Array<{
     questionId: string
@@ -69,20 +70,31 @@ export default function ExamPage() {
   }>>([])
   const flushInFlightRef = useRef(false)
 
-  const flushAnswers = useCallback(async () => {
-    if (flushInFlightRef.current) return
-    const batch = pendingAnswersRef.current.splice(0)
-    if (batch.length === 0) return
-    flushInFlightRef.current = true
-    try {
-      await examsApi.submitAnswersBatch(sessionId, { answers: batch })
-    } catch {
-      pendingAnswersRef.current.unshift(...batch)
-    } finally {
-      flushInFlightRef.current = false
-      if (pendingAnswersRef.current.length > 0) {
-        await flushAnswers()
+  const flushAnswers = useCallback(async (opts?: { maxAttempts?: number }) => {
+    const maxAttempts = opts?.maxAttempts ?? 4
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      while (flushInFlightRef.current) {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 50))
       }
+
+      const batch = pendingAnswersRef.current.splice(0)
+      if (batch.length === 0) return
+
+      flushInFlightRef.current = true
+      try {
+        await examsApi.submitAnswersBatch(sessionId, { answers: batch })
+      } catch {
+        pendingAnswersRef.current.unshift(...batch)
+        if (attempt === maxAttempts - 1) return
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 400 * (attempt + 1)))
+        continue
+      } finally {
+        flushInFlightRef.current = false
+      }
+
+      if (pendingAnswersRef.current.length > 0) continue
+      return
     }
   }, [sessionId])
 
@@ -98,13 +110,15 @@ export default function ExamPage() {
   const handleFinish = useCallback(async () => {
     if (finishing) return
     setFinishing(true)
-    await flushAnswers()
-    // Race API call vs 8s timeout — redirect regardless so user never waits minutes
-    await Promise.race([
-      examsApi.finish(sessionId).catch(() => {}),
-      new Promise<void>((resolve) => setTimeout(resolve, 8000)),
-    ])
-    router.push(`/result/${sessionId}`)
+    setFinishError(null)
+    try {
+      await flushAnswers({ maxAttempts: 5 })
+      await examsApi.finish(sessionId)
+      router.push(`/result/${sessionId}`)
+    } catch {
+      setFinishing(false)
+      setFinishError('No se pudo finalizar el examen. Intenta de nuevo.')
+    }
   }, [finishing, sessionId, router, flushAnswers])
 
   const applySessionPayload = useCallback((data: Record<string, unknown>, fallbackId: string) => {
@@ -407,6 +421,9 @@ export default function ExamPage() {
           </>
         }
       >
+        {finishError ? (
+          <p className="text-sm" style={{ color: RED }}>{finishError}</p>
+        ) : null}
         {allAnswered ? (
           <p>
             Has respondido todas las preguntas ({answeredCount} de {effectiveTotal}). ¿Listo para ver tu
