@@ -70,6 +70,7 @@ export default function ExamPage() {
   }>>([])
   const flushInFlightRef = useRef(false)
   const finishingRef = useRef(false)
+  const autoFinishTriggeredRef = useRef(false)
 
   const waitForFlushSlot = useCallback(async (maxMs = 22_000) => {
     const started = Date.now()
@@ -81,7 +82,7 @@ export default function ExamPage() {
     }
   }, [])
 
-  const flushAnswers = useCallback(async (opts?: { maxAttempts?: number }) => {
+  const flushAnswers = useCallback(async (opts?: { maxAttempts?: number; throwOnFailure?: boolean }) => {
     const maxAttempts = opts?.maxAttempts ?? 4
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -95,7 +96,12 @@ export default function ExamPage() {
         await examsApi.submitAnswersBatch(sessionId, { answers: batch })
       } catch {
         pendingAnswersRef.current.unshift(...batch)
-        if (attempt === maxAttempts - 1) return
+        if (attempt === maxAttempts - 1) {
+          if (opts?.throwOnFailure) {
+            throw new Error('No se pudieron guardar las respuestas pendientes.')
+          }
+          return
+        }
         await new Promise<void>((resolve) => window.setTimeout(resolve, 400 * (attempt + 1)))
         continue
       } finally {
@@ -127,7 +133,7 @@ export default function ExamPage() {
     }
 
     try {
-      await flushAnswers({ maxAttempts: 5 })
+      await flushAnswers({ maxAttempts: 5, throwOnFailure: true })
 
       await Promise.race([
         examsApi.finish(sessionId),
@@ -136,6 +142,7 @@ export default function ExamPage() {
         ),
       ])
 
+      setShowFinishModal(false)
       goToResult()
     } catch {
       // Si finish tardó o falló, la sesión pudo haberse cerrado igual: ir al resultado.
@@ -143,6 +150,7 @@ export default function ExamPage() {
         const res = await examsApi.getResult(sessionId)
         const status = (res.data?.status ?? res.data?.Status ?? '').toString().toLowerCase()
         if (status === 'completed' || status === 'timedout') {
+          setShowFinishModal(false)
           goToResult()
           return
         }
@@ -218,7 +226,8 @@ export default function ExamPage() {
       const data = res.data as Record<string, unknown>
       const status = (data.status as string | undefined) ?? (data.Status as string | undefined)
 
-      if (status === 'Completed') {
+      const normalizedStatus = (status ?? '').toString().toLowerCase()
+      if (normalizedStatus === 'completed' || normalizedStatus === 'timedout') {
         router.replace(`/result/${sessionId}`)
         return
       }
@@ -241,11 +250,23 @@ export default function ExamPage() {
   useEffect(() => {
     if (!session) return
     const t = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) { void handleFinish(); return 0 }
+      if (finishingRef.current) return
+
+      setTimeLeft((prev) => {
+        if (prev <= 0) return 0
+        if (prev === 1) {
+          if (!autoFinishTriggeredRef.current) {
+            autoFinishTriggeredRef.current = true
+            void handleFinish()
+          }
+          return 0
+        }
         return prev - 1
       })
-      setQuestionTime(prev => prev + 1000)
+
+      if (!finishingRef.current) {
+        setQuestionTime((prev) => prev + 1000)
+      }
     }, 1000)
     return () => clearInterval(t)
   }, [session, handleFinish])
