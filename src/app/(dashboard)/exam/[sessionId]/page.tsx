@@ -71,6 +71,19 @@ export default function ExamPage() {
   const flushInFlightRef = useRef(false)
   const finishingRef = useRef(false)
   const autoFinishTriggeredRef = useRef(false)
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const stopExamTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
+    }
+  }, [])
+
+  const goToResult = useCallback(() => {
+    // Navegación completa: evita errores removeChild de React al desmontar modal/timer.
+    window.location.replace(`/result/${sessionId}`)
+  }, [sessionId])
 
   const waitForFlushSlot = useCallback(async (maxMs = 22_000) => {
     const started = Date.now()
@@ -125,12 +138,9 @@ export default function ExamPage() {
   const handleFinish = useCallback(async () => {
     if (finishingRef.current) return
     finishingRef.current = true
+    stopExamTimer()
     setFinishing(true)
     setFinishError(null)
-
-    const goToResult = () => {
-      router.replace(`/result/${sessionId}`)
-    }
 
     try {
       await flushAnswers({ maxAttempts: 5, throwOnFailure: true })
@@ -142,7 +152,6 @@ export default function ExamPage() {
         ),
       ])
 
-      setShowFinishModal(false)
       goToResult()
     } catch {
       // Si finish tardó o falló, la sesión pudo haberse cerrado igual: ir al resultado.
@@ -150,7 +159,6 @@ export default function ExamPage() {
         const res = await examsApi.getResult(sessionId)
         const status = (res.data?.status ?? res.data?.Status ?? '').toString().toLowerCase()
         if (status === 'completed' || status === 'timedout') {
-          setShowFinishModal(false)
           goToResult()
           return
         }
@@ -162,7 +170,7 @@ export default function ExamPage() {
       setFinishing(false)
       setFinishError('No se pudo finalizar el examen. Intenta de nuevo.')
     }
-  }, [sessionId, router, flushAnswers])
+  }, [sessionId, flushAnswers, stopExamTimer, goToResult])
 
   const applySessionPayload = useCallback((data: Record<string, unknown>, fallbackId: string) => {
     const meta = normalizeExamSessionPayload(data)
@@ -228,7 +236,7 @@ export default function ExamPage() {
 
       const normalizedStatus = (status ?? '').toString().toLowerCase()
       if (normalizedStatus === 'completed' || normalizedStatus === 'timedout') {
-        router.replace(`/result/${sessionId}`)
+        window.location.replace(`/result/${sessionId}`)
         return
       }
 
@@ -245,11 +253,13 @@ export default function ExamPage() {
 
   useEffect(() => {
     void loadSession()
-  }, [loadSession])
+    return () => stopExamTimer()
+  }, [loadSession, stopExamTimer])
 
   useEffect(() => {
-    if (!session) return
-    const t = setInterval(() => {
+    if (!session || finishingRef.current) return
+    stopExamTimer()
+    timerIntervalRef.current = setInterval(() => {
       if (finishingRef.current) return
 
       setTimeLeft((prev) => {
@@ -268,8 +278,8 @@ export default function ExamPage() {
         setQuestionTime((prev) => prev + 1000)
       }
     }, 1000)
-    return () => clearInterval(t)
-  }, [session, handleFinish])
+    return () => stopExamTimer()
+  }, [session, handleFinish, stopExamTimer])
 
   const handleAnswer = (optionId: string) => {
     if (!session) return
@@ -323,6 +333,17 @@ export default function ExamPage() {
         <div className="text-center">
           <div className="text-4xl mb-4 animate-bounce">🐊</div>
           <p className="text-gray-400">Cargando simulacro...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (finishing) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="text-4xl mb-4 animate-bounce">🐊</div>
+          <p className="text-gray-400">Guardando tu resultado...</p>
         </div>
       </div>
     )
