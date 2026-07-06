@@ -113,7 +113,7 @@ async function resolveSlugForHost(host: string): Promise<string | null> {
   return null
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
   const host = normalizeHost(hostname)
   const { pathname } = request.nextUrl
