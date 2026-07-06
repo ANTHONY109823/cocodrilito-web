@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { buildTenantIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
-import { resolveRequestTenantSlug } from '@/lib/utils/tenantSlugCookie'
+import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
 import { DashboardClientLayout } from '@/components/layout/DashboardClientLayout'
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -4,7 +4,7 @@ import { BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { TenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { buildTenantIconMetadata, resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
-import { resolveRequestTenantSlug } from '@/lib/utils/tenantSlugCookie'
+import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
 
 export async function generateMetadata(): Promise<Metadata> {
   const slug = await resolveRequestTenantSlug()
