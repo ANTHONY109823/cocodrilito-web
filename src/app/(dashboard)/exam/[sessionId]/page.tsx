@@ -61,6 +61,7 @@ export default function ExamPage() {
   const [questionTime, setQuestionTime] = useState(0)
   const [loading, setLoading] = useState(true)
   const [finishing, setFinishing] = useState(false)
+  const [finishError, setFinishError] = useState<string | null>(null)
   const [showFinishModal, setShowFinishModal] = useState(false)
   const pendingAnswersRef = useRef<Array<{
     questionId: string
@@ -68,23 +69,62 @@ export default function ExamPage() {
     timeSpentMs: number
   }>>([])
   const flushInFlightRef = useRef(false)
+  const finishingRef = useRef(false)
+  const autoFinishTriggeredRef = useRef(false)
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const flushAnswers = useCallback(async () => {
-    if (flushInFlightRef.current) return
-    const batch = pendingAnswersRef.current.splice(0)
-    if (batch.length === 0) return
-    flushInFlightRef.current = true
-    try {
-      await examsApi.submitAnswersBatch(sessionId, { answers: batch })
-    } catch {
-      pendingAnswersRef.current.unshift(...batch)
-    } finally {
-      flushInFlightRef.current = false
-      if (pendingAnswersRef.current.length > 0) {
-        await flushAnswers()
-      }
+  const stopExamTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
     }
+  }, [])
+
+  const goToResult = useCallback(() => {
+    // Navegación completa: evita errores removeChild de React al desmontar modal/timer.
+    window.location.replace(`/result/${sessionId}`)
   }, [sessionId])
+
+  const waitForFlushSlot = useCallback(async (maxMs = 22_000) => {
+    const started = Date.now()
+    while (flushInFlightRef.current && Date.now() - started < maxMs) {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 50))
+    }
+    if (flushInFlightRef.current) {
+      flushInFlightRef.current = false
+    }
+  }, [])
+
+  const flushAnswers = useCallback(async (opts?: { maxAttempts?: number; throwOnFailure?: boolean }) => {
+    const maxAttempts = opts?.maxAttempts ?? 4
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await waitForFlushSlot()
+
+      const batch = pendingAnswersRef.current.splice(0)
+      if (batch.length === 0) return
+
+      flushInFlightRef.current = true
+      try {
+        await examsApi.submitAnswersBatch(sessionId, { answers: batch })
+      } catch {
+        pendingAnswersRef.current.unshift(...batch)
+        if (attempt === maxAttempts - 1) {
+          if (opts?.throwOnFailure) {
+            throw new Error('No se pudieron guardar las respuestas pendientes.')
+          }
+          return
+        }
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 400 * (attempt + 1)))
+        continue
+      } finally {
+        flushInFlightRef.current = false
+      }
+
+      if (pendingAnswersRef.current.length > 0) continue
+      return
+    }
+  }, [sessionId, waitForFlushSlot])
 
   const queueAnswer = useCallback((answer: {
     questionId: string
@@ -96,16 +136,41 @@ export default function ExamPage() {
   }, [flushAnswers])
 
   const handleFinish = useCallback(async () => {
-    if (finishing) return
+    if (finishingRef.current) return
+    finishingRef.current = true
+    stopExamTimer()
     setFinishing(true)
-    await flushAnswers()
-    // Race API call vs 8s timeout — redirect regardless so user never waits minutes
-    await Promise.race([
-      examsApi.finish(sessionId).catch(() => {}),
-      new Promise<void>((resolve) => setTimeout(resolve, 8000)),
-    ])
-    router.push(`/result/${sessionId}`)
-  }, [finishing, sessionId, router, flushAnswers])
+    setFinishError(null)
+
+    try {
+      await flushAnswers({ maxAttempts: 5, throwOnFailure: true })
+
+      await Promise.race([
+        examsApi.finish(sessionId),
+        new Promise<void>((_, reject) =>
+          window.setTimeout(() => reject(new Error('finish_timeout')), 18_000)
+        ),
+      ])
+
+      goToResult()
+    } catch {
+      // Si finish tardó o falló, la sesión pudo haberse cerrado igual: ir al resultado.
+      try {
+        const res = await examsApi.getResult(sessionId)
+        const status = (res.data?.status ?? res.data?.Status ?? '').toString().toLowerCase()
+        if (status === 'completed' || status === 'timedout') {
+          goToResult()
+          return
+        }
+      } catch {
+        // ignore
+      }
+
+      finishingRef.current = false
+      setFinishing(false)
+      setFinishError('No se pudo finalizar el examen. Intenta de nuevo.')
+    }
+  }, [sessionId, flushAnswers, stopExamTimer, goToResult])
 
   const applySessionPayload = useCallback((data: Record<string, unknown>, fallbackId: string) => {
     const meta = normalizeExamSessionPayload(data)
@@ -169,8 +234,9 @@ export default function ExamPage() {
       const data = res.data as Record<string, unknown>
       const status = (data.status as string | undefined) ?? (data.Status as string | undefined)
 
-      if (status === 'Completed') {
-        router.replace(`/result/${sessionId}`)
+      const normalizedStatus = (status ?? '').toString().toLowerCase()
+      if (normalizedStatus === 'completed' || normalizedStatus === 'timedout') {
+        window.location.replace(`/result/${sessionId}`)
         return
       }
 
@@ -187,19 +253,33 @@ export default function ExamPage() {
 
   useEffect(() => {
     void loadSession()
-  }, [loadSession])
+    return () => stopExamTimer()
+  }, [loadSession, stopExamTimer])
 
   useEffect(() => {
-    if (!session) return
-    const t = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) { void handleFinish(); return 0 }
+    if (!session || finishingRef.current) return
+    stopExamTimer()
+    timerIntervalRef.current = setInterval(() => {
+      if (finishingRef.current) return
+
+      setTimeLeft((prev) => {
+        if (prev <= 0) return 0
+        if (prev === 1) {
+          if (!autoFinishTriggeredRef.current) {
+            autoFinishTriggeredRef.current = true
+            void handleFinish()
+          }
+          return 0
+        }
         return prev - 1
       })
-      setQuestionTime(prev => prev + 1000)
+
+      if (!finishingRef.current) {
+        setQuestionTime((prev) => prev + 1000)
+      }
     }, 1000)
-    return () => clearInterval(t)
-  }, [session, handleFinish])
+    return () => stopExamTimer()
+  }, [session, handleFinish, stopExamTimer])
 
   const handleAnswer = (optionId: string) => {
     if (!session) return
@@ -253,6 +333,17 @@ export default function ExamPage() {
         <div className="text-center">
           <div className="text-4xl mb-4 animate-bounce">🐊</div>
           <p className="text-gray-400">Cargando simulacro...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (finishing) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="text-4xl mb-4 animate-bounce">🐊</div>
+          <p className="text-gray-400">Guardando tu resultado...</p>
         </div>
       </div>
     )
@@ -407,6 +498,9 @@ export default function ExamPage() {
           </>
         }
       >
+        {finishError ? (
+          <p className="text-sm" style={{ color: RED }}>{finishError}</p>
+        ) : null}
         {allAnswered ? (
           <p>
             Has respondido todas las preguntas ({answeredCount} de {effectiveTotal}). ¿Listo para ver tu

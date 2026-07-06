@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { buildTenantIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
 import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
@@ -10,11 +9,10 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!slug) return {}
 
   const config = await fetchTenantConfigServer(slug)
-  if (!config?.name) return {}
 
   return {
-    title: config.name,
-    icons: buildTenantIconMetadata(config.logoUrl),
+    ...(config?.name ? { title: config.name } : {}),
+    icons: buildTenantIconMetadata(config?.logoUrl),
   }
 }
 

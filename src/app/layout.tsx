@@ -1,15 +1,15 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import './globals.css'
 import { AppProviders } from '@/components/AppProviders'
 import { BRAND_DESCRIPTION, BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { buildTenantIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
 import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
+import { TenantHeadIcons } from '@/components/tenant/TenantHeadIcons'
 
 const PLATFORM_ICONS: Metadata['icons'] = {
-  icon: [{ url: '/icon', type: 'image/svg+xml', sizes: 'any' }],
-  apple: [{ url: '/apple-icon', type: 'image/svg+xml' }],
+  icon: [{ url: '/favicon.svg', type: 'image/svg+xml', sizes: 'any' }],
+  apple: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   shortcut: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
 }
 
@@ -50,6 +50,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <TenantHeadIcons />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('simulacros-color-scheme');var s=t==='light'?'light':'dark';document.documentElement.setAttribute('data-theme',s);document.documentElement.style.colorScheme=s;}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,

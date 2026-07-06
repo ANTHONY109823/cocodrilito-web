@@ -27,12 +27,12 @@ export function isAdminAcademia(_role?: string | null, _tenantType?: string | nu
 
 export type NavContext = 'student' | 'superadmin' | 'tenant-admin'
 
-/** SuperAdmin real (no impersonando) → panel global. Impersonación → panel de agencia/academia. */
+/** SuperAdmin real (no impersonando) → panel global. Impersonación → panel de agencia. */
 export function getNavContext(
   role?: string | null,
   impersonating?: boolean
 ): NavContext {
-  if (impersonating && isTenantAdmin(role)) return 'tenant-admin'
+  if (impersonating) return 'tenant-admin'
   if (isSuperAdmin(role)) return 'superadmin'
   if (isTenantAdmin(role)) return 'tenant-admin'
   return 'student'

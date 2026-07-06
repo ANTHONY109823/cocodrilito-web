@@ -14,7 +14,9 @@ import { useTenantSlug } from '@/hooks/useTenantSlug'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LoginBrandedSkeleton } from '@/components/auth/LoginBrandedSkeleton'
+import { useTenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { buildLoginThemeStyle } from '@/lib/utils/loginTheme'
+import { normalizeStudentDniPassword } from '@/lib/utils/studentPassword'
 import Image from 'next/image'
 import { BRAND_LOGIN, BRAND_PLATFORM } from '@/lib/constants/brand'
 import { resolveLoginBranding } from '@/lib/constants/defaultLoginBranding'
@@ -107,6 +109,7 @@ function LoginForm() {
   const { stopImpersonation } = useImpersonationStore()
 
   const tenantSlug = useTenantSlug()
+  const { slug: bootstrapSlug } = useTenantLoginBootstrap()
   const [isRootLogin, setIsRootLogin] = useState(false)
   const { config, loading: configLoading, error: tenantConfigError } = useTenantConfig()
   const [loginId, setLoginId] = useState('')
@@ -122,7 +125,9 @@ function LoginForm() {
     void fetch('/api/health', { method: 'GET', cache: 'no-store' }).catch(() => {})
   }, [])
 
-  const isPlatformLogin = isRootLogin && !tenantSlug
+  const isPlatformLogin = isRootLogin && !tenantSlug && !bootstrapSlug
+
+  const resolvedTenantSlug = tenantSlug ?? bootstrapSlug ?? config?.slug ?? undefined
 
   const displayName = isPlatformLogin
     ? BRAND_PLATFORM
@@ -177,8 +182,8 @@ function LoginForm() {
     try {
       const res = await authApi.login({
         email: loginId.trim(),
-        password,
-        tenantSlug: tenantSlug ?? undefined,
+        password: normalizeStudentDniPassword(password),
+        tenantSlug: resolvedTenantSlug,
       })
       const loggedUser = normalizeUser(res.data as unknown as Record<string, unknown>)
       stopImpersonation()
@@ -206,10 +211,10 @@ function LoginForm() {
     }
   }
 
-  const loginFieldLabel = isPlatformLogin ? 'Correo electrónico' : 'Usuario o correo'
+  const loginFieldLabel = isPlatformLogin ? 'Correo electrónico' : 'Usuario'
   const loginFieldPlaceholder = isPlatformLogin
-    ? 'admin@simulacros.pe'
-    : 'Usuario o correo'
+    ? 'correo@ejemplo.com'
+    : 'Ej. usuario de acceso'
 
   return (
     <ThemeProvider config={config}>
@@ -348,8 +353,8 @@ function LoginForm() {
                   ? 'Preparando tu portal...'
                   : isPlatformLogin
                     ? 'Solo administradores de plataforma. Agencias y alumnos: usa tu-agencia.simulacros.pe'
-                    : tenantSlug
-                      ? `Acceso exclusivo de ${config?.name ?? 'tu institución'}`
+                    : resolvedTenantSlug
+                      ? `Alumnos: usuario de acceso y contraseña = DNI de 8 dígitos. Admins: su correo.`
                       : 'Acceso de institución'}
               </p>
 
@@ -425,7 +430,7 @@ function LoginForm() {
                         id="login-password"
                         className="login-input"
                         type="password"
-                        placeholder="••••••••"
+                        placeholder={isPlatformLogin ? '••••••••' : 'DNI — 8 dígitos'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         autoComplete="current-password"

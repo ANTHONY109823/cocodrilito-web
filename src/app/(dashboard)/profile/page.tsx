@@ -10,12 +10,7 @@ import apiClient from '@/lib/api/client'
 import { getApiErrorMessage } from '@/lib/api/errors'
 import { isTenantAdmin } from '@/lib/auth/roles'
 import { useAuthStore } from '@/lib/store/authStore'
-import { resolveUserTrackKey, trackLabel } from '@/lib/constants/trackTypes'
-import {
-  hierarchyLabel,
-  promotionGradeLabel,
-  resolveUserHierarchyValue,
-} from '@/lib/constants/promotionGrades'
+import { promotionGradeLabel, resolveUserClassificationLabels } from '@/lib/constants/promotionGrades'
 import { cn } from '@/lib/utils/cn'
 
 export default function ProfilePage() {
@@ -145,16 +140,27 @@ export default function ProfilePage() {
             <div className="text-sm text-[var(--color-text-muted)]">{user?.email}</div>
             <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">DNI: {user?.dni}</div>
             <div className="mt-1 text-xs font-medium text-[var(--color-primary)]">
-              Balotario: {trackLabel(resolveUserTrackKey(user))}
+              Balotario: {resolveUserClassificationLabels(user).trackLabel}
             </div>
             {user?.promotionGrade ? (
-              <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-                Postula a:{' '}
-                <span className="font-medium text-[var(--color-text-primary)]">
-                  {promotionGradeLabel(user.promotionGrade)}
-                </span>
-                {' · '}
-                {hierarchyLabel(resolveUserHierarchyValue(user))}
+              <div className="mt-0.5 text-xs text-[var(--color-text-muted)] space-y-0.5">
+                <div>
+                  Postula a:{' '}
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {promotionGradeLabel(user.promotionGrade)}
+                  </span>
+                </div>
+                <div>
+                  Categoría:{' '}
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {resolveUserClassificationLabels(user).categoryLabel}
+                  </span>
+                  {' · '}
+                  Jerarquía:{' '}
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {resolveUserClassificationLabels(user).hierarchyLabel}
+                  </span>
+                </div>
               </div>
             ) : (
               <div className="mt-0.5 text-xs text-[#C9943A]">

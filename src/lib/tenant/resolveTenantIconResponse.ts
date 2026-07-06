@@ -2,22 +2,16 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { headers } from 'next/headers'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
+import { resolveTenantSlugFromHeaders } from '@/lib/tenant/resolveTenantSlugFromHeaders'
+import {
+  buildTenantFaviconHref,
+} from '@/lib/utils/resolveTenantAssetUrl'
 
-import { parseTenantSlugFromCookie } from '@/lib/utils/tenantSlugCookie'
-
-function getUploadFetchUrl(resolvedPath: string): string {
-  if (resolvedPath.startsWith('http')) return resolvedPath
-
-  const apiOrigin = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || '')
-    .replace(/\/api\/?$/i, '')
-    .replace(/\/$/, '')
-
-  if (apiOrigin && resolvedPath.startsWith('/uploads/')) {
-    return `${apiOrigin}${resolvedPath}`
-  }
-
-  return resolvedPath
+async function getRequestOrigin(): Promise<string> {
+  const h = await headers()
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
+  const proto = h.get('x-forwarded-proto') ?? (host.includes('localhost') ? 'http' : 'https')
+  return `${proto}://${host}`
 }
 
 async function loadPlatformIconResponse(): Promise<Response> {
@@ -25,36 +19,44 @@ async function loadPlatformIconResponse(): Promise<Response> {
   return new Response(svg, {
     headers: {
       'Content-Type': 'image/svg+xml',
-      'Cache-Control': 'public, max-age=86400',
+      'Cache-Control': 'public, max-age=86400, immutable',
     },
   })
 }
 
-/** Icono de pestaña según subdominio (agencia) o Simulacros.pe por defecto. */
+function redirectToFavicon(targetPath: string, origin: string): Response {
+  return new Response(null, {
+    status: 307,
+    headers: {
+      Location: `${origin}${targetPath}`,
+      'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+    },
+  })
+}
+
+/** Icono de pestaña: redirige al logo optimizado (32px) o SVG plataforma. Sin proxy de MB. */
 export async function resolveTenantIconResponse(): Promise<Response> {
-  const headerStore = await headers()
-  const slug =
-    headerStore.get('x-tenant-slug') ??
-    parseTenantSlugFromCookie(headerStore.get('cookie'))
+  const slug = await resolveTenantSlugFromHeaders()
   if (!slug) return loadPlatformIconResponse()
 
   const config = await fetchTenantConfigServer(slug)
-  const logoPath = resolveTenantAssetUrl(config?.logoUrl)
-  if (!logoPath) return loadPlatformIconResponse()
+  const faviconHref = buildTenantFaviconHref(config?.logoUrl)
+  if (!faviconHref) return loadPlatformIconResponse()
 
-  try {
-    const fetchUrl = getUploadFetchUrl(logoPath)
-    const res = await fetch(fetchUrl, { next: { revalidate: 600 } })
-    if (!res.ok) return loadPlatformIconResponse()
+  const origin = await getRequestOrigin()
+  return redirectToFavicon(faviconHref, origin)
+}
 
-    const contentType = res.headers.get('content-type') ?? 'image/png'
-    return new Response(await res.arrayBuffer(), {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=600, stale-while-revalidate=86400',
-      },
-    })
-  } catch {
-    return loadPlatformIconResponse()
-  }
+/** Apple touch icon: redirige al logo optimizado (180px). */
+export async function resolveTenantAppleIconResponse(): Promise<Response> {
+  const slug = await resolveTenantSlugFromHeaders()
+  if (!slug) return loadPlatformIconResponse()
+
+  const config = await fetchTenantConfigServer(slug)
+  const appleHref =
+    buildTenantFaviconHref(config?.logoUrl, 180) ?? buildTenantFaviconHref(config?.logoUrl)
+  if (!appleHref) return loadPlatformIconResponse()
+
+  const origin = await getRequestOrigin()
+  return redirectToFavicon(appleHref, origin)
 }

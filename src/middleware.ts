@@ -123,13 +123,18 @@ export async function middleware(request: NextRequest) {
   }
 
   const tenantSlug = await resolveSlugForHost(host)
-  const isIconRequest =
-    pathname === '/favicon.ico' || pathname === '/icon' || pathname === '/apple-icon'
+
+  const isIconRequest = pathname === '/brand/icon' || pathname === '/brand/apple-icon'
 
   if (isIconRequest && tenantSlug) {
     const customDomain =
       !host.endsWith('.simulacros.pe') && !host.endsWith('.localhost') ? host : undefined
-    return withTenantContext(NextResponse.next(), tenantSlug, hostname, { customDomain })
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-tenant-slug', tenantSlug)
+    requestHeaders.set('x-tenant-host', hostname)
+    if (customDomain) requestHeaders.set('x-tenant-custom-domain', customDomain)
+    const response = NextResponse.next({ request: { headers: requestHeaders } })
+    return withTenantContext(response, tenantSlug, hostname, { customDomain })
   }
 
   if (isRootDomain(host) && pathname === '/login') {

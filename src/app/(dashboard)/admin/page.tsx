@@ -36,11 +36,15 @@ import {
   CURRENT_GRADE_SELECT_OPTIONS,
   promotionGradeLabel,
   PROMOTION_GRADE_OPTIONS,
+  PROMOTION_HIERARCHY_OPTIONS,
+  hierarchyFromGrade,
   trackFromGrade,
   applyCurrentGradeSelection,
   rankLabelFromCurrentGrade,
   parseCurrentGradeFromText,
   inferCurrentGradeFromPostulation,
+  studentClassificationFromCurrentGrade,
+  resolveUserClassificationLabels,
 } from '@/lib/constants/promotionGrades'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { Modal, Button } from '@/components/ui'
@@ -52,6 +56,16 @@ import {
   generateStudentLoginUsername,
   generateStudentLoginUsernameFromParts,
 } from '@/lib/utils/studentLoginUsername'
+import {
+  type ExcelPreviewRow,
+  applyBackendImportErrors,
+  buildExcelConfirmRow,
+  normalizePreviewRowsFromApi,
+  revalidatePreviewRows,
+  updatePreviewRowField,
+  validateExcelUploadFile,
+} from '@/lib/admin/excelImportPreview'
+import { getTenantAccessUrl } from '@/lib/utils/tenantUrl'
 interface User {
   id: string
   fullName: string
@@ -132,9 +146,22 @@ function AdminPageContent() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
-  const excelInputRef = useRef<HTMLInputElement>(null)
-  const [uploadingExcel, setUploadingExcel] = useState(false)
+  const excelPreviewInputRef = useRef<HTMLInputElement>(null)
+  const [previewingExcel, setPreviewingExcel] = useState(false)
+  const [confirmingExcel, setConfirmingExcel] = useState(false)
   const [importResult, setImportResult] = useState<{ created: number; failed: number; errors: string[] } | null>(null)
+  const [excelPreviewOpen, setExcelPreviewOpen] = useState(false)
+  const [excelPreviewFileName, setExcelPreviewFileName] = useState('')
+  const [excelPreviewRows, setExcelPreviewRows] = useState<ExcelPreviewRow[]>([])
+  const [excelConfirmNotice, setExcelConfirmNotice] = useState<{ ok: boolean; text: string } | null>(null)
+  const [excelImportCreatedUsers, setExcelImportCreatedUsers] = useState<Array<{
+    fullName: string
+    loginUsername: string
+    dni: string
+    temporaryPassword: string
+    planDays: number
+    expiresAt?: string
+  }> | null>(null)
 
   const [editTarget, setEditTarget] = useState<User | null>(null)
   const [editForm, setEditForm] = useState({
@@ -156,6 +183,7 @@ function AdminPageContent() {
   const [createdUser, setCreatedUser] = useState<{
     fullName: string; loginUsername?: string; dni: string; temporaryPassword?: string; planDays: number; expiresAt?: string
     currentGradeLabel?: string; postulationGradeLabel?: string; trackLabel?: string
+    hierarchyLabel?: string; categoryLabel?: string
   } | null>(null)
 
   const [form, setForm] = useState({
@@ -175,6 +203,13 @@ function AdminPageContent() {
     else if (rawTab === 'create') router.replace('/admin?tab=users&sub=crear')
     else if (rawTab === 'subscriptions' || rawTab === 'ventas' || rawTab === 'plans') router.replace('/admin')
   }, [rawTab, router])
+
+  useEffect(() => {
+    if (tab !== 'users' || tenantProfile) return
+    void tenantAdminApi.getProfile()
+      .then((res) => setTenantProfile(res.data))
+      .catch(() => { /* perfil opcional para URL de acceso */ })
+  }, [tab, tenantProfile])
 
   const handleCurrentGradeChange = (value: number) => {
     const applied = applyCurrentGradeSelection(value)
@@ -224,40 +259,162 @@ function AdminPageContent() {
     }
   }, [tab, usersPage])
 
-  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelPreview = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploadingExcel(true)
+    setPreviewingExcel(true)
     setImportResult(null)
     try {
+      const fileError = await validateExcelUploadFile(file)
+      if (fileError) {
+        setMsg({ text: fileError, ok: false })
+        return
+      }
+
       const formData = new FormData()
       formData.append('file', file)
-      const res = await apiClient.post('/admin/users/import/excel', formData, {
+      const res = await apiClient.post('/admin/users/import/excel/preview', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      const data = res.data as { created?: number; failed?: number; errors?: string[]; message?: string }
+      const data = res.data as {
+        fileName?: string
+        rows?: ExcelPreviewRow[]
+        message?: string
+      }
+      const rows = normalizePreviewRowsFromApi(data.rows ?? [])
+      setExcelPreviewFileName(data.fileName ?? file.name)
+      setExcelPreviewRows(rows)
+      setExcelConfirmNotice(null)
+      setExcelPreviewOpen(true)
+      setMsg({
+        text: rows.length > 0
+          ? `📋 ${rows.filter((r) => r.valid).length} filas listas · ${rows.filter((r) => !r.valid).length} con error — revise antes de grabar`
+          : '⚠️ El archivo no contiene filas de datos',
+        ok: rows.some((r) => r.valid),
+      })
+    } catch (err: unknown) {
+      const raw = getApiErrorMessage(err, 'Error al leer el Excel')
+      const text = raw.toLowerCase().includes('corrupted')
+        ? 'Archivo Excel inválido. Descargue la plantilla .xlsx de este panel, complétela y vuelva a subirla (no use .xls ni CSV).'
+        : raw
+      setMsg({ text, ok: false })
+    } finally {
+      setPreviewingExcel(false)
+      if (excelPreviewInputRef.current) excelPreviewInputRef.current.value = ''
+    }
+  }
+
+  const handleExcelConfirm = async () => {
+    const revalidated = revalidatePreviewRows(excelPreviewRows)
+    setExcelPreviewRows(revalidated)
+    const validRows = revalidated.filter((r) => r.valid)
+    if (validRows.length === 0) {
+      setExcelConfirmNotice({ ok: false, text: 'No hay filas válidas para importar. Corrija los errores en la tabla.' })
+      return
+    }
+
+    let payloadRows
+    try {
+      payloadRows = validRows.map((r) => buildExcelConfirmRow(r))
+    } catch (err: unknown) {
+      setExcelConfirmNotice({
+        ok: false,
+        text: err instanceof Error ? err.message : 'Hay filas con datos incompletos',
+      })
+      return
+    }
+
+    setConfirmingExcel(true)
+    setExcelConfirmNotice(null)
+    try {
+      const res = await apiClient.post('/admin/users/import/excel/confirm', { rows: payloadRows })
+      const data = res.data as {
+        created?: number
+        failed?: number
+        errors?: string[]
+        message?: string
+        createdUsers?: Array<{
+          fullName: string
+          loginUsername: string
+          dni: string
+          temporaryPassword: string
+          planDays: number
+          expiresAt?: string
+        }>
+      }
       const created = data.created ?? 0
       const errors = data.errors ?? []
+      const createdUsers = data.createdUsers ?? []
+
       setImportResult({ created, failed: data.failed ?? errors.length, errors })
-      setMsg({
-        text: created > 0
-          ? `✅ ${created} usuarios importados${errors.length ? ` · ${errors.length} filas con error` : ''}`
-          : `⚠️ No se importó ningún usuario${errors.length ? ` · ${errors.length} errores` : ''}`,
-        ok: created > 0,
-      })
-      if (created > 0) void loadData()
+
+      if (created > 0) {
+        setExcelPreviewOpen(false)
+        setExcelPreviewRows([])
+        setExcelPreviewFileName('')
+        setExcelImportCreatedUsers(createdUsers.map((u) => ({
+          fullName: u.fullName,
+          loginUsername: u.loginUsername,
+          dni: u.dni,
+          temporaryPassword: u.temporaryPassword ?? u.dni,
+          planDays: u.planDays,
+          expiresAt: u.expiresAt,
+        })))
+        setMsg({
+          text: `✅ ${created} usuarios creados con acceso por usuario + DNI${errors.length ? ` · ${errors.length} filas con error` : ''}`,
+          ok: true,
+        })
+        router.push('/admin?tab=users&sub=activos')
+        void loadData()
+      } else {
+        setExcelPreviewRows((rows) => applyBackendImportErrors(rows, errors))
+        setExcelConfirmNotice({
+          ok: false,
+          text: errors.length > 0
+            ? `No se grabó ningún usuario. ${errors.length} error(es) — revise la columna Estado.`
+            : data.message ?? 'No se importó ningún usuario',
+        })
+        setMsg({
+          text: errors[0] ?? data.message ?? 'No se importó ningún usuario',
+          ok: false,
+        })
+      }
     } catch (err: unknown) {
-      setMsg({ text: getApiErrorMessage(err, 'Error al importar'), ok: false })
+      const text = getApiErrorMessage(err, 'Error al grabar usuarios')
+      setExcelConfirmNotice({ ok: false, text })
+      setMsg({ text, ok: false })
     } finally {
-      setUploadingExcel(false)
-      if (excelInputRef.current) excelInputRef.current.value = ''
+      setConfirmingExcel(false)
     }
+  }
+
+  const patchExcelPreviewRow = (rowNumber: number, field: keyof ExcelPreviewRow, value: string | number) => {
+    setExcelPreviewRows((rows) => updatePreviewRowField(rows, rowNumber, field, value))
   }
 
   const handleDownloadExcelTemplate = async () => {
     try {
       const res = await apiClient.get('/admin/users/import/template', { responseType: 'blob' })
-      const url = window.URL.createObjectURL(res.data as Blob)
+      const blob = res.data as Blob
+
+      const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer())
+      const isValidXlsx = header.length >= 2 && header[0] === 0x50 && header[1] === 0x4b
+      if (blob.size < 512 || !isValidXlsx) {
+        const text = await blob.text()
+        if (text.trimStart().startsWith('{')) {
+          try {
+            const json = JSON.parse(text) as { message?: string }
+            throw new Error(json.message ?? 'No se pudo descargar la plantilla')
+          } catch (parseErr) {
+            if (parseErr instanceof Error && parseErr.message !== 'Unexpected token') {
+              throw parseErr
+            }
+          }
+        }
+        throw new Error('La plantilla descargada no es válida. Recargue la página e intente de nuevo.')
+      }
+
+      const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = 'plantilla_usuarios_agencia.xlsx'
@@ -340,6 +497,8 @@ function AdminPageContent() {
         currentGradeLabel: CURRENT_GRADE_SELECT_OPTIONS.find((g) => g.value === savedForm.currentGrade)?.label,
         postulationGradeLabel: promotionGradeLabel(savedForm.promotionGrade!),
         trackLabel: trackLabel(savedForm.trackType),
+        hierarchyLabel: studentClassificationFromCurrentGrade(savedForm.currentGrade)?.hierarchyLabel,
+        categoryLabel: studentClassificationFromCurrentGrade(savedForm.currentGrade)?.categoryLabel,
       })
       setForm({
         firstName: '',
@@ -519,22 +678,29 @@ function AdminPageContent() {
 
   const openEditUser = (u: User) => {
     setEditTarget(u)
-    const trackValue =
-      ASCENSO_TRACK_OPTIONS.find((t) => t.key === u.activeTrackType)?.value ??
-      DEFAULT_QUESTION_TRACK
     const promotionValue =
-      PROMOTION_GRADE_OPTIONS.find((g) => g.key === u.promotionGrade)?.value ??
-      PROMOTION_GRADE_OPTIONS.find((g) => g.trackValue === trackValue)?.value ??
-      null
+      PROMOTION_GRADE_OPTIONS.find((g) => g.key === u.promotionGrade)?.value ?? null
     const currentGrade =
       parseCurrentGradeFromText(u.rank) ??
       (promotionValue != null ? inferCurrentGradeFromPostulation(promotionValue) : null)
+
+    let trackType = DEFAULT_QUESTION_TRACK
+    let promotionGrade: number | null = null
+
+    if (currentGrade != null) {
+      const applied = applyCurrentGradeSelection(currentGrade)
+      if (applied) {
+        trackType = applied.trackType
+        promotionGrade = applied.promotionGrade
+      }
+    }
+
     setEditForm({
       fullName: u.fullName,
       dni: u.dni,
       currentGrade,
-      trackType: trackValue,
-      promotionGrade: promotionValue,
+      trackType,
+      promotionGrade,
     })
   }
 
@@ -551,14 +717,19 @@ function AdminPageContent() {
         fullName: editForm.fullName,
         dni: editForm.dni,
         rank,
-        trackType: trackFromGrade(editForm.promotionGrade),
         promotionGrade: editForm.promotionGrade,
       })
-      const trackKey = ASCENSO_TRACK_OPTIONS.find((t) => t.value === editForm.trackType)?.key
       const gradeKey =
         editForm.promotionGrade != null
           ? PROMOTION_GRADE_OPTIONS.find((g) => g.value === editForm.promotionGrade)?.key ?? null
           : null
+      const hierarchyKey =
+        editForm.promotionGrade != null
+          ? PROMOTION_HIERARCHY_OPTIONS.find(
+              (h) => h.value === hierarchyFromGrade(editForm.promotionGrade!)
+            )?.key ?? null
+          : null
+      const trackKey = ASCENSO_TRACK_OPTIONS.find((t) => t.value === trackFromGrade(editForm.promotionGrade!))?.key
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editTarget.id
@@ -569,6 +740,7 @@ function AdminPageContent() {
                 rank,
                 activeTrackType: trackKey ?? u.activeTrackType,
                 promotionGrade: gradeKey,
+                promotionHierarchy: hierarchyKey,
               }
             : u
         )
@@ -816,6 +988,18 @@ function AdminPageContent() {
                         <span className="text-[var(--color-text-primary)]">{createdUser.postulationGradeLabel}</span>
                       </>
                     )}
+                    {createdUser.hierarchyLabel && (
+                      <>
+                        <span className="text-gray-500">Jerarquía</span>
+                        <span className="text-[var(--color-text-primary)]">{createdUser.hierarchyLabel}</span>
+                      </>
+                    )}
+                    {createdUser.categoryLabel && (
+                      <>
+                        <span className="text-gray-500">Categoría</span>
+                        <span className="text-[var(--color-text-primary)]">{createdUser.categoryLabel}</span>
+                      </>
+                    )}
                     {createdUser.trackLabel && (
                       <>
                         <span className="text-gray-500">Balotario</span>
@@ -896,7 +1080,11 @@ function AdminPageContent() {
                       </div>
                       <div className="text-gray-500 text-xs mt-1">
                         Usuario <span className="text-[var(--color-text-primary)] font-medium">{u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'}</span>
-                        {' · '}DNI {u.dni} · {u.rank} · {u.unit}
+                        {' · '}DNI {u.dni} · {u.rank}
+                        {u.promotionGrade ? (
+                          <> · {resolveUserClassificationLabels(u).hierarchyLabel}</>
+                        ) : null}
+                        {' · '}{u.unit}
                       </div>
                       {u.subscription && (
                         <div className="text-xs mt-1.5 font-medium"
@@ -1033,7 +1221,11 @@ function AdminPageContent() {
                         )}
                       </div>
                       <div className="text-gray-600 text-xs mt-1">
-                        Usuario {u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'} · DNI {u.dni} · {u.rank} · {u.unit}
+                        Usuario {u.loginUsername ?? generateStudentLoginUsername(u.fullName) ?? '—'} · DNI {u.dni} · {u.rank}
+                        {u.promotionGrade ? (
+                          <> · {resolveUserClassificationLabels(u).hierarchyLabel}</>
+                        ) : null}
+                        {' · '}{u.unit}
                       </div>
                       {u.subscription ? (
                         <div className="text-xs mt-1.5 font-medium text-gray-500">
@@ -1098,7 +1290,7 @@ function AdminPageContent() {
                 { label: 'Nombre(s) *', key: 'firstName', placeholder: 'Juan' },
                 { label: 'Apellido paterno *', key: 'paternalSurname', placeholder: 'Pérez' },
                 { label: 'Apellido materno', key: 'maternalSurname', placeholder: 'Mayta' },
-                { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '12345678', maxLength: 8 },
+                { label: 'DNI * (8 dígitos)', key: 'dni', placeholder: '00000000', maxLength: 8 },
               ].map(field => {
                 const fieldKey = field.key as keyof typeof form
                 return (
@@ -1133,13 +1325,20 @@ function AdminPageContent() {
                     <option key={g.value} value={g.value}>{g.label}</option>
                   ))}
                 </select>
-                {form.promotionGrade != null && (
+                {form.promotionGrade != null && (() => {
+                  const cls = studentClassificationFromCurrentGrade(form.currentGrade)
+                  return (
                   <p className="text-xs mt-2 text-gray-500">
                     Postula a: <strong className="text-[var(--color-text-primary)]">{promotionGradeLabel(form.promotionGrade)}</strong>
                     {' · '}
+                    Categoría: <strong className="text-[var(--color-text-primary)]">{cls?.categoryLabel ?? '—'}</strong>
+                    {' · '}
+                    Jerarquía: <strong className="text-[var(--color-text-primary)]">{cls?.hierarchyLabel ?? '—'}</strong>
+                    {' · '}
                     Balotario: <strong className="text-[var(--color-text-primary)]">{trackLabel(form.trackType)}</strong>
                   </p>
-                )}
+                  )
+                })()}
               </div>
             </div>
             <div>
@@ -1179,16 +1378,53 @@ function AdminPageContent() {
               </div>
             </div>
 
+            {/* Acciones: usuario individual o carga masiva */}
+            <div className="grid md:grid-cols-2 gap-3 pt-1">
+              <button
+                type="submit"
+                disabled={saving || previewingExcel || confirmingExcel}
+                className="w-full py-3.5 rounded-xl font-bold text-sm transition-opacity"
+                style={{
+                  background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`,
+                  color: 'var(--color-text-primary)',
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving ? 'Grabando...' : '➕ Grabar usuario con acceso inmediato'}
+              </button>
+              <button
+                type="button"
+                onClick={() => excelPreviewInputRef.current?.click()}
+                disabled={saving || previewingExcel || confirmingExcel}
+                className="w-full py-3.5 rounded-xl text-sm font-bold transition-opacity"
+                style={{
+                  background: `linear-gradient(135deg, ${PURPLE}, #7C3AED)`,
+                  color: '#fff',
+                  opacity: previewingExcel ? 0.7 : 1,
+                }}
+              >
+                {previewingExcel ? 'Leyendo Excel...' : '📋 Carga masiva Excel — revisar y grabar'}
+              </button>
+              <input
+                ref={excelPreviewInputRef}
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                className="hidden"
+                onChange={handleExcelPreview}
+              />
+            </div>
+
             {/* IMPORTAR DESDE EXCEL */}
             <div className="rounded-2xl p-5 panel-elevated" style={{ border: `1px solid ${purpleMix(25)}` }}>
               <h3 className="text-[var(--color-text-primary)] font-bold text-sm mb-1">📊 Carga masiva desde Excel</h3>
               <p className="text-gray-500 text-xs mb-2">
-                Descargue la plantilla <strong className="text-[var(--color-text-secondary)]">.xlsx</strong>, complete una fila por alumno y súbala aquí.
-                Funciona igual para todas las agencias (Partner, etc.).
+                Para varios alumnos use el botón morado de arriba: cargue el Excel,{' '}
+                <strong className="text-[var(--color-text-secondary)]">revise la tabla</strong> y grabe el bloque completo.
+                También puede descargar la plantilla aquí.
               </p>
               <ul className="text-gray-500 text-xs mb-3 space-y-1 list-disc pl-4">
                 <li>Columnas: Nombres, Apellido paterno, Apellido materno, DNI, Grado actual, Días plan (30/60/180).</li>
-                <li>Usuario de acceso: inicial + apellido paterno (Juan Pérez → <strong className="text-[var(--color-text-secondary)]">JPEREZ</strong>).</li>
+                <li>Usuario de acceso: inicial + apellido paterno (ej. Juan García → <strong className="text-[var(--color-text-secondary)]">JGARCIA</strong>).</li>
                 <li>Contraseña sugerida: el DNI. Sin correo electrónico.</li>
                 <li>El grado actual asigna automáticamente el balotario del ascenso siguiente.</li>
               </ul>
@@ -1219,25 +1455,228 @@ function AdminPageContent() {
                   style={{ backgroundColor: `${skyMix(15)}`, color: NEON2, border: `1px solid ${skyMix(25)}` }}>
                   ⬇️ Descargar plantilla Excel
                 </button>
-                <button type="button" onClick={() => excelInputRef.current?.click()} disabled={uploadingExcel}
-                  className="px-4 py-2 rounded-xl text-sm font-bold"
-                  style={{ background: `linear-gradient(135deg, ${PURPLE}, #7C3AED)`, color: '#fff', opacity: uploadingExcel ? 0.7 : 1 }}>
-                  {uploadingExcel ? 'Importando...' : '📁 Subir Excel'}
-                </button>
-                <input ref={excelInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
               </div>
             </div>
-
-            <button type="submit" disabled={saving}
-              className="w-full py-3 rounded-xl font-bold text-sm"
-              style={{ background: `linear-gradient(135deg, ${NEON}, #1A5C2E)`, color: 'var(--color-text-primary)', opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'Creando...' : '➕ Crear usuario con acceso inmediato'}
-            </button>
           </form>
         </div>
       )}
         </div>
       )}
+
+      <Modal
+        open={excelPreviewOpen}
+        onClose={() => { if (!confirmingExcel) setExcelPreviewOpen(false) }}
+        title="📋 Revisar y editar usuarios del Excel"
+        maxWidth="max-w-[min(96vw,1280px)]"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={confirmingExcel}
+              onClick={() => setExcelPreviewOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              loading={confirmingExcel}
+              disabled={!excelPreviewRows.some((r) => r.valid)}
+              onClick={handleExcelConfirm}
+            >
+              Grabar {excelPreviewRows.filter((r) => r.valid).length} usuarios
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          {excelConfirmNotice && (
+            <div
+              className="rounded-xl px-3 py-2 text-xs font-medium"
+              style={{
+                backgroundColor: excelConfirmNotice.ok
+                  ? 'var(--color-primary-bg)'
+                  : 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
+                border: `1px solid ${excelConfirmNotice.ok ? primaryMix(35) : 'color-mix(in srgb, var(--color-danger) 35%, transparent)'}`,
+                color: excelConfirmNotice.ok ? NEON : RED,
+              }}
+            >
+              {excelConfirmNotice.text}
+            </div>
+          )}
+          <p className="text-xs text-gray-500">
+            Archivo: <strong className="text-[var(--color-text-secondary)]">{excelPreviewFileName || '—'}</strong>
+            {' · '}
+            {excelPreviewRows.filter((r) => r.valid).length} válidos
+            {' · '}
+            {excelPreviewRows.filter((r) => !r.valid).length} con error
+          </p>
+          <p className="text-xs text-gray-500 rounded-lg px-3 py-2" style={{ backgroundColor: `${primaryMix(8)}`, border: `1px solid ${primaryMix(20)}` }}>
+            <strong className="text-[var(--color-text-secondary)]">Acceso:</strong> ingresa con el <strong>Usuario</strong> y la contraseña es el <strong>DNI</strong> (8 dígitos).
+            El grado actual define postulación, <strong>categoría</strong>, <strong>jerarquía</strong> y balotario de preguntas.
+          </p>
+          <div className="overflow-auto rounded-xl border border-[var(--color-surface-border)] max-h-[min(70vh,640px)]">
+            <table className="w-full text-xs min-w-[1200px]">
+              <thead className="sticky top-0 z-10" style={{ backgroundColor: SURFACE }}>
+                <tr className="text-left text-gray-500">
+                  <th className="px-2 py-2 font-medium w-10">#</th>
+                  <th className="px-2 py-2 font-medium min-w-[100px]">Nombres</th>
+                  <th className="px-2 py-2 font-medium min-w-[100px]">Ap. paterno</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">Ap. materno</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">DNI (contraseña)</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">Usuario</th>
+                  <th className="px-2 py-2 font-medium min-w-[140px]">Grado actual</th>
+                  <th className="px-2 py-2 font-medium min-w-[90px]">Postula</th>
+                  <th className="px-2 py-2 font-medium min-w-[110px]">Categoría</th>
+                  <th className="px-2 py-2 font-medium min-w-[100px]">Jerarquía</th>
+                  <th className="px-2 py-2 font-medium min-w-[110px]">Balotario</th>
+                  <th className="px-2 py-2 font-medium min-w-[80px]">Plan</th>
+                  <th className="px-2 py-2 font-medium min-w-[120px]">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {excelPreviewRows.map((row) => (
+                  <tr
+                    key={row.rowNumber}
+                    style={{
+                      backgroundColor: row.valid
+                        ? 'transparent'
+                        : 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
+                    }}
+                  >
+                    <td className="px-2 py-2 text-gray-500 align-top">{row.rowNumber}</td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[90px]"
+                        value={row.firstName}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'firstName', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[90px]"
+                        value={row.paternalSurname}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'paternalSurname', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[80px]"
+                        value={row.maternalSurname ?? ''}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'maternalSurname', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[80px] font-mono"
+                        maxLength={8}
+                        value={row.dni}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'dni', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <input
+                        className="input-admin text-xs w-full min-w-[80px] font-mono"
+                        value={row.loginUsername}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'loginUsername', e.target.value)}
+                      />
+                    </td>
+                    <td className="px-1 py-1 align-top">
+                      <select
+                        className="input-admin text-xs w-full min-w-[130px]"
+                        value={row.currentGrade ?? ''}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'currentGrade', Number(e.target.value))}
+                      >
+                        <option value="" disabled>Grado PNP</option>
+                        {CURRENT_GRADE_SELECT_OPTIONS.map((g) => (
+                          <option key={g.value} value={g.value}>{g.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-2 py-2 align-top text-[var(--color-text-secondary)]">{row.postulationGradeLabel}</td>
+                    <td className="px-2 py-2 align-top text-gray-400">{row.categoryLabel}</td>
+                    <td className="px-2 py-2 align-top text-gray-400">{row.hierarchyLabel}</td>
+                    <td className="px-2 py-2 align-top text-gray-400">{row.trackLabel}</td>
+                    <td className="px-1 py-1 align-top">
+                      <select
+                        className="input-admin text-xs w-full"
+                        value={row.planDays}
+                        onChange={(e) => patchExcelPreviewRow(row.rowNumber, 'planDays', Number(e.target.value))}
+                      >
+                        {SUBSCRIPTION_PLANS.map((p) => (
+                          <option key={p.days} value={p.days}>{p.days} d</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-2 py-2 align-top">
+                      {row.valid ? (
+                        <span style={{ color: NEON }}>OK</span>
+                      ) : (
+                        <span className="text-[11px] leading-snug block max-w-[140px]" style={{ color: RED }} title={row.error ?? undefined}>
+                          {row.error ?? 'Error'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {excelPreviewRows.some((r) => !r.valid) && (
+            <p className="text-xs text-gray-500">
+              Corrija las filas en rojo en la tabla. Solo se grabarán las filas válidas.
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        open={excelImportCreatedUsers != null && excelImportCreatedUsers.length > 0}
+        onClose={() => setExcelImportCreatedUsers(null)}
+        title="✅ Usuarios creados — credenciales de acceso"
+        maxWidth="max-w-lg"
+        footer={
+          <Button size="sm" onClick={() => setExcelImportCreatedUsers(null)}>
+            Entendido
+          </Button>
+        }
+      >
+        <div className="space-y-3 text-sm">
+          <p className="text-xs text-gray-500">
+            Cada alumno ingresa en la URL de su agencia con su <strong className="text-[var(--color-text-secondary)]">Usuario</strong> y
+            contraseña <strong className="text-[var(--color-text-secondary)]">DNI</strong> (8 dígitos).
+          </p>
+          {tenantProfile && (
+            <div className="rounded-xl px-3 py-2" style={{ backgroundColor: `${primaryMix(8)}`, border: `1px solid ${primaryMix(25)}` }}>
+              <p className="text-xs text-gray-500 mb-1">Enlace de la agencia</p>
+              <TenantAccessUrl slug={tenantProfile.slug} customDomain={tenantProfile.customDomain} compact />
+            </div>
+          )}
+          {!tenantProfile && user?.tenantSlug && (
+            <p className="text-xs text-gray-500 break-all">
+              URL: <strong className="text-[var(--color-text-secondary)]">{getTenantAccessUrl(user.tenantSlug)}</strong>
+            </p>
+          )}
+          <div className="space-y-2 max-h-[min(50vh,360px)] overflow-y-auto">
+            {excelImportCreatedUsers?.map((u) => (
+              <div
+                key={`${u.loginUsername}-${u.dni}`}
+                className="rounded-xl px-3 py-2 text-xs grid grid-cols-2 gap-x-3 gap-y-1"
+                style={{ backgroundColor: SURFACE, border: '1px solid var(--color-surface-border)' }}
+              >
+                <span className="text-gray-500">Nombre</span>
+                <span className="text-[var(--color-text-primary)] font-medium">{u.fullName}</span>
+                <span className="text-gray-500">Usuario</span>
+                <span className="text-[var(--color-text-primary)] font-bold tracking-wide">{u.loginUsername}</span>
+                <span className="text-gray-500">Contraseña</span>
+                <span className="text-[var(--color-text-primary)] font-mono">{u.temporaryPassword}</span>
+                <span className="text-gray-500">Plan</span>
+                <span style={{ color: NEON }}>{u.planDays} días</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={editTarget != null}
@@ -1277,13 +1716,20 @@ function AdminPageContent() {
                 <option key={g.value} value={g.value}>{g.label}</option>
               ))}
             </select>
-            {editForm.promotionGrade != null && (
+            {editForm.promotionGrade != null && (() => {
+              const cls = studentClassificationFromCurrentGrade(editForm.currentGrade)
+              return (
               <p className="text-xs mt-2 text-gray-500">
                 Postula a: <strong className="text-[var(--color-text-primary)]">{promotionGradeLabel(editForm.promotionGrade)}</strong>
                 {' · '}
+                Categoría: <strong className="text-[var(--color-text-primary)]">{cls?.categoryLabel ?? '—'}</strong>
+                {' · '}
+                Jerarquía: <strong className="text-[var(--color-text-primary)]">{cls?.hierarchyLabel ?? '—'}</strong>
+                {' · '}
                 Balotario: <strong className="text-[var(--color-text-primary)]">{trackLabel(editForm.trackType)}</strong>
               </p>
-            )}
+              )
+            })()}
           </div>
         </div>
       </Modal>
@@ -1400,6 +1846,12 @@ function AdminPageContent() {
             <div><span className="text-gray-500">DNI: </span><strong className="text-[var(--color-text-primary)]">{form.dni}</strong></div>
             <div><span className="text-gray-500">Grado actual: </span><strong className="text-[var(--color-text-primary)]">{form.currentGrade != null ? CURRENT_GRADE_SELECT_OPTIONS.find((g) => g.value === form.currentGrade)?.label : '—'}</strong></div>
             <div><span className="text-gray-500">Postula a: </span><strong className="text-[var(--color-text-primary)]">{form.promotionGrade != null ? promotionGradeLabel(form.promotionGrade) : '—'}</strong></div>
+            {form.promotionGrade != null && (
+              <>
+                <div><span className="text-gray-500">Categoría: </span><strong className="text-[var(--color-text-primary)]">{studentClassificationFromCurrentGrade(form.currentGrade)?.categoryLabel ?? '—'}</strong></div>
+                <div><span className="text-gray-500">Jerarquía: </span><strong className="text-[var(--color-text-primary)]">{studentClassificationFromCurrentGrade(form.currentGrade)?.hierarchyLabel ?? '—'}</strong></div>
+              </>
+            )}
             <div><span className="text-gray-500">Balotario: </span><strong className="text-[var(--color-text-primary)]">{trackLabel(form.trackType)}</strong></div>
             <div><span className="text-gray-500">Plan: </span><strong style={{ color: NEON }}>{form.planDays} días</strong></div>
           </div>

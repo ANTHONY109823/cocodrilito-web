@@ -2,6 +2,14 @@
 
 Frontend Next.js del simulador de exámenes PNP — plataforma multi-tenant con paneles Admin, SuperAdmin y white label.
 
+## Guía para agencias
+
+**Manual de acceso y gestión** (importación Excel, login alumnos, suscripciones):
+
+→ **[docs/GUIA-AGENCIA.md](./docs/GUIA-AGENCIA.md)**
+
+Este documento **no incluye credenciales**. Los accesos de cada agencia se entregan por canal privado.
+
 ## Requisitos
 
 - Node.js 20+
@@ -24,30 +32,34 @@ Abre [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_API_URL` | URL base del API (ej. `http://localhost:5034/api`) |
 | `API_URL` | URL del backend para rewrites del servidor (opcional) |
 
-## Entornos de desarrollo
+## Seguridad
 
-Las credenciales de prueba **no se documentan en este repositorio**. Configúralas en el backend
-(variables de entorno / user secrets) o solicítalas al administrador del proyecto.
+- **No documentar credenciales** en este repositorio (usuarios, contraseñas, tokens, DNIs reales).
+- Los archivos `.env*` locales están en `.gitignore`; use solo `.env.example` como plantilla sin secretos.
+- Las credenciales de desarrollo o prueba se configuran en el backend o se solicitan al administrador del proyecto.
 
 ## White label (login)
 
-Accede con branding del tenant usando query params:
+Cada agencia accede por subdominio:
 
-- Academia: `/login?academia=demo-academia`
-- Agencia: `/login?agencia=demo-agencia`
+```text
+https://[slug].simulacros.pe/login
+```
 
-El slug debe coincidir con el tenant registrado en el backend.
+En desarrollo local: `http://[slug].localhost:3000/login`
 
 ## Estructura principal
 
 ```
 src/
-├── app/(dashboard)/superadmin/   # Panel SuperAdmin (FASE 6)
-├── app/(dashboard)/admin/        # Panel admin tenant (FASE 8)
-├── components/ThemeProvider.tsx    # White label (FASE 7)
-├── hooks/use*.ts                 # SWR data hooks (FASE 9)
-└── lib/api/superadmin.ts         # Cliente API SuperAdmin
+├── app/(dashboard)/superadmin/   # Panel SuperAdmin
+├── app/(dashboard)/admin/        # Panel admin tenant
+├── components/tenant/            # Branding, favicon, login bootstrap
+├── docs/GUIA-AGENCIA.md          # Guía operativa para agencias
+└── lib/api/                      # Clientes API
 ```
+
+Documentación adicional: [docs/CONFIGURACION-PRODUCCION.md](./docs/CONFIGURACION-PRODUCCION.md)
 
 ## Scripts
 
@@ -60,7 +72,7 @@ npm run start    # Servidor producción
 
 ## Deploy
 
-El proyecto incluye configuración Netlify (`netlify.toml`). Define `NEXT_PUBLIC_API_URL` apuntando al backend en producción.
+Proyecto desplegado en **Vercel**. Defina `NEXT_PUBLIC_API_URL` y `API_URL` en Environment Variables apuntando al backend en producción.
 
 ## CI
 
