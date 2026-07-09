@@ -13,7 +13,7 @@ import { Modal, Button } from '@/components/ui'
 import { CredentialsModal, type AdminCredentials } from '@/components/admin/CredentialsModal'
 import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
-import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, policeGreenRgba, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
+import { DANGER, INFO, NEON, SURFACE, SURFACE_BORDER, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, warningMix } from '@/lib/constants/theme'
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { TenantLoginBrandingFields, emptyLoginBranding } from '@/components/superadmin/TenantLoginBrandingFields'
 import {

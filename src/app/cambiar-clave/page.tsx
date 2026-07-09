@@ -11,7 +11,6 @@ import { PasswordPolicyHint } from '@/components/admin/PasswordPolicyHint'
 import { validatePassword } from '@/lib/utils/passwordPolicy'
 import { SURFACE_CARD, primaryMix } from '@/lib/constants/theme'
 
-const PAGE_NEON = '#4A7C59'
 const PAGE_GOLD = '#F5C842'
 
 export default function CambiarClavePage() {

@@ -1,6 +1,6 @@
 'use client'
 
-import { NEON, primaryMix, warningMix, dangerMix, TEXT_MUTED, TEXT_SECONDARY } from '@/lib/constants/theme'
+import { NEON, primaryMix, warningMix, TEXT_MUTED } from '@/lib/constants/theme'
 
 interface ExplanationCoverageBannerProps {
   total: number

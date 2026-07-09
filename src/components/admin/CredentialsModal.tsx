@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal, Button } from '@/components/ui'
-import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
+import { GOLD, INPUT_BG, goldBrightMix, primaryMix, warningMix } from '@/lib/constants/theme'
 
 export interface AdminCredentials {
   fullName: string

@@ -20,7 +20,7 @@ import { CreateTenantPanel, type CreateTenantFormState } from '@/components/supe
 import { TenantAccessUrl } from '@/components/tenant/TenantAccessUrl'
 import { SystemHealthPanel } from '@/components/superadmin/SystemHealthPanel'
 import { SuperAdminUsersPanel } from '@/components/superadmin/SuperAdminUsersPanel'
-import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, policeGreenRgba, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
+import { DANGER, INFO, NEON, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, policeGreenRgba, warningMix } from '@/lib/constants/theme'
 type TabKey =
   | 'inicio'
   | 'agencias'

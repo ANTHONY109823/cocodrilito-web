@@ -1,7 +1,7 @@
 'use client'
 
 import { ASCENSO_TRACK_OPTIONS, trackLabel } from '@/lib/constants/trackTypes'
-import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
+import { NEON, primaryMix } from '@/lib/constants/theme'
 import type { QuestionFormState } from '@/components/admin/preguntas/types'
 import { OPTION_LETTERS } from '@/components/admin/preguntas/types'
 

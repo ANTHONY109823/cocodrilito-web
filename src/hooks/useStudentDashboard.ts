@@ -24,12 +24,12 @@ export function useStudentDashboard() {
     swrFetcher,
     swrOpts
   )
-  const { data: history, error: historyError, isLoading: historyLoading } = useSWR(
+  const { data: history, error: historyError } = useSWR(
     '/exams/sessions/history?limit=7',
     swrFetcher,
     swrOpts
   )
-  const { data: ranking, error: rankingError, isLoading: rankingLoading } = useSWR(
+  const { data: ranking, error: rankingError } = useSWR(
     '/rankings/me?period=weekly',
     swrFetcher,
     swrOpts

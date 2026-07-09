@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { superadminApi } from '@/lib/api/superadmin'
-import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
+import { DANGER, INFO, NEON, SURFACE_BORDER, WARNING, dangerMix, primaryMix, warningMix } from '@/lib/constants/theme'
 
 interface HealthCheck {
   name: string

@@ -14,9 +14,7 @@ import {
   SKY as NEON2,
   GOLD_BRIGHT as GOLD,
   RED_BRIGHT as RED,
-  PURPLE_ACCENT as PURPLE,
-  POLICE_GREEN_DARK,
-  SURFACE_CARD,
+  PURPLE_ACCENT as PURPLE,  SURFACE_CARD,
   SURFACE,
   TEXT_MUTED,
   primaryMix,
@@ -425,6 +423,8 @@ function AdminPageContent() {
     }
   }
 
+  // Solo al montar: hidratar desde localStorage una vez.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadFromStorage() }, [])
 
   useEffect(() => {
@@ -435,6 +435,9 @@ function AdminPageContent() {
     }
     const hasCachedData = tab === 'dashboard' ? Boolean(dashData) : users.length > 0
     void loadData({ silent: hasCachedData })
+    // dashData/users.length solo deciden el modo silent (UX); incluirlos en deps
+    // reejecutaría loadData al llegar sus propios datos (bucle).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loadData, router, tab, usersPage])
 
   const handleCreate = (e: React.FormEvent) => {

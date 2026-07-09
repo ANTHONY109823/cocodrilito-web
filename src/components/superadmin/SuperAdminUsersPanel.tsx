@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { superadminApi } from '@/lib/api/superadmin'
 import { SkeletonTable } from '@/components/Skeleton'
-import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_BORDER, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, policeGreenRgba, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
+import { DANGER, NEON, SURFACE, SURFACE_BORDER, WARNING, dangerMix, policeGreenRgba } from '@/lib/constants/theme'
 
 export interface SuperAdminUserRow {
   id: string

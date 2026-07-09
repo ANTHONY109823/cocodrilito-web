@@ -12,9 +12,7 @@ import {
   primaryMix,
   skyMix,
   redBrightMix,
-  goldBrightMix,
-  dangerMix,
-  SURFACE_CARD,
+  goldBrightMix,  SURFACE_CARD,
 } from '@/lib/constants/theme'
 import { SUBSCRIPTION_PLANS, formatPlanPrice, getPriceForDays } from '@/lib/constants/subscriptionPlans'
 

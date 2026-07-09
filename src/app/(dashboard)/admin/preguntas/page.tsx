@@ -11,7 +11,7 @@ import {
 } from '@/lib/auth/roles'
 import { trackLabel, DEFAULT_QUESTION_TRACK, resolveUserTrackKey } from '@/lib/constants/trackTypes'
 import { hierarchyLabel } from '@/lib/constants/promotionGrades'
-import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
+import { NEON } from '@/lib/constants/theme'
 import { useAdminQuestions } from '@/hooks/useAdminQuestions'
 import { QuestionEditModal } from '@/components/admin/preguntas/QuestionEditModal'
 import { QuestionAddForm, TrackSelector, NEON2 } from '@/components/admin/preguntas/QuestionAddForm'
@@ -58,7 +58,6 @@ export default function PreguntasPage() {
     }
   }, [user, router, isSuperAdminMode, pathname])
 
-  const totalPages = Math.ceil(q.filtered.length / PAGE_SIZE)
   const paginated = q.filtered.slice((q.page - 1) * PAGE_SIZE, q.page * PAGE_SIZE)
   const currentCat = q.categories.find((c) => c.name === q.selectedCategory)
 

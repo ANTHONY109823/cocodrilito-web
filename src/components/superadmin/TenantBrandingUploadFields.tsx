@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { DANGER, GOLD, INFO, INPUT_BG, NEON, POLICE_GREEN_DARK, PURPLE_ACCENT, RED_BRIGHT, SKY, SURFACE, SURFACE_CARD, TEXT_MUTED, WARNING, dangerMix, goldBrightMix, infoMix, primaryMix, purpleMix, redBrightMix, skyMix, warningMix } from '@/lib/constants/theme'
+import { NEON, primaryMix } from '@/lib/constants/theme'
 
 export const MAX_BRANDING_IMAGE_BYTES = 2 * 1024 * 1024
 export const ALLOWED_BRANDING_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -44,6 +44,8 @@ function BrandingImageField({
           }`}
         >
           {previewUrl ? (
+            // Preview de imagen subida por el usuario (blob/object URL): next/image no aplica.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={previewUrl}
               alt=""

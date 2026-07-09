@@ -1,6 +1,5 @@
 import {
   applyCurrentGradeSelection,
-  categoryLabelFromTrack,
   CURRENT_GRADE_SELECT_OPTIONS,
   parseCurrentGradeFromText,
   promotionGradeLabel,

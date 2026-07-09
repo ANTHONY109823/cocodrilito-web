@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { TenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'

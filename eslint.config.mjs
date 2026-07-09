@@ -17,6 +17,11 @@ const eslintConfig = defineConfig([
     rules: {
       // Carga de datos en useEffect es un patrón válido en esta app
       "react-hooks/set-state-in-effect": "off",
+      // Convención: argumentos/vars con prefijo _ son intencionalmente no usados
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
 ]);

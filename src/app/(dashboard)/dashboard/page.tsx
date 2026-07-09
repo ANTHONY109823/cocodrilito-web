@@ -37,10 +37,6 @@ interface LatestSession {
   passed: boolean
 }
 
-interface HistoryEntry {
-  score: number
-}
-
 interface MyRanking {
   position: number
 }

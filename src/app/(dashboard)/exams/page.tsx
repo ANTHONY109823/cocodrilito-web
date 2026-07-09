@@ -75,7 +75,7 @@ export default function ExamsPage() {
     : resolveUserHierarchyValue(user)
   const categoryTrack = trackValueForHierarchy(categoryHierarchy)
   const { exams, isLoading: examsLoading, error: examsError } = useExamList()
-  const { categories, isLoading: catsLoading, error: catsError } = useCategories(
+  const { categories, error: catsError } = useCategories(
     categoryTrack,
     categoryHierarchy
   )
