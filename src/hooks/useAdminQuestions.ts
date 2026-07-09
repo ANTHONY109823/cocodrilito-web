@@ -604,13 +604,34 @@ export function useAdminQuestions({
     localCategorizedCount,
   ])
 
-  const uncategorizedCount =
-    !bankScopeReady || browseMode
-      ? 0
-      : scopedQuestions.length -
-        scopedQuestions.filter((q) =>
-          categories.some((cat) => categoryMatches(q.category, cat.name))
-        ).length
+  const uncategorizedCount = useMemo(() => {
+    if (!bankScopeReady || countsPending) return 0
+
+    // Preferir conteos remotos: evita falsos positivos con listas de categorías en caché vieja.
+    if (countsEnabled && remoteTotal > 0) {
+      let orphan = 0
+      for (const [key, value] of Object.entries(remoteCounts)) {
+        if (!categories.some((cat) => categoryMatches(key, cat.name))) {
+          orphan += value
+        }
+      }
+      return orphan
+    }
+
+    if (browseMode) return 0
+
+    return scopedQuestions.length - localCategorizedCount
+  }, [
+    bankScopeReady,
+    countsPending,
+    countsEnabled,
+    remoteTotal,
+    remoteCounts,
+    categories,
+    browseMode,
+    scopedQuestions.length,
+    localCategorizedCount,
+  ])
 
   const explanationCoverage = useMemo(() => {
     const coverageTotal =
