@@ -2,7 +2,6 @@ import {
   applyCurrentGradeSelection,
   categoryLabelFromTrack,
   CURRENT_GRADE_SELECT_OPTIONS,
-  hierarchyLabelFromPostulationGrade,
   parseCurrentGradeFromText,
   promotionGradeLabel,
   studentClassificationFromPostulationGrade,
@@ -254,8 +253,4 @@ function revalidatePreviewRow(row: ExcelPreviewRow, allRows: ExcelPreviewRow[]):
     valid: true,
     error: null,
   }
-}
-
-export function hierarchyLabelForRow(row: ExcelPreviewRow): string {
-  return row.hierarchyLabel || hierarchyLabelFromPostulationGrade(row.promotionGrade)
 }

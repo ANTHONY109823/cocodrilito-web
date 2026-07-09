@@ -83,17 +83,6 @@ export function hierarchiesForTrack(trackValue: number) {
   return PROMOTION_HIERARCHY_OPTIONS.filter((h) => h.trackValue === trackValue)
 }
 
-export function gradesForTrack(trackValue: number) {
-  return PROMOTION_GRADE_OPTIONS.filter((g) => g.trackValue === trackValue && g.postulationTarget)
-}
-
-export function gradesForHierarchy(hierarchyValue: number) {
-  const normalized = normalizeHierarchyValue(hierarchyValue)
-  return PROMOTION_GRADE_OPTIONS.filter(
-    (g) => g.hierarchy === normalized && g.postulationTarget
-  )
-}
-
 export function hierarchyFromGrade(gradeValue: number) {
   return PROMOTION_GRADE_OPTIONS.find((g) => g.value === gradeValue)?.hierarchy ?? null
 }
@@ -142,10 +131,6 @@ export function trackFromGrade(gradeValue: number) {
 export function defaultHierarchyForTrack(trackValue: number): number {
   // Fallback conservador: jerarquía base del balotario (Subalternos / Suboficiales).
   return trackValue === 2 ? 1 : 5
-}
-
-export function defaultPostulationGradeForTrack(trackValue: number): number {
-  return trackValue === 2 ? 2 : 13 // Teniente / Suboficial de 2.ª
 }
 
 export function parseGradeKey(value: string | null | undefined): number | null {

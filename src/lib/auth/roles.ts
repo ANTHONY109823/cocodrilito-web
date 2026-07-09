@@ -20,11 +20,6 @@ export function isAdminAgencia(role?: string | null, tenantType?: string | null)
   )
 }
 
-/** @deprecated Solo agencias de ascenso; legacy academia se trata como agencia. */
-export function isAdminAcademia(_role?: string | null, _tenantType?: string | null): boolean {
-  return false
-}
-
 export type NavContext = 'student' | 'superadmin' | 'tenant-admin'
 
 /** SuperAdmin real (no impersonando) → panel global. Impersonación → panel de agencia. */

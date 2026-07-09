@@ -56,20 +56,3 @@ function normalizeTrackKey(value: string): string | null {
   const byKey = QUESTION_TRACK_OPTIONS.find((t) => t.key === trimmed)
   return byKey?.key ?? null
 }
-
-/** Balotario por defecto al crear alumno según lo habilitado en la agencia. */
-export function resolveDefaultStudentTrack(
-  user?: { allowedTrackTypes?: string[] } | null
-): number {
-  const allowed = (user?.allowedTrackTypes ?? [])
-    .map((t) => normalizeTrackKey(String(t)))
-    .filter((t): t is string => Boolean(t))
-
-  const hasOfficials = allowed.includes('AscensosOficiales')
-  const hasSubofficials = allowed.includes('AscensosSuboficiales')
-
-  if (hasOfficials && !hasSubofficials) return 2
-  if (hasSubofficials) return 1
-  if (hasOfficials) return 2
-  return DEFAULT_QUESTION_TRACK
-}

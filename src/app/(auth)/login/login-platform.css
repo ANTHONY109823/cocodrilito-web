@@ -698,28 +698,6 @@
   white-space: nowrap;
 }
 
-.register-link {
-  font-size: 12px;
-  text-align: center;
-  color: var(--white-dim);
-  margin-bottom: 18px;
-  letter-spacing: .2px;
-}
-.register-link a,
-.register-link .join-request-btn {
-  color: var(--green-hi);
-  text-decoration: none;
-  font-weight: 600;
-  transition: color .2s;
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  cursor: pointer;
-}
-.register-link a:hover,
-.register-link .join-request-btn:hover { color: var(--gold); text-decoration: underline; }
-
 .social-label {
   font-size: 9px;
   font-weight: 600;
@@ -1503,7 +1481,6 @@
   font-weight: 600;
 }
 
-[data-theme='light'] .loginRoot .join-request-btn,
 [data-theme='light'] .login-skeleton-text {
   color: #5C5C5C !important;
 }

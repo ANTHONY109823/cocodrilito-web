@@ -7,22 +7,11 @@ export interface LoginRequest {
   tenantSlug?: string | null
 }
 
-export interface RegisterRequest {
-  dni: string
-  email: string
-  password: string
-  fullName: string
-  rank: string
-  unit: string
-}
-
 export type AuthProfileResponse = AuthUser
 
 export const authApi = {
   login: (data: LoginRequest) =>
     apiClient.post<AuthProfileResponse>('/Auth/login', data),
-  register: (data: RegisterRequest) =>
-    apiClient.post<AuthProfileResponse>('/Auth/register', data),
   logout: () => apiClient.post('/Auth/logout'),
   stopImpersonate: () => apiClient.post<AuthProfileResponse>('/Auth/stop-impersonate'),
   me: () => apiClient.get('/Auth/me'),
