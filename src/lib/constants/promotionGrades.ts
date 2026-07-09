@@ -1,19 +1,22 @@
-/** Jerarquías del balotario (~1500 preguntas c/u). Orden: mayor a menor jerarquía. */
+/** Jerarquías del balotario. Oficiales: 2 bancos. Suboficiales: banco unificado (value 5). */
 import { trackLabel } from './trackTypes'
 
+/** Opciones activas en UI (tabs). Valores 3/4 deprecados se normalizan a 5. */
 export const PROMOTION_HIERARCHY_OPTIONS = [
   { value: 2, key: 'OficialesSuperiores', label: 'Oficiales Superiores', trackValue: 2 },
   { value: 1, key: 'OficialesSubalternos', label: 'Oficiales Subalternos', trackValue: 2 },
-  { value: 3, key: 'SuboficialesSuperiores', label: 'Suboficiales Superiores', trackValue: 1 },
-  { value: 4, key: 'SuboficialesTecnicos', label: 'Suboficiales Técnicos', trackValue: 1 },
   { value: 5, key: 'Suboficiales', label: 'Suboficiales', trackValue: 1 },
 ] as const
+
+/** Alias legacy (3/4) → banco unificado Suboficiales (5). */
+const LEGACY_SUBOFICIAL_HIERARCHIES = new Set([3, 4])
 
 export type PromotionHierarchyKey = (typeof PROMOTION_HIERARCHY_OPTIONS)[number]['key']
 
 /**
  * Grados al que postula el alumno (meta de ascenso). Ordenado por jerarquía, mayor a menor.
  * Alférez y Suboficial de 3.ª son grados actuales, no metas de postulación.
+ * Todos los grados Suboficiales usan hierarchy 5 (banco unificado).
  */
 export const PROMOTION_GRADE_OPTIONS = [
   { value: 6, key: 'Coronel', label: 'Coronel', hierarchy: 2, trackValue: 2, postulationTarget: true },
@@ -22,11 +25,11 @@ export const PROMOTION_GRADE_OPTIONS = [
   { value: 3, key: 'Capitan', label: 'Capitán', hierarchy: 1, trackValue: 2, postulationTarget: true },
   { value: 2, key: 'Teniente', label: 'Teniente', hierarchy: 1, trackValue: 2, postulationTarget: true },
   { value: 1, key: 'Alferez', label: 'Alférez', hierarchy: 1, trackValue: 2, postulationTarget: false },
-  { value: 7, key: 'SuboficialSuperior', label: 'Suboficial Superior', hierarchy: 3, trackValue: 1, postulationTarget: true },
-  { value: 8, key: 'SuboficialBrigadier', label: 'Suboficial Brigadier', hierarchy: 3, trackValue: 1, postulationTarget: true },
-  { value: 9, key: 'SuboficialTecnicoPrimera', label: 'Suboficial Técnico de 1.ª', hierarchy: 4, trackValue: 1, postulationTarget: true },
-  { value: 10, key: 'SuboficialTecnicoSegunda', label: 'Suboficial Técnico de 2.ª', hierarchy: 4, trackValue: 1, postulationTarget: true },
-  { value: 11, key: 'SuboficialTecnicoTercera', label: 'Suboficial Técnico de 3.ª', hierarchy: 4, trackValue: 1, postulationTarget: true },
+  { value: 7, key: 'SuboficialSuperior', label: 'Suboficial Superior', hierarchy: 5, trackValue: 1, postulationTarget: true },
+  { value: 8, key: 'SuboficialBrigadier', label: 'Suboficial Brigadier', hierarchy: 5, trackValue: 1, postulationTarget: true },
+  { value: 9, key: 'SuboficialTecnicoPrimera', label: 'Suboficial Técnico de 1.ª', hierarchy: 5, trackValue: 1, postulationTarget: true },
+  { value: 10, key: 'SuboficialTecnicoSegunda', label: 'Suboficial Técnico de 2.ª', hierarchy: 5, trackValue: 1, postulationTarget: true },
+  { value: 11, key: 'SuboficialTecnicoTercera', label: 'Suboficial Técnico de 3.ª', hierarchy: 5, trackValue: 1, postulationTarget: true },
   { value: 12, key: 'SuboficialPrimera', label: 'Suboficial de 1.ª', hierarchy: 5, trackValue: 1, postulationTarget: true },
   { value: 13, key: 'SuboficialSegunda', label: 'Suboficial de 2.ª', hierarchy: 5, trackValue: 1, postulationTarget: true },
   { value: 14, key: 'SuboficialTercera', label: 'Suboficial de 3.ª', hierarchy: 5, trackValue: 1, postulationTarget: false },
@@ -48,13 +51,23 @@ const POSTULATION_BY_CURRENT: Record<number, number> = {
   8: 7, // Brigadier → SO Superior
 }
 
+export function normalizeHierarchyValue(value: number): number {
+  return LEGACY_SUBOFICIAL_HIERARCHIES.has(value) ? 5 : value
+}
+
 export function hierarchyLabel(value: number | string | null | undefined): string {
   if (value == null) return '—'
-  const num = typeof value === 'number' ? value : Number(value)
-  const byValue = PROMOTION_HIERARCHY_OPTIONS.find((h) => h.value === num)
-  if (byValue) return byValue.label
-  const byKey = PROMOTION_HIERARCHY_OPTIONS.find((h) => h.key === value)
-  return byKey?.label ?? String(value)
+  if (typeof value === 'string') {
+    const byKey = PROMOTION_HIERARCHY_OPTIONS.find((h) => h.key === value)
+    if (byKey) return byKey.label
+    if (value === 'SuboficialesSuperiores' || value === 'SuboficialesTecnicos') return 'Suboficiales'
+    const num = Number(value)
+    if (!Number.isNaN(num)) return hierarchyLabel(num)
+    return value
+  }
+  const normalized = normalizeHierarchyValue(value)
+  const byValue = PROMOTION_HIERARCHY_OPTIONS.find((h) => h.value === normalized)
+  return byValue?.label ?? String(value)
 }
 
 export function promotionGradeLabel(value: number | string | null | undefined): string {
@@ -75,8 +88,9 @@ export function gradesForTrack(trackValue: number) {
 }
 
 export function gradesForHierarchy(hierarchyValue: number) {
+  const normalized = normalizeHierarchyValue(hierarchyValue)
   return PROMOTION_GRADE_OPTIONS.filter(
-    (g) => g.hierarchy === hierarchyValue && g.postulationTarget
+    (g) => g.hierarchy === normalized && g.postulationTarget
   )
 }
 
@@ -144,9 +158,12 @@ export function parseGradeKey(value: string | null | undefined): number | null {
 
 export function parseHierarchyKey(value: string | null | undefined): number | null {
   if (!value) return null
+  if (value === 'SuboficialesSuperiores' || value === 'SuboficialesTecnicos') return 5
   const byKey = PROMOTION_HIERARCHY_OPTIONS.find((h) => h.key === value)
   if (byKey) return byKey.value
   const num = Number(value)
+  if (Number.isNaN(num)) return null
+  if (LEGACY_SUBOFICIAL_HIERARCHIES.has(num)) return 5
   return PROMOTION_HIERARCHY_OPTIONS.some((h) => h.value === num) ? num : null
 }
 
@@ -245,7 +262,7 @@ export function resolveUserHierarchyValue(user?: {
   activeTrackType?: string | null
 } | null): number {
   const fromHierarchy = parseHierarchyKey(user?.promotionHierarchy ?? null)
-  if (fromHierarchy) return fromHierarchy
+  if (fromHierarchy) return normalizeHierarchyValue(fromHierarchy)
 
   const grade = parseGradeKey(user?.promotionGrade ?? null)
   if (grade) {
@@ -282,5 +299,6 @@ export function resolveUserClassificationLabels(user?: {
 }
 
 export function trackValueForHierarchy(hierarchyValue: number): number {
-  return PROMOTION_HIERARCHY_OPTIONS.find((h) => h.value === hierarchyValue)?.trackValue ?? 1
+  const normalized = normalizeHierarchyValue(hierarchyValue)
+  return PROMOTION_HIERARCHY_OPTIONS.find((h) => h.value === normalized)?.trackValue ?? 1
 }

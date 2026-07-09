@@ -31,7 +31,9 @@ export function HierarchySwitchBar({
           </div>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-relaxed">
             {hint ??
-              'Cada jerarquía tiene su propio banco (~1500 preguntas). Sube CSV y asigna alumnos por grado de postulación sin mezclar jerarquías.'}
+              (activeTrackType === 1
+                ? 'Banco unificado de Suboficiales (~1500 preguntas). Sube CSV por categoría; todos los grados de Suboficiales ven el mismo banco.'
+                : 'Cada jerarquía de Oficiales tiene su propio banco (~1500 preguntas). No mezcles Subalternos y Superiores en el mismo CSV.')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
