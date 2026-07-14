@@ -35,6 +35,12 @@ import { Button } from '@/components/ui'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Badge } from '@/components/ui'
 import { cn } from '@/lib/utils/cn'
+import {
+  EXAM_LEVELS,
+  type ExamLevelKey,
+  countsForLevel,
+  defaultCountForLevel,
+} from '@/lib/constants/examLevels'
 
 const CATEGORY_EMOJI: Record<string, string> = {
   'Ley PNP': '⚖️',
@@ -91,8 +97,15 @@ export default function ExamsPage() {
   const [starting, setStarting] = useState<string | null>(null)
   const [blocked, setBlocked] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedCount, setSelectedCount] = useState<25 | 50 | 100>(100)
+  const [selectedLevel, setSelectedLevel] = useState<ExamLevelKey>('Intermedio')
+  const [selectedCount, setSelectedCount] = useState<number>(100)
   const startingRef = useRef(false)
+
+  const levelCounts = countsForLevel(selectedLevel)
+  const selectLevel = (level: ExamLevelKey) => {
+    setSelectedLevel(level)
+    setSelectedCount(defaultCountForLevel(level))
+  }
 
   const loading = examsLoading && exams.length === 0 && countsLoading && totalQuestions === 0
 
@@ -114,16 +127,17 @@ export default function ExamsPage() {
     }
   }, [examsError, catsError, countsError])
 
-  const DURATIONS: Record<25 | 50 | 100, string> = {
-    25: '~15 minutos',
-    50: '~30 minutos',
+  const DURATIONS: Record<number, string> = {
+    15: '~20 minutos',
+    25: '~15–30 minutos',
+    50: '~30–60 minutos',
     100: '~45 minutos',
   }
 
   const startExam = async (
     examId: string,
     label: string,
-    options?: { mode?: string; category?: string; questionCount?: number }
+    options?: { mode?: string; category?: string; questionCount?: number; level?: string }
   ) => {
     if (startingRef.current || !examId) return
     startingRef.current = true
@@ -265,9 +279,9 @@ export default function ExamsPage() {
               <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary-bg)]">
                 <ShieldCheck className="h-7 w-7 text-[var(--color-primary)]" />
               </div>
-              <h2 className="text-[17px] font-bold text-[var(--color-text-primary)]">Simulacro General</h2>
+              <h2 className="text-[17px] font-bold text-[var(--color-text-primary)]">Simulacro por Niveles</h2>
               <p className="text-[13px] text-[var(--color-text-muted)]">
-                Examen completo con todas las categorías del balotario oficial
+                Elige tu nivel y la cantidad de preguntas del balotario oficial
               </p>
               <div className="mt-1 flex flex-wrap gap-4 text-xs text-[var(--color-text-secondary)]">
                 <span className="flex items-center gap-1.5">
@@ -276,20 +290,51 @@ export default function ExamsPage() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 text-[var(--color-primary)]" />
-                  {DURATIONS[selectedCount]}
+                  {DURATIONS[selectedCount] ?? '—'}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <BarChart3 className="h-3.5 w-3.5 text-[var(--color-primary)]" />
-                  Nota mín. {mainExam.passingScore || 65} pts
+                  {selectedLevel === 'Basico'
+                    ? 'Score informativo · suma progreso'
+                    : `Nota mín. ${mainExam.passingScore || 65}% · suma progreso`}
                 </span>
               </div>
 
               <div className="mt-3">
                 <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-text-secondary)]">
-                  ¿Cuántas preguntas quieres practicar?
+                  NIVELES
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {EXAM_LEVELS.map((lvl) => (
+                    <button
+                      key={lvl.key}
+                      type="button"
+                      onClick={() => selectLevel(lvl.key)}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-left transition-all min-w-[110px]',
+                        selectedLevel === lvl.key
+                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                          : 'border-[var(--color-surface-border)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'
+                      )}
+                    >
+                      <div className="text-sm font-extrabold tracking-wide">{lvl.label}</div>
+                      <div className={cn(
+                        'text-[10px] mt-0.5 leading-snug',
+                        selectedLevel === lvl.key ? 'text-white/85' : 'text-[var(--color-text-muted)]'
+                      )}>
+                        {lvl.subtitle}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <p className="mb-1.5 text-[12px] font-semibold text-[var(--color-text-secondary)]">
+                  ¿Cuántas preguntas?
                 </p>
                 <div className="flex gap-2">
-                  {([25, 50, 100] as const).map((n) => (
+                  {levelCounts.map((n) => (
                     <button
                       key={n}
                       type="button"
@@ -317,9 +362,13 @@ export default function ExamsPage() {
               className="shrink-0 px-7 font-bold"
               loading={starting === 'completo'}
               disabled={!!starting || simulacroCount === 0}
-              onClick={() => startExam(mainExam.id, 'completo', { mode: 'simulacro', questionCount: selectedCount })}
+              onClick={() => startExam(mainExam.id, 'completo', {
+                mode: 'simulacro',
+                questionCount: selectedCount,
+                level: selectedLevel,
+              })}
             >
-              Iniciar Simulacro →
+              Iniciar {selectedLevel.toUpperCase()} →
             </Button>
           </div>
 

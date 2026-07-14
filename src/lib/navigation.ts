@@ -25,7 +25,7 @@ export const STUDENT_NAV: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: Home },
   { href: '/exams', label: 'Exámenes', icon: FileText },
   { href: '/history', label: 'Historial', icon: History },
-  { href: '/ranking', label: 'Ranking', icon: Trophy },
+  { href: '/ranking', label: 'Mi rango', mobileLabel: 'Rango', icon: Trophy },
   { href: '/profile', label: 'Mi Perfil', mobileLabel: 'Perfil', icon: User },
 ]
 
@@ -105,7 +105,7 @@ export function pageTitleForPath(pathname: string, search?: string, role?: strin
     '/dashboard': 'Inicio',
     '/exams': 'Exámenes',
     '/history': 'Historial',
-    '/ranking': 'Ranking',
+    '/ranking': 'Mi rango',
     '/premium': 'Premium',
     '/profile': 'Mi Perfil',
   }

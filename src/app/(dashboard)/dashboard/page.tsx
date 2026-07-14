@@ -15,12 +15,19 @@ import { getApiErrorMessage } from '@/lib/api/errors'
 import { useStudentDashboard } from '@/hooks/useStudentDashboard'
 import { useAuthStore } from '@/lib/store/authStore'
 import { cn } from '@/lib/utils/cn'
+import { formatProgressPoints, rankEmoji } from '@/lib/constants/progressRanks'
 
 interface GamificationStatus {
-  currentLeague: string
-  totalXp: number
-  currentStreakDays: number
-  examsCompleted: number
+  currentLeague?: string
+  currentRank?: string
+  totalXp?: number
+  progressPoints?: number
+  nextRank?: string | null
+  pointsToNextRank?: number
+  rankProgressPercent?: number
+  currentStreakDays?: number
+  examsCompleted?: number
+  maxProgressPoints?: number
 }
 
 interface Stats {
@@ -35,26 +42,6 @@ interface LatestSession {
   correctAnswers: number
   score: number
   passed: boolean
-}
-
-interface MyRanking {
-  position: number
-}
-
-const leagueConfig: Record<string, { emoji: string; next: string; xpTarget: number }> = {
-  'Cola Cortada': { emoji: '🏆', next: 'Máximo nivel', xpTarget: 0 },
-  'Creo que nos cortan la cola': { emoji: '✂️', next: 'Cola Cortada', xpTarget: 2000 },
-  Lagartito: { emoji: '🦎', next: 'Creo que nos cortan la cola', xpTarget: 1500 },
-  Cocodrilito: { emoji: '🐊', next: 'Lagartito', xpTarget: 1000 },
-  Dinosaurio: { emoji: '🦕', next: 'Cocodrilito', xpTarget: 500 },
-}
-
-const getLeague = (n: number) => {
-  if (n >= 100) return 'Cola Cortada'
-  if (n >= 75) return 'Creo que nos cortan la cola'
-  if (n >= 50) return 'Lagartito'
-  if (n >= 25) return 'Cocodrilito'
-  return 'Dinosaurio'
 }
 
 function StatCard({
@@ -91,12 +78,11 @@ function StatCard({
 
 export default function DashboardPage() {
   const { user } = useAuthStore()
-  const { gami, stats, latest, myRanking, chartScores, loading, error } = useStudentDashboard()
+  const { gami, stats, latest, chartScores, loading, error } = useStudentDashboard()
 
   const gamiData = gami as GamificationStatus | null
   const statsData = stats as Stats | null
   const latestData = latest as LatestSession | null
-  const rankingData = myRanking as MyRanking | null
 
   const firstName = user?.fullName?.split(' ')[0] || 'Cadete'
   const today = new Date().toLocaleDateString('es-PE', {
@@ -113,10 +99,11 @@ export default function DashboardPage() {
       ? Math.round(((statsData?.totalCorrect ?? 0) / totalQ) * 100)
       : latestData?.score ?? 0
   const streak = gamiData?.currentStreakDays ?? 0
-  const liga = getLeague(latestData?.correctAnswers ?? 0)
-  const ligaCfg = leagueConfig[liga] ?? leagueConfig.Dinosaurio
-  const xp = gamiData?.totalXp ?? 0
-  const xpTarget = ligaCfg.xpTarget || 2000
+  const rank = gamiData?.currentRank ?? gamiData?.currentLeague ?? 'Bronce'
+  const points = gamiData?.progressPoints ?? gamiData?.totalXp ?? 0
+  const nextRank = gamiData?.nextRank ?? null
+  const pointsToNext = gamiData?.pointsToNextRank ?? 0
+  const rankPercent = gamiData?.rankProgressPercent ?? 0
   const hour = new Date().getHours()
   const greet = hour < 12 ? 'Buen día' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'
 
@@ -147,7 +134,7 @@ export default function DashboardPage() {
           <p className="mt-0.5 text-[13px] capitalize text-[var(--color-text-muted)]">{today}</p>
         </div>
         <span className="rounded-full border border-[#318F48] bg-[#318F48]/15 px-3 py-1.5 text-xs font-medium text-[var(--color-primary)]">
-          {ligaCfg.emoji} Liga {liga}
+          {rankEmoji(rank)} {rank}
         </span>
       </div>
 
@@ -180,14 +167,14 @@ export default function DashboardPage() {
             <Trophy className="h-[18px] w-[18px] text-[#C9943A]" />
           </div>
           <div className="text-[22px] font-extrabold text-[var(--color-text-primary)]">
-            {rankingData?.position != null ? `#${rankingData.position}` : '—'}
+            {rankEmoji(rank)} {rank}
           </div>
-          <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">Posición ranking</div>
+          <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">Tu rango</div>
           <Link
             href="/ranking"
             className="mt-1 inline-block text-[11px] text-[#C9943A] hover:underline"
           >
-            Ver ranking →
+            Ver progreso →
           </Link>
         </div>
       </div>
@@ -245,24 +232,26 @@ export default function DashboardPage() {
 
         <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4">
           <div className="flex items-center gap-2.5">
-            <span className="text-[32px]">{ligaCfg.emoji}</span>
+            <span className="text-[32px]">{rankEmoji(rank)}</span>
             <div>
-              <div className="text-[15px] font-bold text-[var(--color-text-primary)]">{liga}</div>
+              <div className="text-[15px] font-bold text-[var(--color-text-primary)]">{rank}</div>
               <div className="text-xs text-[var(--color-text-muted)]">
-                Liga actual · {xp.toLocaleString()} XP
+                Tu progreso · {formatProgressPoints(points)}
               </div>
             </div>
           </div>
-          {xpTarget > 0 && (
-            <>
-              <ProgressBar value={xp} max={xpTarget} color="green" animated />
-              <p className="text-xs text-[var(--color-text-muted)]">
+          <ProgressBar value={nextRank ? rankPercent : 100} max={100} color="green" animated />
+          <p className="text-xs text-[var(--color-text-muted)]">
+            {nextRank ? (
+              <>
                 Siguiente:{' '}
-                <span className="font-semibold text-[#C9943A]">{ligaCfg.next}</span>
-                {xpTarget > xp && ` · faltan ${xpTarget - xp} XP`}
-              </p>
-            </>
-          )}
+                <span className="font-semibold text-[#C9943A]">{nextRank}</span>
+                {pointsToNext > 0 && ` · faltan ${pointsToNext} pts`}
+              </>
+            ) : (
+              <span className="font-semibold text-[#C9943A]">¡Rango máximo: Leyenda!</span>
+            )}
+          </p>
         </div>
       </div>
 

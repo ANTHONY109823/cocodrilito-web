@@ -1,12 +1,20 @@
 import apiClient from './client'
 
 export const examsApi = {
-  start: (examId: string, params?: { mode?: string; category?: string; questionCount?: number; track?: string; hierarchy?: number | string }) => {
+  start: (examId: string, params?: {
+    mode?: string
+    category?: string
+    questionCount?: number
+    track?: string
+    hierarchy?: number | string
+    level?: string
+  }) => {
     const qs = new URLSearchParams()
     if (params?.mode) qs.set('mode', params.mode)
     if (params?.category) qs.set('category', params.category)
     if (params?.questionCount) qs.set('questionCount', String(params.questionCount))
     if (params?.track) qs.set('track', params.track)
+    if (params?.level) qs.set('level', params.level)
     if (params?.hierarchy != null && params.hierarchy !== '') {
       qs.set('hierarchy', String(params.hierarchy))
     }

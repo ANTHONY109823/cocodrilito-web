@@ -23,6 +23,7 @@ import {
   SURFACE_CARD,
   TEXT_MUTED,
 } from '@/lib/constants/theme'
+import { formatProgressPoints, rankEmoji } from '@/lib/constants/progressRanks'
 
 interface ResultData {
   sessionId: string
@@ -38,6 +39,11 @@ interface ResultData {
   passingScore: number
   answers?: QuestionAnswer[]
   questions?: QuestionAnswer[]
+  progressPointsEarned?: number | null
+  progressPointsTotal?: number | null
+  progressRank?: string | null
+  previousProgressRank?: string | null
+  progressRankUp?: boolean
 }
 
 interface QuestionAnswer {
@@ -61,7 +67,18 @@ export default function ResultPage() {
   const loadResult = useCallback(async () => {
     try {
       const res = await examsApi.getResult(sessionId)
-      setResult(res.data)
+      let data = res.data as ResultData
+      try {
+        const raw = sessionStorage.getItem(`progressFlash:${sessionId}`)
+        if (raw) {
+          const flash = JSON.parse(raw) as Partial<ResultData>
+          data = { ...data, ...flash }
+          sessionStorage.removeItem(`progressFlash:${sessionId}`)
+        }
+      } catch {
+        /* ignore */
+      }
+      setResult(data)
     } catch {
       router.push('/exams')
     } finally {
@@ -146,6 +163,39 @@ export default function ResultPage() {
         <span>⏱ Tiempo: {formatTime(result.timeSpentSeconds)}</span>
       </div>
 
+      {(result.progressPointsEarned ?? 0) > 0 && (
+        <div
+          className="rounded-xl px-4 py-3 text-sm mb-4 text-center"
+          style={{
+            background: primaryMix(8),
+            border: `1px solid ${primaryMix(25)}`,
+            color: 'var(--color-text-primary)',
+          }}
+        >
+          <div className="font-bold">
+            +{result.progressPointsEarned} pts de progreso
+            {result.progressRank ? (
+              <span>
+                {' '}
+                · {rankEmoji(result.progressRank)} {result.progressRank}
+              </span>
+            ) : null}
+          </div>
+          {result.progressRankUp ? (
+            <div className="mt-1 text-[var(--color-primary)] font-semibold">
+              ¡Subiste de rango!
+              {result.previousProgressRank
+                ? ` ${result.previousProgressRank} → ${result.progressRank}`
+                : ''}
+            </div>
+          ) : result.progressPointsTotal != null ? (
+            <div className="mt-1 text-xs text-[var(--color-text-muted)]">
+              Total: {formatProgressPoints(result.progressPointsTotal)}
+            </div>
+          ) : null}
+        </div>
+      )}
+
       {unanswered > 0 && (
         <div className="rounded-xl px-4 py-2.5 text-xs mb-4 text-center"
           style={{ background: goldBrightMix(8), border: `1px solid ${goldBrightMix(20)}`, color: GOLD }}>
@@ -177,7 +227,7 @@ export default function ResultPage() {
       <Link href="/ranking"
         className="block py-3 rounded-xl text-sm font-medium text-center mb-4 transition-all"
         style={{ backgroundColor: 'var(--color-surface-elevated)', color: 'var(--color-text-muted)', border: '1px solid var(--color-surface-border)' }}>
-        Ver mi posición en el ranking →
+        Ver mi rango →
       </Link>
 
       {/* REVISIÓN DE RESPUESTAS */}

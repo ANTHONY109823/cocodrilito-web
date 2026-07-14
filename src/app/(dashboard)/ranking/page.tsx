@@ -1,177 +1,187 @@
 'use client'
 
 import Link from 'next/link'
-import { Badge, Card, ErrorState } from '@/components/ui'
+import useSWR from 'swr'
+import { Card, ErrorState, ProgressBar } from '@/components/ui'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useAuthStore } from '@/lib/store/authStore'
-import { useRanking } from '@/hooks/useRanking'
-import { leagueEmoji } from '@/lib/utils/league'
+import { swrFetcher } from '@/lib/swr/fetcher'
 import { getApiErrorMessage } from '@/lib/api/errors'
+import {
+  MAX_PROGRESS_POINTS,
+  PROGRESS_RANKS,
+  formatProgressPoints,
+  rankEmoji,
+} from '@/lib/constants/progressRanks'
 import { cn } from '@/lib/utils/cn'
 
-const podiumStyles: Record<number, string> = {
-  1: 'border-[#C9943A]/30 bg-[#C9943A]/10',
-  2: 'border-[rgba(189,255,223,0.2)] bg-[rgba(189,255,223,0.06)]',
-  3: 'border-[#BA7517]/30 bg-[#BA7517]/10',
+interface ProgressStatus {
+  totalXp?: number
+  progressPoints?: number
+  currentRank?: string
+  currentLeague?: string
+  nextRank?: string | null
+  currentRankMin?: number
+  nextRankMin?: number | null
+  pointsToNextRank?: number
+  rankProgressPercent?: number
+  maxProgressPoints?: number
+  examsCompleted?: number
+  currentStreakDays?: number
+  badges?: string[]
 }
 
-const podiumScoreColor: Record<number, string> = {
-  1: 'text-[#C9943A]',
-  2: 'text-[var(--color-text-secondary)]',
-  3: 'text-[#BA7517]',
-}
-
-function PositionBadge({ position }: { position: number }) {
-  if (position <= 3) {
-    const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : '🥉'
-    return (
-      <div
-        className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold',
-          podiumStyles[position]
-        )}
-      >
-        {medal}
-      </div>
-    )
-  }
-  return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-bg)] text-sm font-bold text-[var(--color-text-muted)]">
-      #{position}
-    </div>
-  )
-}
-
-export default function RankingPage() {
+export default function ProgressRankPage() {
   const { user } = useAuthStore()
-  const { ranking, myRanking, isLoading, error, refresh } = useRanking()
+  const { data, error, isLoading, mutate } = useSWR<ProgressStatus>(
+    '/gamification/me',
+    swrFetcher,
+    { revalidateOnFocus: true, dedupingInterval: 30_000 }
+  )
 
-  const errorMessage = error ? getApiErrorMessage(error, 'Error al cargar el ranking') : null
+  const errorMessage = error ? getApiErrorMessage(error, 'Error al cargar tu progreso') : null
+  const points = data?.progressPoints ?? data?.totalXp ?? 0
+  const rank = data?.currentRank ?? data?.currentLeague ?? 'Bronce'
+  const nextRank = data?.nextRank ?? null
+  const pointsToNext = data?.pointsToNextRank ?? Math.max(0, (data?.nextRankMin ?? MAX_PROGRESS_POINTS) - points)
+  const percent = data?.rankProgressPercent
+    ?? (nextRank
+      ? Math.min(100, Math.round(
+          ((points - (data?.currentRankMin ?? 0)) /
+            Math.max(1, (data?.nextRankMin ?? MAX_PROGRESS_POINTS) - (data?.currentRankMin ?? 0))) *
+            100
+        ))
+      : 100)
+  const maxPts = data?.maxProgressPoints ?? MAX_PROGRESS_POINTS
 
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 flex flex-wrap items-start gap-3 sm:gap-4">
-        <Link href="/dashboard" className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]">
+        <Link
+          href="/dashboard"
+          className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
+        >
           ← Inicio
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-theme-primary sm:text-2xl">Ranking PNP 🏆</h1>
-          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">Los mejores efectivos del simulacro</p>
+          <h1 className="text-xl font-bold text-theme-primary sm:text-2xl">Mi rango</h1>
+          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
+            Progreso personal · no se compara con otros alumnos
+          </p>
         </div>
       </div>
 
-      {myRanking && (
-        <Card
-          variant="highlighted"
-          padding="sm"
-          className="mb-4 rounded-xl border-[var(--color-surface-border)] bg-[var(--color-primary-bg)]"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary-bg)] text-lg font-bold text-[var(--color-primary)]">
-                #{myRanking.position}
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-[var(--color-text-primary)]">Tu posición</div>
-                <div className="text-xs text-[var(--color-text-muted)]">{user?.fullName}</div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-[var(--color-primary)]">
-                {leagueEmoji[myRanking.currentLeague]} {myRanking.currentLeague}
-              </div>
-              <div className="text-xs text-[var(--color-text-muted)]">
-                Promedio {myRanking.averageScore}% · {myRanking.examsCompleted} exámenes
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {!isLoading && ranking.length >= 3 && (
-        <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-          {[ranking[1], ranking[0], ranking[2]].map((entry, i) => {
-            if (!entry) return null
-            const actualPos = i === 0 ? 2 : i === 1 ? 1 : 3
-            return (
-              <Card
-                key={entry.userId}
-                padding="sm"
-                className={cn(
-                  'rounded-xl text-center',
-                  podiumStyles[actualPos],
-                  actualPos === 1 ? 'py-5 sm:py-6' : 'py-3 sm:py-4'
-                )}
-              >
-                <div className="mb-1 text-2xl">
-                  {actualPos === 1 ? '🥇' : actualPos === 2 ? '🥈' : '🥉'}
-                </div>
-                <div className="truncate text-xs font-bold text-theme-primary">{entry.fullName.split(' ')[0]}</div>
-                <div className={cn('mt-0.5 text-xs', podiumScoreColor[actualPos])}>
-                  {entry.averageScore}% prom.
-                </div>
-                <div className="mt-0.5 text-xs text-[var(--color-text-muted)]">{leagueEmoji[entry.currentLeague]}</div>
-              </Card>
-            )
-          })}
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="h-16 animate-pulse rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]"
-            />
-          ))}
-        </div>
-      ) : errorMessage ? (
-        <ErrorState message={errorMessage} onRetry={() => refresh()} />
-      ) : ranking.length === 0 ? (
-        <EmptyState
-          icon="🏆"
-          title="Ranking vacío"
-          description="Sé el primero en completar un simulacro."
-          action={{ label: 'Hacer simulacro →', href: '/exams' }}
-        />
+      {errorMessage ? (
+        <ErrorState message={errorMessage} onRetry={() => void mutate()} />
+      ) : isLoading && !data ? (
+        <p className="py-12 text-center text-[var(--color-text-muted)]">Cargando tu rango...</p>
       ) : (
-        <div className="space-y-2">
-          {ranking.map((entry) => {
-            const isMe = entry.userId === user?.id
-            return (
-              <Card
-                key={entry.userId}
-                padding="sm"
-                className={cn(
-                  'rounded-xl transition-transform hover:translate-x-1',
-                  isMe && 'border-[var(--color-surface-border)] bg-[var(--color-primary-bg)]'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <PositionBadge position={entry.position} />
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-theme-primary">{entry.fullName}</span>
-                      {isMe && <Badge color="green">tú</Badge>}
-                    </div>
-                    <div className="truncate text-xs text-[var(--color-text-muted)]">
-                      {entry.rank} · {entry.unit}
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 text-right">
-                    <div className="text-sm font-bold text-[var(--color-primary)]">{entry.averageScore}%</div>
-                    <div className="text-xs text-[var(--color-text-muted)]">
-                      {leagueEmoji[entry.currentLeague]} {entry.currentLeague}
-                    </div>
-                  </div>
+        <>
+          <Card
+            variant="highlighted"
+            padding="md"
+            className="mb-4 rounded-xl border-[var(--color-surface-border)] bg-[var(--color-primary-bg)]"
+          >
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="text-5xl" aria-hidden>
+                {rankEmoji(rank)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-[var(--color-text-muted)]">{user?.fullName}</div>
+                <div className="text-2xl font-extrabold text-[var(--color-text-primary)]">{rank}</div>
+                <div className="mt-0.5 text-sm text-[var(--color-text-secondary)]">
+                  {formatProgressPoints(points)}
+                  {nextRank
+                    ? ` · faltan ${pointsToNext} para ${nextRank}`
+                    : ' · rango máximo'}
                 </div>
-              </Card>
-            )
-          })}
-        </div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <ProgressBar
+                value={nextRank ? percent : 100}
+                max={100}
+                color="green"
+                animated
+              />
+              <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                Meta Leyenda: {formatProgressPoints(maxPts)} · Básico 1 · Intermedio 2 · Avanzado 5 pts/acierto
+              </p>
+            </div>
+          </Card>
+
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <Card padding="sm" className="rounded-xl text-center">
+              <div className="text-xl font-bold text-[var(--color-text-primary)]">
+                {data?.examsCompleted ?? 0}
+              </div>
+              <div className="text-xs text-[var(--color-text-muted)]">Simulacros</div>
+            </Card>
+            <Card padding="sm" className="rounded-xl text-center">
+              <div className="text-xl font-bold text-[var(--color-text-primary)]">
+                {data?.currentStreakDays ?? 0}
+              </div>
+              <div className="text-xs text-[var(--color-text-muted)]">Días de racha</div>
+            </Card>
+          </div>
+
+          <h2 className="mb-2 text-sm font-semibold text-[var(--color-text-primary)]">Camino de rangos</h2>
+          <div className="mb-6 space-y-2">
+            {PROGRESS_RANKS.map((r) => {
+              const reached = points >= r.threshold
+              const current = rank.toLowerCase() === r.name.toLowerCase()
+              return (
+                <div
+                  key={r.name}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl border px-3 py-2.5',
+                    current
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-bg)]'
+                      : reached
+                        ? 'border-[var(--color-surface-border)] bg-[var(--color-surface-card)]'
+                        : 'border-[var(--color-surface-border)] opacity-55'
+                  )}
+                >
+                  <span className="text-xl">{r.emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-[var(--color-text-primary)]">{r.name}</div>
+                    <div className="text-xs text-[var(--color-text-muted)]">
+                      Desde {formatProgressPoints(r.threshold)}
+                    </div>
+                  </div>
+                  {current ? (
+                    <span className="text-xs font-semibold text-[var(--color-primary)]">Actual</span>
+                  ) : reached ? (
+                    <span className="text-xs text-[var(--color-text-muted)]">✓</span>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+
+          {(data?.badges?.length ?? 0) > 0 ? (
+            <div className="mb-4">
+              <h2 className="mb-2 text-sm font-semibold text-[var(--color-text-primary)]">Logros</h2>
+              <div className="flex flex-wrap gap-2">
+                {data!.badges!.map((b) => (
+                  <span
+                    key={b}
+                    className="rounded-lg border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-2.5 py-1 text-xs text-[var(--color-text-secondary)]"
+                  >
+                    {b}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <EmptyState
+            icon="🎯"
+            title="Suma puntos en cada simulacro"
+            description="Básico, Intermedio y Avanzado cuentan. Termina exámenes y acierta para subir de rango."
+            action={{ label: 'Ir a exámenes', href: '/exams' }}
+          />
+        </>
       )}
     </div>
   )

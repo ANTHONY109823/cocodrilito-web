@@ -29,12 +29,6 @@ export function useStudentDashboard() {
     swrFetcher,
     swrOpts
   )
-  const { data: ranking, error: rankingError } = useSWR(
-    '/rankings/me?period=weekly',
-    swrFetcher,
-    swrOpts
-  )
-
   const historyItems = Array.isArray(history) ? history : (history as { items?: unknown[] })?.items ?? []
   const chartScores = historyItems
     .slice(0, 7)
@@ -42,13 +36,12 @@ export function useStudentDashboard() {
     .map((entry: { score: number }) => entry.score)
 
   const loading = gamiLoading && statsLoading && latestLoading && !gami && !stats && !latest
-  const error = gamiError || statsError || latestError || historyError || rankingError
+  const error = gamiError || statsError || latestError || historyError
 
   return {
     gami,
     stats,
     latest,
-    myRanking: ranking,
     chartScores,
     loading,
     error,

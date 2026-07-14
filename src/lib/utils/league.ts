@@ -1,16 +1,18 @@
-export const leagueEmoji: Record<string, string> = {
-  'Cola Cortada': '🏆',
-  'Creo que nos cortan la cola': '✂️',
-  Lagartito: '🦎',
-  Cocodrilito: '🐊',
-  Dinosaurio: '🦕',
+import { PROGRESS_RANKS, rankEmoji, type ProgressRankName } from '@/lib/constants/progressRanks'
+
+/** @deprecated usar rankEmoji / PROGRESS_RANKS — se mantiene por compatibilidad. */
+export const leagueEmoji: Record<string, string> = Object.fromEntries(
+  PROGRESS_RANKS.map((r) => [r.name, r.emoji])
+)
+
+/** Resuelve rango por puntos (cliente). Preferir currentRank del API. */
+export function getLeague(progressPoints: number): ProgressRankName {
+  let rank: ProgressRankName = 'Bronce'
+  for (const r of PROGRESS_RANKS) {
+    if (progressPoints >= r.threshold) rank = r.name
+    else break
+  }
+  return rank
 }
 
-/** Liga gamificada según respuestas correctas acumuladas (aprox. por mejor puntaje). */
-export function getLeague(correctOrScore: number): string {
-  if (correctOrScore >= 100) return 'Cola Cortada'
-  if (correctOrScore >= 75) return 'Creo que nos cortan la cola'
-  if (correctOrScore >= 50) return 'Lagartito'
-  if (correctOrScore >= 25) return 'Cocodrilito'
-  return 'Dinosaurio'
-}
+export { rankEmoji }

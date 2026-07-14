@@ -23,13 +23,18 @@ import {
 import { Modal, Button } from '@/components/ui'
 import { QuizOption } from '@/components/exam/QuizOption'
 import { optionLetter } from '@/lib/utils/optionLetter'
+import { isBasicoLevel } from '@/lib/constants/examLevels'
 
 const ORANGE = '#FF8A3D'
+/** Pausa breve en modo play (todos los niveles) antes del auto-avance. */
+const STANDARD_AUTO_ADVANCE_MS = 450
 
 interface AnswerOption {
   id: string
   optionText: string
   optionIndex: number
+  /** Solo Básico: viene del API para feedback inmediato. */
+  isCorrect?: boolean | null
 }
 
 interface Question {
@@ -37,6 +42,8 @@ interface Question {
   questionText: string
   orderIndex: number
   category: string
+  /** Solo Básico: id de la opción correcta para feedback inmediato. */
+  correctOptionId?: string | null
   options: AnswerOption[]
 }
 
@@ -44,6 +51,7 @@ interface SessionData {
   sessionId: string
   examTitle: string
   practiceCategory: string | null
+  difficultyLevel: string
   totalQuestions: number
   timeLimitSeconds: number
   questions: Question[]
@@ -63,6 +71,18 @@ export default function ExamPage() {
   const [finishing, setFinishing] = useState(false)
   const [finishError, setFinishError] = useState<string | null>(null)
   const [showFinishModal, setShowFinishModal] = useState(false)
+  /** Básico: preguntas ya acertadas (bloqueadas). */
+  const [lockedQuestions, setLockedQuestions] = useState<Record<string, true>>({})
+  /** Básico: última opción incorrecta por pregunta. */
+  const [wrongOptions, setWrongOptions] = useState<Record<string, string>>({})
+  const [shakeWrong, setShakeWrong] = useState(false)
+  const [basicoBusy, setBasicoBusy] = useState(false)
+  const [basicoHint, setBasicoHint] = useState<string | null>(null)
+  /**
+   * Play = auto-avance (Básico tras acertar; Intermedio/Avanzado tras marcar).
+   * Pausa = el usuario usa Siguiente.
+   */
+  const [examAutoplay, setExamAutoplay] = useState(true)
   const pendingAnswersRef = useRef<Array<{
     questionId: string
     selectedOptionId: string | null
@@ -71,7 +91,28 @@ export default function ExamPage() {
   const flushInFlightRef = useRef(false)
   const finishingRef = useRef(false)
   const autoFinishTriggeredRef = useRef(false)
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const examAutoplayRef = useRef(examAutoplay)
+  examAutoplayRef.current = examAutoplay
+
+  const clearAutoAdvance = useCallback(() => {
+    if (autoAdvanceRef.current) {
+      clearTimeout(autoAdvanceRef.current)
+      autoAdvanceRef.current = null
+    }
+  }, [])
+
+  const scheduleAutoAdvance = useCallback((delayMs: number, lastIndex: number) => {
+    clearAutoAdvance()
+    if (!examAutoplayRef.current) return
+    autoAdvanceRef.current = setTimeout(() => {
+      autoAdvanceRef.current = null
+      setBasicoHint(null)
+      setCurrentIdx((prev) => (prev < lastIndex ? prev + 1 : prev))
+      setQuestionTime(0)
+    }, delayMs)
+  }, [clearAutoAdvance])
 
   const stopExamTimer = useCallback(() => {
     if (timerIntervalRef.current) {
@@ -145,12 +186,30 @@ export default function ExamPage() {
     try {
       await flushAnswers({ maxAttempts: 5, throwOnFailure: true })
 
-      await Promise.race([
+      const finishRes = await Promise.race([
         examsApi.finish(sessionId),
-        new Promise<void>((_, reject) =>
+        new Promise<never>((_, reject) =>
           window.setTimeout(() => reject(new Error('finish_timeout')), 18_000)
         ),
       ])
+
+      try {
+        const d = finishRes?.data as Record<string, unknown> | undefined
+        if (d && (d.progressPointsEarned != null || d.ProgressPointsEarned != null)) {
+          sessionStorage.setItem(
+            `progressFlash:${sessionId}`,
+            JSON.stringify({
+              progressPointsEarned: d.progressPointsEarned ?? d.ProgressPointsEarned,
+              progressPointsTotal: d.progressPointsTotal ?? d.ProgressPointsTotal,
+              progressRank: d.progressRank ?? d.ProgressRank,
+              previousProgressRank: d.previousProgressRank ?? d.PreviousProgressRank,
+              progressRankUp: d.progressRankUp ?? d.ProgressRankUp,
+            })
+          )
+        }
+      } catch {
+        /* ignore */
+      }
 
       goToResult()
     } catch {
@@ -182,19 +241,27 @@ export default function ExamPage() {
       orderIndex: number
       categoryName?: string
       category?: string
-      options?: AnswerOption[]
-      answerOptions?: AnswerOption[]
-    }> | undefined)?.map((q) => ({
-      id: q.id,
-      questionText: q.questionText,
-      orderIndex: q.orderIndex,
-      category: q.categoryName || q.category || '',
-      options: (q.options || q.answerOptions || []).map((o: AnswerOption) => ({
+      correctOptionId?: string | null
+      CorrectOptionId?: string | null
+      options?: Array<AnswerOption & { isCorrect?: boolean | null; IsCorrect?: boolean | null }>
+      answerOptions?: Array<AnswerOption & { isCorrect?: boolean | null; IsCorrect?: boolean | null }>
+    }> | undefined)?.map((q) => {
+      const options = (q.options || q.answerOptions || []).map((o) => ({
         id: o.id,
         optionText: o.optionText,
         optionIndex: o.optionIndex,
-      })),
-    })) ?? []
+        isCorrect: o.isCorrect ?? o.IsCorrect ?? null,
+      }))
+      const correctFromOptions = options.find((o) => o.isCorrect === true)?.id ?? null
+      return {
+        id: q.id,
+        questionText: q.questionText,
+        orderIndex: q.orderIndex,
+        category: q.categoryName || q.category || '',
+        correctOptionId: q.correctOptionId ?? q.CorrectOptionId ?? correctFromOptions,
+        options,
+      }
+    }) ?? []
 
     const totalQuestions =
       meta.totalQuestions > 0
@@ -205,10 +272,16 @@ export default function ExamPage() {
       practiceCategory ??
       (meta.examTitle || cached?.examTitle || 'Simulacro')
 
+    const difficultyLevel =
+      (data.difficultyLevel as string | undefined) ??
+      (data.DifficultyLevel as string | undefined) ??
+      'Intermedio'
+
     setSession({
       sessionId: (data.sessionId as string | undefined) ?? (data.SessionId as string | undefined) ?? fallbackId,
       examTitle,
       practiceCategory,
+      difficultyLevel,
       totalQuestions,
       timeLimitSeconds: (data.timeLimitSeconds as number | undefined) ?? (data.TimeLimitSeconds as number | undefined) ?? 3600,
       questions: questionList,
@@ -253,8 +326,15 @@ export default function ExamPage() {
 
   useEffect(() => {
     void loadSession()
-    return () => stopExamTimer()
-  }, [loadSession, stopExamTimer])
+    return () => {
+      stopExamTimer()
+      clearAutoAdvance()
+    }
+  }, [loadSession, stopExamTimer, clearAutoAdvance])
+
+  useEffect(() => {
+    if (!examAutoplay) clearAutoAdvance()
+  }, [examAutoplay, clearAutoAdvance])
 
   useEffect(() => {
     if (!session || finishingRef.current) return
@@ -281,10 +361,18 @@ export default function ExamPage() {
     return () => stopExamTimer()
   }, [session, handleFinish, stopExamTimer])
 
+  const isBasico = isBasicoLevel(session?.difficultyLevel)
+
   const handleAnswer = (optionId: string) => {
     if (!session) return
     const q = session.questions[currentIdx]
     if (!q) return
+
+    if (isBasico) {
+      if (lockedQuestions[q.id] || basicoBusy) return
+      void handleBasicoAnswer(q, optionId)
+      return
+    }
 
     const spentMs = questionTime
     setAnswers((prev) => ({ ...prev, [q.id]: optionId }))
@@ -294,6 +382,112 @@ export default function ExamPage() {
       selectedOptionId: optionId,
       timeSpentMs: spentMs,
     })
+
+    const lastIndex = (session.totalQuestions || session.questions.length) - 1
+    if (currentIdx < lastIndex) {
+      scheduleAutoAdvance(STANDARD_AUTO_ADVANCE_MS, lastIndex)
+    } else {
+      clearAutoAdvance()
+    }
+  }
+
+  const applyBasicoFeedback = (
+    questionId: string,
+    optionId: string,
+    correct: boolean,
+    explanation?: string | null
+  ) => {
+    // Un solo lote de estado: evita frame intermedio en verde (selected).
+    if (correct) {
+      setAnswers((prev) => ({ ...prev, [questionId]: optionId }))
+      setLockedQuestions((prev) => ({ ...prev, [questionId]: true }))
+      setWrongOptions((prev) => {
+        const next = { ...prev }
+        delete next[questionId]
+        return next
+      })
+      setBasicoHint(explanation?.trim() ? explanation : null)
+      if (!session) return
+      const lastIndex = (session.totalQuestions || session.questions.length) - 1
+      scheduleAutoAdvance(STANDARD_AUTO_ADVANCE_MS, lastIndex)
+    } else {
+      setAnswers((prev) => ({ ...prev, [questionId]: optionId }))
+      setWrongOptions((prev) => ({ ...prev, [questionId]: optionId }))
+      setShakeWrong(true)
+      window.setTimeout(() => setShakeWrong(false), 450)
+    }
+  }
+
+  const resolveBasicoCorrect = (question: Question, optionId: string): boolean | null => {
+    const opt = question.options.find((o) => o.id.toLowerCase() === optionId.toLowerCase())
+    if (typeof opt?.isCorrect === 'boolean') return opt.isCorrect
+    if (question.correctOptionId) {
+      return optionId.toLowerCase() === question.correctOptionId.toLowerCase()
+    }
+    return null
+  }
+
+  const handleBasicoAnswer = async (question: Question, optionId: string) => {
+    if (!session) return
+    setBasicoHint(null)
+    const spentMs = questionTime
+    const knownCorrect = resolveBasicoCorrect(question, optionId)
+
+    // Feedback inmediato (rojo/verde) sin esperar red.
+    if (knownCorrect !== null) {
+      applyBasicoFeedback(question.id, optionId, knownCorrect)
+      void examsApi
+        .submitAnswer(sessionId, {
+          questionId: question.id,
+          selectedOptionId: optionId,
+          timeSpentMs: spentMs,
+        })
+        .then((res) => {
+          if (!knownCorrect) return
+          const data = res.data as {
+            explanation?: string | null
+            Explanation?: string | null
+          }
+          const explanation = data.explanation ?? data.Explanation
+          if (explanation?.trim()) setBasicoHint(explanation)
+        })
+        .catch(() => {
+          if (!knownCorrect) setBasicoHint('No se pudo guardar. Intenta otra vez.')
+        })
+      return
+    }
+
+    // Fallback sesión antigua: no pintar verde mientras valida — solo rojo/verde al final.
+    setBasicoBusy(true)
+    try {
+      const res = await examsApi.submitAnswer(sessionId, {
+        questionId: question.id,
+        selectedOptionId: optionId,
+        timeSpentMs: spentMs,
+      })
+      const data = res.data as {
+        isCorrect?: boolean
+        IsCorrect?: boolean
+        locked?: boolean
+        Locked?: boolean
+        explanation?: string | null
+        Explanation?: string | null
+      }
+      const correct = Boolean(data.isCorrect ?? data.IsCorrect)
+      applyBasicoFeedback(
+        question.id,
+        optionId,
+        correct,
+        data.explanation ?? data.Explanation
+      )
+      if (Boolean(data.locked ?? data.Locked) && !correct) {
+        setLockedQuestions((prev) => ({ ...prev, [question.id]: true }))
+      }
+    } catch {
+      setBasicoHint('No se pudo validar. Intenta otra vez.')
+    } finally {
+      setBasicoBusy(false)
+    }
   }
 
   const formatTime = (s: number) => {
@@ -353,21 +547,46 @@ export default function ExamPage() {
     session.totalQuestions,
     session.questions.length
   )
-  const answeredCount = Object.keys(answers).length
+  const answeredCount = isBasico
+    ? Object.keys(lockedQuestions).length
+    : Object.keys(answers).length
   const unansweredCount = Math.max(0, effectiveTotal - answeredCount)
   const allAnswered = answeredCount >= effectiveTotal
   const isLast = currentIdx === effectiveTotal - 1
+  const currentLocked = currentQ ? Boolean(lockedQuestions[currentQ.id]) : false
+  const canGoNext = !isBasico || currentLocked
 
   const goPrev = () => {
+    clearAutoAdvance()
+    setBasicoHint(null)
     setCurrentIdx((prev) => prev - 1)
     setQuestionTime(0)
   }
   const goNext = () => {
+    if (!canGoNext) return
+    clearAutoAdvance()
+    setBasicoHint(null)
     setCurrentIdx((prev) => prev + 1)
     setQuestionTime(0)
   }
 
+  const toggleExamAutoplay = () => {
+    setExamAutoplay((prev) => {
+      if (prev) clearAutoAdvance()
+      return !prev
+    })
+  }
+
+  const autoplayTitle = isBasico
+    ? examAutoplay
+      ? 'Auto-avance tras acertar (play)'
+      : 'Auto-avance en pausa — usa Siguiente al acertar'
+    : examAutoplay
+      ? 'Auto-avance al marcar respuesta (play)'
+      : 'Auto-avance en pausa — usa Siguiente'
+
   const currentAnswer = currentQ ? answers[currentQ.id] ?? null : null
+  const currentWrong = currentQ ? wrongOptions[currentQ.id] : undefined
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -376,12 +595,20 @@ export default function ExamPage() {
         .fade-in { animation: fadeIn 0.25s ease forwards; }
         @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(255,82,82,0.4)} 50%{box-shadow:0 0 0 8px rgba(255,82,82,0)} }
         .pulse-red { animation: pulse-red 1s infinite; }
+        @keyframes pollitoShake {
+          0%,100% { transform: translateX(0); }
+          20% { transform: translateX(-6px); }
+          40% { transform: translateX(6px); }
+          60% { transform: translateX(-4px); }
+          80% { transform: translateX(4px); }
+        }
+        .pollito-shake { animation: pollitoShake 0.4s ease; }
       `}</style>
 
       {/* HEADER */}
-      <div className="rounded-2xl p-4 mb-4 flex items-center justify-between"
+      <div className="rounded-2xl p-4 mb-4 flex items-center justify-between gap-3"
         style={{ background: 'var(--color-surface-elevated)', border: '1px solid var(--color-surface-border)' }}>
-        <div>
+        <div className="min-w-0">
           <div className="text-[var(--color-text-primary)] font-bold text-sm">{session.examTitle}</div>
           {currentQ?.category ? (
             <div className="text-xs mt-0.5 text-[var(--color-text-accent)] font-medium">
@@ -395,13 +622,32 @@ export default function ExamPage() {
             Pregunta {currentIdx + 1} de {effectiveTotal}
           </div>
         </div>
-        <div className="text-center">
-          <div
-            className={`text-2xl font-bold tabular-nums ${timeLeft < 60 ? 'pulse-red' : ''}`}
-            style={{ color: timerColor, textShadow: `0 0 15px ${timerColor}` }}>
-            {formatTime(timeLeft)}
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={toggleExamAutoplay}
+            title={autoplayTitle}
+            aria-label={examAutoplay ? 'Pausar auto-avance' : 'Activar auto-avance'}
+            aria-pressed={examAutoplay}
+            className="flex flex-col items-center justify-center w-11 h-11 rounded-xl transition-all hover:opacity-90"
+            style={{
+              background: examAutoplay ? primaryMix(18) : 'var(--color-surface)',
+              border: `1px solid ${examAutoplay ? primaryMix(45) : 'var(--color-surface-border)'}`,
+              color: examAutoplay ? NEON : 'var(--color-text-muted)',
+            }}
+          >
+            <span className="text-lg leading-none" aria-hidden>
+              {examAutoplay ? '⏸' : '▶'}
+            </span>
+          </button>
+          <div className="text-center">
+            <div
+              className={`text-2xl font-bold tabular-nums ${timeLeft < 60 ? 'pulse-red' : ''}`}
+              style={{ color: timerColor, textShadow: `0 0 15px ${timerColor}` }}>
+              {formatTime(timeLeft)}
+            </div>
+            <div className="text-xs text-[var(--color-text-muted)]">tiempo restante</div>
           </div>
-          <div className="text-xs text-[var(--color-text-muted)]">tiempo restante</div>
         </div>
       </div>
 
@@ -412,8 +658,11 @@ export default function ExamPage() {
       </div>
 
       {/* PREGUNTA */}
-      <div className="rounded-2xl p-5 mb-4 fade-in" key={currentIdx}
-        style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${primaryMix(15)}` }}>
+      <div
+        className={`rounded-2xl p-5 mb-4 fade-in ${shakeWrong ? 'pollito-shake' : ''}`}
+        key={currentIdx}
+        style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${primaryMix(15)}` }}
+      >
         <div className="text-xs text-[var(--color-text-muted)] mb-3 uppercase tracking-wider">
           Pregunta {currentIdx + 1}
         </div>
@@ -422,16 +671,35 @@ export default function ExamPage() {
         </p>
 
         <div className="space-y-3">
-        {sortedOptions.map((opt, i) => (
+        {sortedOptions.map((opt, i) => {
+              let variant: 'neutral' | 'selected' | 'correct' | 'wrong' = 'neutral'
+              if (isBasico) {
+                // En Básico nunca usar "selected" (verde): solo correct / wrong.
+                if (currentLocked && currentAnswer === opt.id) variant = 'correct'
+                else if (currentWrong === opt.id) variant = 'wrong'
+              } else if (currentAnswer === opt.id) {
+                variant = 'selected'
+              }
+              return (
               <QuizOption
                 key={opt.id}
                 letter={optionLetter(i)}
                 text={opt.optionText}
-                variant={currentAnswer === opt.id ? 'selected' : 'neutral'}
-                onClick={() => handleAnswer(opt.id)}
+                variant={variant}
+                tag={null}
+                onClick={isBasico && currentLocked ? undefined : () => handleAnswer(opt.id)}
               />
-            ))}
+              )
+            })}
         </div>
+        {isBasico && basicoHint ? (
+          <p
+            className="mt-4 text-sm font-medium"
+            style={{ color: currentLocked ? NEON : RED }}
+          >
+            {basicoHint}
+          </p>
+        ) : null}
       </div>
 
       {/* FOOTER */}
@@ -464,10 +732,20 @@ export default function ExamPage() {
               <span className="px-5 py-2.5 text-xs text-[var(--color-text-muted)]">Última pregunta</span>
             )
           ) : (
-            <button type="button" onClick={goNext}
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={!canGoNext}
               className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-              style={{ backgroundColor: 'var(--color-surface-elevated)', color: 'var(--color-text-primary)', border: '1px solid var(--color-surface-border)' }}>
-              Siguiente →
+              style={{
+                backgroundColor: 'var(--color-surface-elevated)',
+                color: canGoNext ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                border: '1px solid var(--color-surface-border)',
+                cursor: canGoNext ? 'pointer' : 'not-allowed',
+                opacity: canGoNext ? 1 : 0.55,
+              }}
+            >
+              {isBasico && !canGoNext ? 'Acierta para continuar' : 'Siguiente →'}
             </button>
           )}
         </div>
