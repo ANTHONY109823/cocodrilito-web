@@ -96,7 +96,10 @@ export default function ResultPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-bounce">🐊</div>
+          <div
+            className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent"
+            aria-hidden
+          />
           <p className="text-gray-400">Calculando resultado...</p>
         </div>
       </div>

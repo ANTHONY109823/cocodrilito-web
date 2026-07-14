@@ -27,7 +27,7 @@ import { isBasicoLevel } from '@/lib/constants/examLevels'
 
 const ORANGE = '#FF8A3D'
 /** Pausa breve en modo play (todos los niveles) antes del auto-avance. */
-const STANDARD_AUTO_ADVANCE_MS = 450
+const STANDARD_AUTO_ADVANCE_MS = 1500
 
 interface AnswerOption {
   id: string
@@ -539,7 +539,10 @@ export default function ExamPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-bounce">🐊</div>
+          <div
+            className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent"
+            aria-hidden
+          />
           <p className="text-gray-400">Guardando tu resultado...</p>
         </div>
       </div>

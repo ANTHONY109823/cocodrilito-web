@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
+import { AppNavLink } from '@/components/navigation/AppNavLink'
 import { superadminApi } from '@/lib/api/superadmin'
 import { SkeletonTable } from '@/components/Skeleton'
 import { DANGER, NEON, SURFACE, SURFACE_BORDER, WARNING, dangerMix, policeGreenRgba } from '@/lib/constants/theme'
@@ -179,11 +179,11 @@ export function SuperAdminUsersPanel({ tenantId, tenantName, compact }: SuperAdm
                 )}
                 {!tenantId && u.tenantName && u.tenantId && (
                   <div className="text-xs mt-1">
-                    <Link href={`/superadmin/tenants/${u.tenantId}`}
+                    <AppNavLink href={`/superadmin/tenants/${u.tenantId}`}
                       className="hover:underline" style={{ color: NEON }}>
                       {u.tenantName}
                       {u.tenantSlug ? ` (${u.tenantSlug})` : ''}
-                    </Link>
+                    </AppNavLink>
                   </div>
                 )}
                 <div className="text-[10px] text-gray-600 mt-0.5">

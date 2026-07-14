@@ -223,6 +223,7 @@ function AdminPageContent() {
 
   const loadData = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false
+    // Al cambiar de pestaña: no vaciar UI si ya hay datos en memoria.
     if (!silent) {
       setLoading(true)
       setLoadError(null)

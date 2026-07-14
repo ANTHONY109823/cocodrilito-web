@@ -2,9 +2,10 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import { AppNavLink } from '@/components/navigation/AppNavLink'
 import { useAuthStore, normalizeUser } from '@/lib/store/authStore'
 import { useImpersonationStore } from '@/lib/store/impersonationStore'
+import { useNavigationStore } from '@/lib/store/navigationStore'
 import { isSuperAdmin, displayInstitutionType } from '@/lib/auth/roles'
 import {
   superadminApi,
@@ -63,11 +64,13 @@ function SuperAdminPageContent() {
 
   const { user, loadFromStorage, setUser } = useAuthStore()
   const { startImpersonation, active: impersonating } = useImpersonationStore()
+  const pendingHref = useNavigationStore((s) => s.pendingHref)
 
   const [dashboard, setDashboard] = useState<DashboardStats | null>(null)
   const [tenants, setTenants] = useState<TenantSummary[]>([])
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [tabLoading, setTabLoading] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createdCredentials, setCreatedCredentials] = useState<AdminCredentials | null>(null)
@@ -95,11 +98,27 @@ function SuperAdminPageContent() {
   }, [impersonating, router])
 
   const loadTabData = useCallback(async () => {
-    if (tab === 'agencias' && tenantsCacheRef.current.length > 0) {
+    // Usuarios tiene su propio panel de carga: no bloquear el cambio de pestaña.
+    if (tab === 'usuarios') {
       setLoading(false)
+      setTabLoading(false)
       return
     }
-    setLoading(true)
+
+    if (tab === 'agencias' && tenantsCacheRef.current.length > 0) {
+      setTenants(tenantsCacheRef.current)
+      setLoading(false)
+      setTabLoading(false)
+      return
+    }
+
+    // No vaciar la UI en cambios de pestaña: solo skeleton en la primera carga.
+    setLoading((wasLoading) => {
+      if (wasLoading) return true
+      setTabLoading(true)
+      return false
+    })
+
     try {
       if (tab === 'inicio') {
         const [dashRes, tenantsRes] = await Promise.all([
@@ -127,6 +146,7 @@ function SuperAdminPageContent() {
       toast(getApiErrorMessage(err, 'Error al cargar datos'), 'error')
     } finally {
       setLoading(false)
+      setTabLoading(false)
     }
   }, [tab])
 
@@ -324,53 +344,57 @@ function SuperAdminPageContent() {
         {list.map((t) => (
           <div key={t.id} className="rounded-2xl p-4 flex flex-wrap items-center gap-3 justify-between"
             style={{ background: 'var(--color-surface-elevated)', border: `1px solid ${policeGreenRgba(0.2)}` }}>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[var(--color-text-primary)] font-semibold">{t.name}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: policeGreenRgba(0.15), color: NEON }}>
-                  {displayInstitutionType(t.tenantType)}
-                </span>
-                {!t.isActive || t.suspended ? (
-                  <span className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: `${dangerMix(20)}`, color: DANGER }}>
-                    {t.suspended ? 'SUSPENDIDO' : 'Inactivo'}
-                  </span>
-                ) : null}
-                {t.isExpired ? (
-                  <span className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: `${dangerMix(20)}`, color: DANGER }}>
-                    EXPIRADO
-                  </span>
-                ) : t.accessExpiresAt ? (
+            <div className="min-w-0 flex-1">
+              <AppNavLink href={`/superadmin/tenants/${t.id}`} className="block">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[var(--color-text-primary)] font-semibold hover:underline">{t.name}</span>
                   <span className="text-xs px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: policeGreenRgba(0.15), color: NEON }}>
-                    Vigente
+                    {displayInstitutionType(t.tenantType)}
                   </span>
-                ) : null}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {t.slug} · {t.students} alumno{t.students !== 1 ? 's' : ''}
-                {(t.admins ?? 0) > 0 ? ` · ${t.admins} admin` : ''} · {t.examsCompleted} exámenes
-                {t.contactPhone ? ` · ${t.contactPhone}` : ''}
-                {t.monthlyFee > 0 ? ` · S/. ${t.monthlyFee}/mes` : ''}
-              </div>
-              {t.accessExpiresAt ? (
-                <div className="text-xs mt-0.5" style={{ color: t.isExpired ? DANGER : TEXT_MUTED }}>
-                  Vigencia: {t.accessStartsAt ? new Date(t.accessStartsAt).toLocaleDateString('es-PE') : '—'}
-                  {' → '}
-                  {new Date(t.accessExpiresAt).toLocaleDateString('es-PE')}
+                  {!t.isActive || t.suspended ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: `${dangerMix(20)}`, color: DANGER }}>
+                      {t.suspended ? 'SUSPENDIDO' : 'Inactivo'}
+                    </span>
+                  ) : null}
+                  {t.isExpired ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: `${dangerMix(20)}`, color: DANGER }}>
+                      EXPIRADO
+                    </span>
+                  ) : t.accessExpiresAt ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: policeGreenRgba(0.15), color: NEON }}>
+                      Vigente
+                    </span>
+                  ) : null}
                 </div>
-              ) : null}
+                <div className="text-xs text-gray-500 mt-1">
+                  {t.slug} · {t.students} alumno{t.students !== 1 ? 's' : ''}
+                  {(t.admins ?? 0) > 0 ? ` · ${t.admins} admin` : ''} · {t.examsCompleted} exámenes
+                  {t.contactPhone ? ` · ${t.contactPhone}` : ''}
+                  {t.monthlyFee > 0 ? ` · S/. ${t.monthlyFee}/mes` : ''}
+                </div>
+                {t.accessExpiresAt ? (
+                  <div className="text-xs mt-0.5" style={{ color: t.isExpired ? DANGER : TEXT_MUTED }}>
+                    Vigencia: {t.accessStartsAt ? new Date(t.accessStartsAt).toLocaleDateString('es-PE') : '—'}
+                    {' → '}
+                    {new Date(t.accessExpiresAt).toLocaleDateString('es-PE')}
+                  </div>
+                ) : null}
+              </AppNavLink>
               <TenantAccessUrl slug={t.slug} compact />
               <div className="text-xs text-gray-600 mt-0.5">{t.contactEmail}</div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Link href={`/superadmin/tenants/${t.id}`}
+              <AppNavLink
+                href={`/superadmin/tenants/${t.id}`}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                style={{ backgroundColor: policeGreenRgba(0.12), color: NEON, border: `1px solid ${policeGreenRgba(0.25)}` }}>
+                style={{ backgroundColor: policeGreenRgba(0.12), color: NEON, border: `1px solid ${policeGreenRgba(0.25)}` }}
+              >
                 Detalle
-              </Link>
+              </AppNavLink>
               <button type="button" onClick={() => handleImpersonate(t)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium"
                 style={{ backgroundColor: `${warningMix(15)}`, color: WARNING, border: `1px solid ${warningMix(30)}` }}>
@@ -432,17 +456,25 @@ function SuperAdminPageContent() {
       />
 
       <div className="flex gap-2 mb-6 flex-wrap">
-        {tabs.map((t) => (
-          <Link key={t.key} href={`/superadmin?tab=${t.key}`}
+        {tabs.map((t) => {
+          const href = `/superadmin?tab=${t.key}`
+          const active = tab === t.key || pendingHref === href
+          return (
+          <AppNavLink
+            key={t.key}
+            href={href}
             className="px-3 py-2 rounded-xl text-xs md:text-sm font-medium transition-all"
             style={{
-              backgroundColor: tab === t.key ? NEON : SURFACE_CARD,
-              color: tab === t.key ? '#000' : '#9CA3AF',
-              border: `1px solid ${tab === t.key ? NEON : 'var(--color-surface-border)'}`,
-            }}>
+              backgroundColor: active ? NEON : SURFACE_CARD,
+              color: active ? '#000' : '#9CA3AF',
+              border: `1px solid ${active ? NEON : 'var(--color-surface-border)'}`,
+              opacity: tabLoading && active ? 0.85 : 1,
+            }}
+          >
             {t.label}
-          </Link>
-        ))}
+          </AppNavLink>
+          )
+        })}
       </div>
 
       {tab === 'inicio' && (

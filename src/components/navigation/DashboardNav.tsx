@@ -5,6 +5,7 @@ import { type LucideIcon } from 'lucide-react'
 import { isNavActive, pageTitleForPath } from '@/lib/navigation'
 import { cn } from '@/lib/utils/cn'
 import { AppNavLink } from '@/components/navigation/AppNavLink'
+import { useNavigationStore } from '@/lib/store/navigationStore'
 
 export type DashboardNavItem = {
   href: string
@@ -32,12 +33,15 @@ export function DashboardSidebarNav({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const search = useQuery && searchParams.size > 0 ? `?${searchParams.toString()}` : ''
+  const pendingHref = useNavigationStore((s) => s.pendingHref)
 
   return (
     <>
       {items.map((item) => {
         const { href, label, icon: Icon } = item
-        const active = isNavActive(pathname, href, useQuery ? search : '')
+        const active =
+          (pendingHref != null && pendingHref === href) ||
+          isNavActive(pathname, href, useQuery ? search : '')
         return (
           <AppNavLink key={href} href={href} className={navClass(active)}>
             <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
@@ -59,11 +63,14 @@ export function DashboardMobileNav({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const search = useQuery && searchParams.size > 0 ? `?${searchParams.toString()}` : ''
+  const pendingHref = useNavigationStore((s) => s.pendingHref)
 
   return (
     <>
       {items.map(({ href, label, mobileLabel, icon: Icon }) => {
-        const active = isNavActive(pathname, href, useQuery ? search : '')
+        const active =
+          (pendingHref != null && pendingHref === href) ||
+          isNavActive(pathname, href, useQuery ? search : '')
         return (
           <AppNavLink
             key={href}
