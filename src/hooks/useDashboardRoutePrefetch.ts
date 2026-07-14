@@ -83,11 +83,11 @@ export function useDashboardRoutePrefetch() {
       const track = trackValueForHierarchy(hierarchy)
       const categoriesKey = categoriesApiPath(track, hierarchy)
       void mutate(categoriesKey, () => swrFetcher(categoriesKey), { revalidate: false })
-      void mutate(
-        `/exams/question-counts?track=${encodeURIComponent(trackKey)}`,
-        () => swrFetcher(`/exams/question-counts?track=${encodeURIComponent(trackKey)}`),
-        { revalidate: false }
-      )
+      // Misma clave que useQuestionCounts en /exams (incluye hierarchy).
+      const countsKey = hierarchy != null
+        ? `/exams/question-counts?track=${encodeURIComponent(trackKey)}&hierarchy=${encodeURIComponent(String(hierarchy))}`
+        : `/exams/question-counts?track=${encodeURIComponent(trackKey)}`
+      void mutate(countsKey, () => swrFetcher(countsKey), { revalidate: false })
     }
 
     if (typeof window.requestIdleCallback === 'function') {

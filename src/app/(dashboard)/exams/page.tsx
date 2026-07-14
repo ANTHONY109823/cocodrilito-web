@@ -107,7 +107,8 @@ export default function ExamsPage() {
     setSelectedCount(defaultCountForLevel(level))
   }
 
-  const loading = examsLoading && exams.length === 0 && countsLoading && totalQuestions === 0
+  // Mostrar UI en cuanto hay lista de exámenes; los conteos pueden llegar después.
+  const loading = examsLoading && exams.length === 0
 
   useEffect(() => {
     if (!previewMode) return

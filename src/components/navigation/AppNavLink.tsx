@@ -10,7 +10,6 @@ function hrefMatchesCurrent(href: string, pathname: string, search: string): boo
   if (pathname !== targetPath) return false
   if (!targetQuery) return true
   const current = search.startsWith('?') ? search.slice(1) : search
-  // Comparar solo params del target (ignora extras del URL actual).
   const want = new URLSearchParams(targetQuery)
   const have = new URLSearchParams(current)
   for (const [k, v] of want.entries()) {
@@ -51,15 +50,22 @@ export function AppNavLink({
       e.preventDefault()
       return
     }
-    // Cambios ?tab= en la misma ruta: Link nativo a veces no navega al primer click.
-    e.preventDefault()
+
     useNavSearchStore.getState().applyHref(href)
     setPending(href)
     window.setTimeout(() => {
       if (useNavigationStore.getState().pendingHref === href) setPending(null)
     }, 8000)
-    // Sin startTransition: la navegación debe ir con prioridad alta.
-    router.push(href)
+
+    const targetPath = href.split('?')[0]
+    const isSamePathQueryChange = targetPath === pathname && href.includes('?')
+
+    // Solo forzar push en cambios ?tab= (misma ruta). Entre páginas dejar que Link
+    // nativo navegue: evita pelear con el App Router y errores removeChild.
+    if (isSamePathQueryChange) {
+      e.preventDefault()
+      router.push(href)
+    }
   }
 
   return (
