@@ -22,12 +22,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LoginLayout({ children }: { children: React.ReactNode }) {
   const slug = await resolveRequestTenantSlug()
   const initialConfig = slug ? await fetchTenantConfigServer(slug) : null
-  const logoUrl = resolveTenantAssetUrl(initialConfig?.logoUrl)
   const backgroundUrl = resolveTenantAssetUrl(initialConfig?.loginBackgroundUrl)
 
-  // Precarga vía React (no <link> sueltos en el body → evita mismatch de hidratación).
+  // Solo precargar el fondo (CSS background-image usa la misma URL).
+  // El logo va por next/image (/_next/image?...): precargarlo dispara el warning
+  // "preloaded but not used".
   if (backgroundUrl) preload(backgroundUrl, { as: 'image', fetchPriority: 'high' })
-  if (logoUrl) preload(logoUrl, { as: 'image', fetchPriority: 'high' })
 
   return (
     <TenantLoginBootstrap slug={slug} initialConfig={initialConfig}>

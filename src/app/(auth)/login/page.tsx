@@ -265,6 +265,7 @@ function LoginForm() {
               height={112}
               className="brand-logo"
               priority
+              unoptimized
             />
           )}
           <h1 className={`brand-name${longBrandName ? ' brand-name--long' : ''}`}>{displayName}</h1>
