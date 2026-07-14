@@ -51,21 +51,14 @@ export function AppNavLink({
       return
     }
 
+    // Un solo click debe navegar siempre (Configuración → Modo prueba, tabs, etc.).
+    e.preventDefault()
     useNavSearchStore.getState().applyHref(href)
     setPending(href)
     window.setTimeout(() => {
       if (useNavigationStore.getState().pendingHref === href) setPending(null)
     }, 8000)
-
-    const targetPath = href.split('?')[0]
-    const isSamePathQueryChange = targetPath === pathname && href.includes('?')
-
-    // Solo forzar push en cambios ?tab= (misma ruta). Entre páginas dejar que Link
-    // nativo navegue: evita pelear con el App Router y errores removeChild.
-    if (isSamePathQueryChange) {
-      e.preventDefault()
-      router.push(href)
-    }
+    router.push(href)
   }
 
   return (
