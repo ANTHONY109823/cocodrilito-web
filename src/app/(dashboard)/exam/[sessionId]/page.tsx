@@ -94,7 +94,10 @@ export default function ExamPage() {
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const examAutoplayRef = useRef(examAutoplay)
-  examAutoplayRef.current = examAutoplay
+
+  useEffect(() => {
+    examAutoplayRef.current = examAutoplay
+  }, [examAutoplay])
 
   const clearAutoAdvance = useCallback(() => {
     if (autoAdvanceRef.current) {
