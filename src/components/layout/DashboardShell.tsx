@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
@@ -29,6 +29,7 @@ import { useDashboardRoutePrefetch } from '@/hooks/useDashboardRoutePrefetch'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useNavigationStore } from '@/lib/store/navigationStore'
 import { displayStudentGrade } from '@/lib/utils/displayStudentGrade'
+import { resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
 import type { AuthUser } from '@/lib/store/authStore'
 
 function roleLabel(role?: string) {
@@ -45,6 +46,46 @@ function userProfileSubtitle(user?: AuthUser | null): string {
     return displayStudentGrade(user?.rank)
   }
   return roleLabel(user.role)
+}
+
+function BrandLogoMark({
+  src,
+  className,
+}: {
+  src: string | null
+  className?: string
+}) {
+  const [failed, setFailed] = useState(false)
+  const resolved = src ? resolveTenantAssetUrl(src) : null
+
+  useEffect(() => {
+    setFailed(false)
+  }, [resolved])
+
+  if (!resolved || failed) {
+    return (
+      <div
+        className={cn(
+          'flex shrink-0 items-center justify-center rounded-lg bg-[#318F48] text-base',
+          className ?? 'h-8 w-8'
+        )}
+      >
+        🐊
+      </div>
+    )
+  }
+
+  return (
+    <Image
+      src={resolved}
+      alt=""
+      width={32}
+      height={32}
+      unoptimized
+      onError={() => setFailed(true)}
+      className={cn('shrink-0 rounded-lg object-contain bg-white/5', className ?? 'h-8 w-8')}
+    />
+  )
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -104,20 +145,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 min-h-0">
         <aside className="hidden lg:flex w-[220px] shrink-0 flex-col border-r border-[var(--color-surface-border)] bg-[var(--color-surface-elevated)] px-3.5 py-5">
           <div className="mb-3 flex items-center gap-2 px-2.5 py-2">
-            {brandLogo ? (
-              <Image
-                src={brandLogo}
-                alt=""
-                width={32}
-                height={32}
-                unoptimized
-                className="h-8 w-8 shrink-0 rounded-lg object-contain bg-white/5"
-              />
-            ) : (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#318F48] text-base">
-                🐊
-              </div>
-            )}
+            <BrandLogoMark src={brandLogo} />
             <div className="min-w-0">
               <div className="truncate text-sm font-bold text-[var(--color-text-accent)] leading-tight">
                 {brandName}
@@ -184,16 +212,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
           <header className="hidden lg:flex items-center justify-between border-b border-[var(--color-surface-border)] bg-[var(--color-surface)] px-8 py-4">
             <div className="flex items-center gap-3">
-              {brandLogo && (
-                <Image
-                  src={brandLogo}
-                  alt=""
-                  width={32}
-                  height={32}
-                  unoptimized
-                  className="h-8 w-8 rounded object-contain"
-                />
-              )}
+              <BrandLogoMark src={brandLogo} className="h-8 w-8 rounded" />
               <div>
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {navContext === 'superadmin' ? BRAND_PLATFORM : brandName}

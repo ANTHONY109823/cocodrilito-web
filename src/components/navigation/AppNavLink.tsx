@@ -50,6 +50,11 @@ export function AppNavLink({
       e.preventDefault()
       return
     }
+    // Evita doble push mientras la primera navegación aún está pendiente.
+    if (useNavigationStore.getState().pendingHref === href) {
+      e.preventDefault()
+      return
+    }
 
     // Un solo click debe navegar siempre (Configuración → Modo prueba, tabs, etc.).
     e.preventDefault()

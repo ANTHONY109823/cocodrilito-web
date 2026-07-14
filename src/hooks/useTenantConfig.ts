@@ -33,14 +33,15 @@ function writeCachedConfig(slug: string, config: TenantConfig) {
   }
 }
 
-function resolveSeedConfig(
+/** Solo bootstrap SSR en render — sessionStorage provoca React #418. */
+function resolveSsrSeedConfig(
   slug: string | null,
   bootstrapSlug: string | null,
   initialConfig: TenantConfig | null
 ): TenantConfig | null {
   if (!slug) return null
   if (bootstrapSlug === slug && initialConfig) return initialConfig
-  return readCachedConfig(slug)
+  return null
 }
 
 function hasSsrBootstrap(
@@ -57,13 +58,13 @@ export function useTenantConfig(overrideSlug?: string | null) {
   const slug =
     overrideSlug !== undefined ? overrideSlug : (autoSlug ?? bootstrapSlug)
 
-  const seedConfig = useMemo(
-    () => resolveSeedConfig(slug, bootstrapSlug, initialConfig),
+  const ssrSeed = useMemo(
+    () => resolveSsrSeedConfig(slug, bootstrapSlug, initialConfig),
     [slug, bootstrapSlug, initialConfig]
   )
 
-  const [config, setConfig] = useState<TenantConfig | null>(seedConfig)
-  const [loading, setLoading] = useState(Boolean(slug && !seedConfig))
+  const [config, setConfig] = useState<TenantConfig | null>(ssrSeed)
+  const [loading, setLoading] = useState(Boolean(slug && !ssrSeed))
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -74,8 +75,9 @@ export function useTenantConfig(overrideSlug?: string | null) {
       return
     }
 
-    const seed = seedConfig
     const fromSsr = hasSsrBootstrap(slug, bootstrapSlug, initialConfig)
+    const cached = fromSsr ? null : readCachedConfig(slug)
+    const seed = ssrSeed ?? cached
 
     if (seed) {
       setConfig(seed)
@@ -114,14 +116,14 @@ export function useTenantConfig(overrideSlug?: string | null) {
 
     if (!seed) {
       void refreshConfig(true)
-    } else if (!fromSsr && !readCachedConfig(slug)) {
+    } else if (!fromSsr) {
       void refreshConfig(false)
     }
 
     return () => {
       cancelled = true
     }
-  }, [slug, bootstrapSlug, initialConfig, seedConfig])
+  }, [slug, bootstrapSlug, initialConfig, ssrSeed])
 
   return {
     config: slug ? config : null,

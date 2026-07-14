@@ -45,10 +45,13 @@ export function useStudentDashboard() {
   // latest/history no deben tumbar el dashboard si fallan (p.ej. 500).
   const error = gamiError || statsError
 
+  const latestPayload = latest as { sessionId?: string | null } | null | undefined
+  const hasLatestSession = Boolean(latestPayload?.sessionId)
+
   return {
     gami,
     stats,
-    latest: latestError ? null : latest,
+    latest: latestError || !hasLatestSession ? null : latest,
     chartScores: historyError ? [] : chartScores,
     loading,
     error,

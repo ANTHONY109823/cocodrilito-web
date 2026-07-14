@@ -116,6 +116,7 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [logoFailed, setLogoFailed] = useState(false)
 
   useEffect(() => {
     setIsRootLogin(isRootHost())
@@ -138,6 +139,10 @@ function LoginForm() {
 
   const logoSrc = resolveTenantAssetUrl(config?.logoUrl)
   const backgroundSrc = resolveTenantAssetUrl(config?.loginBackgroundUrl)
+
+  useEffect(() => {
+    setLogoFailed(false)
+  }, [logoSrc])
 
   const loginBackgroundStyle: CSSProperties | undefined = resolvedTenantSlug && backgroundSrc
     ? { backgroundImage: `url('${backgroundSrc}')` }
@@ -257,7 +262,7 @@ function LoginForm() {
           </div>
         )}
         <div className="brand">
-          {resolvedTenantSlug && logoSrc && (
+          {resolvedTenantSlug && logoSrc && !logoFailed && (
             <Image
               src={logoSrc}
               alt=""
@@ -265,6 +270,7 @@ function LoginForm() {
               height={112}
               className="brand-logo"
               unoptimized
+              onError={() => setLogoFailed(true)}
             />
           )}
           <h1 className={`brand-name${longBrandName ? ' brand-name--long' : ''}`}>{displayName}</h1>

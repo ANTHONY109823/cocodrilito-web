@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import { BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { TenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { buildTenantIconMetadata, resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
+import { buildTenantDynamicIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
 import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
-import { preload } from 'react-dom'
 
 export async function generateMetadata(): Promise<Metadata> {
   const slug = await resolveRequestTenantSlug()
@@ -15,19 +14,15 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: `${config.name} — Iniciar sesión`,
-    icons: buildTenantIconMetadata(config.logoUrl),
+    icons: buildTenantDynamicIconMetadata(),
   }
 }
 
 export default async function LoginLayout({ children }: { children: React.ReactNode }) {
   const slug = await resolveRequestTenantSlug()
   const initialConfig = slug ? await fetchTenantConfigServer(slug) : null
-  const backgroundUrl = resolveTenantAssetUrl(initialConfig?.loginBackgroundUrl)
 
-  // Solo precargar el fondo (CSS background-image usa la misma URL).
-  // El logo va por next/image (/_next/image?...): precargarlo dispara el warning
-  // "preloaded but not used".
-  if (backgroundUrl) preload(backgroundUrl, { as: 'image', fetchPriority: 'high' })
+  // Sin preload manual: next/Image y CSS cargan cuando se usan (evita warning F12).
 
   return (
     <TenantLoginBootstrap slug={slug} initialConfig={initialConfig}>

@@ -3,7 +3,7 @@ import './globals.css'
 import { AppProviders } from '@/components/AppProviders'
 import { BRAND_DESCRIPTION, BRAND_PAGE_TITLE } from '@/lib/constants/brand'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { buildTenantIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
+import { buildTenantDynamicIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
 import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
 import { TenantHeadIcons } from '@/components/tenant/TenantHeadIcons'
 
@@ -18,7 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
   if (slug) {
     const config = await fetchTenantConfigServer(slug)
-    const tenantIcons = buildTenantIconMetadata(config?.logoUrl)
+    // Favicon estable vía /brand/icon (TenantHeadIcons pinnea el logo real).
+    // Evita /_next/image sobre PNGs grandes que fallan o pelean con el head.
+    const tenantIcons = buildTenantDynamicIconMetadata()
 
     if (config?.name) {
       return {

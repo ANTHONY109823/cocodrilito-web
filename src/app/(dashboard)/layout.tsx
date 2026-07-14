@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
-import { buildTenantIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
+import { buildTenantDynamicIconMetadata } from '@/lib/utils/resolveTenantAssetUrl'
 import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
 import { DashboardClientLayout } from '@/components/layout/DashboardClientLayout'
 
@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     ...(config?.name ? { title: config.name } : {}),
-    icons: buildTenantIconMetadata(config?.logoUrl),
+    icons: buildTenantDynamicIconMetadata(),
   }
 }
 
