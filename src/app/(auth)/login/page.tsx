@@ -264,7 +264,6 @@ function LoginForm() {
               width={112}
               height={112}
               className="brand-logo"
-              priority
               unoptimized
             />
           )}
