@@ -40,14 +40,14 @@ export function TenantLoginBrandingFields({ value, onChange }: TenantLoginBrandi
 
       <div className="grid md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Subtítulo bajo el nombre</label>
-          <input className={inputClass} style={inputStyle}
+          <label htmlFor="login-brand-tagline" className="block text-xs text-gray-500 mb-1">Subtítulo bajo el nombre</label>
+          <input id="login-brand-tagline" name="brandTagline" className={inputClass} style={inputStyle}
             value={value.brandTagline}
             onChange={(e) => set({ brandTagline: e.target.value })} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Línea de especialidades</label>
-          <input className={inputClass} style={inputStyle}
+          <label htmlFor="login-brand-sub" className="block text-xs text-gray-500 mb-1">Línea de especialidades</label>
+          <input id="login-brand-sub" name="brandSub" className={inputClass} style={inputStyle}
             value={value.brandSub}
             onChange={(e) => set({ brandSub: e.target.value })} />
         </div>
@@ -55,36 +55,36 @@ export function TenantLoginBrandingFields({ value, onChange }: TenantLoginBrandi
 
       <div className="grid md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Título principal (línea 1)</label>
-          <input className={inputClass} style={inputStyle}
+          <label htmlFor="login-headline-normal" className="block text-xs text-gray-500 mb-1">Título principal (línea 1)</label>
+          <input id="login-headline-normal" name="headlineNormal" className={inputClass} style={inputStyle}
             value={value.headlineNormal}
             onChange={(e) => set({ headlineNormal: e.target.value })} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Título principal (acento)</label>
-          <input className={inputClass} style={inputStyle}
+          <label htmlFor="login-headline-accent" className="block text-xs text-gray-500 mb-1">Título principal (acento)</label>
+          <input id="login-headline-accent" name="headlineAccent" className={inputClass} style={inputStyle}
             value={value.headlineAccent}
             onChange={(e) => set({ headlineAccent: e.target.value })} />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Descripción</label>
-        <textarea className={inputClass} style={{ ...inputStyle, minHeight: 72 }} rows={3}
+        <label htmlFor="login-description" className="block text-xs text-gray-500 mb-1">Descripción</label>
+        <textarea id="login-description" name="description" className={inputClass} style={{ ...inputStyle, minHeight: 72 }} rows={3}
           value={value.description}
           onChange={(e) => set({ description: e.target.value })} />
       </div>
 
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Beneficios (uno por línea)</label>
-        <textarea className={inputClass} style={{ ...inputStyle, minHeight: 120 }} rows={6}
+        <label htmlFor="login-features" className="block text-xs text-gray-500 mb-1">Beneficios (uno por línea)</label>
+        <textarea id="login-features" name="features" className={inputClass} style={{ ...inputStyle, minHeight: 120 }} rows={6}
           value={featuresToText(value.features)}
           onChange={(e) => set({ features: textToFeatures(e.target.value) })} />
       </div>
 
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Frase de cierre (CTA)</label>
-        <input className={inputClass} style={inputStyle}
+        <label htmlFor="login-cta" className="block text-xs text-gray-500 mb-1">Frase de cierre (CTA)</label>
+        <input id="login-cta" name="ctaTagline" className={inputClass} style={inputStyle}
           value={value.ctaTagline}
           onChange={(e) => set({ ctaTagline: e.target.value })} />
       </div>
@@ -93,10 +93,12 @@ export function TenantLoginBrandingFields({ value, onChange }: TenantLoginBrandi
         {value.stats.map((stat, index) => (
           <div key={index} className="space-y-2 rounded-lg p-3" style={{ border: '1px solid var(--color-surface-border)' }}>
             <p className="text-[10px] text-gray-500">Estadística {index + 1}</p>
-            <input className={inputClass} style={inputStyle} placeholder="100%"
+            <label className="sr-only" htmlFor={`login-stat-value-${index}`}>Valor estadística {index + 1}</label>
+            <input id={`login-stat-value-${index}`} name={`statValue${index}`} className={inputClass} style={inputStyle} placeholder="100%"
               value={stat.value}
               onChange={(e) => updateStat(index, { value: e.target.value })} />
-            <input className={inputClass} style={inputStyle} placeholder="Etiqueta"
+            <label className="sr-only" htmlFor={`login-stat-label-${index}`}>Etiqueta estadística {index + 1}</label>
+            <input id={`login-stat-label-${index}`} name={`statLabel${index}`} className={inputClass} style={inputStyle} placeholder="Etiqueta"
               value={stat.label}
               onChange={(e) => updateStat(index, { label: e.target.value })} />
           </div>
@@ -105,26 +107,26 @@ export function TenantLoginBrandingFields({ value, onChange }: TenantLoginBrandi
 
       <div className="grid md:grid-cols-2 gap-3 pt-2" style={{ borderTop: '1px solid var(--color-surface-border)' }}>
         <div className="md:col-span-2">
-          <label className="block text-xs text-gray-500 mb-1">URL de WhatsApp (botón superior)</label>
-          <input className={inputClass} style={inputStyle} placeholder="https://wa.me/51..."
+          <label htmlFor="login-whatsapp" className="block text-xs text-gray-500 mb-1">URL de WhatsApp (botón superior)</label>
+          <input id="login-whatsapp" name="whatsappUrl" className={inputClass} style={inputStyle} placeholder="https://wa.me/51..."
             value={value.whatsappUrl}
             onChange={(e) => set({ whatsappUrl: e.target.value })} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">URL TikTok</label>
-          <input className={inputClass} style={inputStyle}
+          <label htmlFor="login-tiktok" className="block text-xs text-gray-500 mb-1">URL TikTok</label>
+          <input id="login-tiktok" name="tiktokUrl" className={inputClass} style={inputStyle}
             value={value.tiktokUrl}
             onChange={(e) => set({ tiktokUrl: e.target.value })} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">URL Facebook</label>
-          <input className={inputClass} style={inputStyle}
+          <label htmlFor="login-facebook" className="block text-xs text-gray-500 mb-1">URL Facebook</label>
+          <input id="login-facebook" name="facebookUrl" className={inputClass} style={inputStyle}
             value={value.facebookUrl}
             onChange={(e) => set({ facebookUrl: e.target.value })} />
         </div>
         <div className="md:col-span-2">
-          <label className="block text-xs text-gray-500 mb-1">URL Instagram</label>
-          <input className={inputClass} style={inputStyle}
+          <label htmlFor="login-instagram" className="block text-xs text-gray-500 mb-1">URL Instagram</label>
+          <input id="login-instagram" name="instagramUrl" className={inputClass} style={inputStyle}
             value={value.instagramUrl}
             onChange={(e) => set({ instagramUrl: e.target.value })} />
         </div>

@@ -30,6 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       iconRight: IconRight,
       type = 'text',
       id: idProp,
+      name: nameProp,
       disabled,
       ...props
     },
@@ -37,6 +38,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const generatedId = useId()
     const id = idProp ?? generatedId
+    const name = nameProp ?? id
     const [showPassword, setShowPassword] = useState(false)
     const isPassword = type === 'password'
     const inputType = isPassword && showPassword ? 'text' : type
@@ -60,7 +62,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           <input
             ref={ref}
-            id={id}
             type={inputType}
             disabled={disabled}
             className={cn(
@@ -78,6 +79,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={!!error}
             aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
             {...props}
+            id={id}
+            name={name}
           />
           {isPassword && (
             <button

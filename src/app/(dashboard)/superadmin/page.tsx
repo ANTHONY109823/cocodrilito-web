@@ -616,10 +616,12 @@ function SuperAdminPageContent() {
               Verificación de seguridad: escribe el nombre exacto de la institución para confirmar.
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">
+              <label htmlFor="sa-delete-confirm" className="block text-xs text-gray-500 mb-1">
                 Escribe «{pendingAction?.tenant.name}» para habilitar el botón
               </label>
               <input
+                id="sa-delete-confirm"
+                name="deleteConfirm"
                 className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
                 style={{ background: 'var(--color-input-bg)', border: `1px solid ${dangerMix(40)}` }}
                 value={deleteConfirmText}
@@ -636,8 +638,10 @@ function SuperAdminPageContent() {
               quedarán bloqueados hasta que la reactives.
             </p>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Motivo (opcional)</label>
+              <label htmlFor="sa-suspend-reason" className="block text-xs text-gray-500 mb-1">Motivo (opcional)</label>
               <textarea
+                id="sa-suspend-reason"
+                name="suspendReason"
                 className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
                 style={{ background: 'var(--color-input-bg)', border: '1px solid var(--color-surface-border)' }}
                 rows={2}

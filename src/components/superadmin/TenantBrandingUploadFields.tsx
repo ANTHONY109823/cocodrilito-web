@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { NEON, primaryMix } from '@/lib/constants/theme'
 
 export const MAX_BRANDING_IMAGE_BYTES = 2 * 1024 * 1024
@@ -14,6 +14,7 @@ interface BrandingImageFieldProps {
   onSelect: (file: File) => void
   disabled?: boolean
   largePreview?: boolean
+  inputName: string
 }
 
 function BrandingImageField({
@@ -24,8 +25,10 @@ function BrandingImageField({
   onSelect,
   disabled,
   largePreview,
+  inputName,
 }: BrandingImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const inputId = useId()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -36,7 +39,7 @@ function BrandingImageField({
 
   return (
     <div>
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      <label htmlFor={inputId} className="block text-xs text-gray-500 mb-1">{label}</label>
       <div className="flex items-start gap-3">
         <div
           className={`shrink-0 flex items-center justify-center rounded-xl border border-white/10 bg-black/30 overflow-hidden ${
@@ -58,9 +61,11 @@ function BrandingImageField({
         <div className="flex flex-col gap-1.5">
           <input
             ref={inputRef}
+            id={inputId}
+            name={inputName}
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            className="hidden"
+            className="sr-only"
             disabled={disabled}
             onChange={handleChange}
           />
@@ -155,6 +160,7 @@ export function TenantBrandingUploadFields({
         selectedFileName={value.logoFile?.name}
         onSelect={selectLogo}
         disabled={disabled}
+        inputName="tenant-logo"
       />
       <BrandingImageField
         label={required ? 'Imagen de fondo del login *' : 'Imagen de fondo del login'}
@@ -164,6 +170,7 @@ export function TenantBrandingUploadFields({
         onSelect={selectBackground}
         disabled={disabled}
         largePreview
+        inputName="tenant-login-background"
       />
     </div>
   )

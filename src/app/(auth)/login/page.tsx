@@ -401,6 +401,7 @@ function LoginForm() {
                       </svg>
                       <input
                         id="login-id"
+                        name="username"
                         className="login-input"
                         type={isPlatformLogin ? 'email' : 'text'}
                         placeholder={loginFieldPlaceholder}
@@ -434,6 +435,7 @@ function LoginForm() {
                       </svg>
                       <input
                         id="login-password"
+                        name="password"
                         className="login-input"
                         type="password"
                         placeholder={isPlatformLogin ? '••••••••' : 'DNI — 8 dígitos'}

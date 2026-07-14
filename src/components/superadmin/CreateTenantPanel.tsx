@@ -154,13 +154,13 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
           <p className="text-xs text-gray-500 mb-3">Información pública y de contacto del tenant.</p>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Nombre *</label>
-              <input className={inputClass} style={inputStyle} required
+              <label htmlFor="create-tenant-name" className="block text-xs text-gray-500 mb-1">Nombre *</label>
+              <input id="create-tenant-name" name="name" className={inputClass} style={inputStyle} required
                 value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Slug (opcional)</label>
-              <input className={inputClass} style={inputStyle}
+              <label htmlFor="create-tenant-slug" className="block text-xs text-gray-500 mb-1">Slug (opcional)</label>
+              <input id="create-tenant-slug" name="slug" className={inputClass} style={inputStyle}
                 placeholder="ej. jraasecurity"
                 value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
               <p className="text-[10px] text-gray-600 mt-1">
@@ -168,23 +168,23 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
               </p>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Cuota mensual (S/.)</label>
-              <input type="number" min={0} step="0.01" className={inputClass} style={inputStyle}
+              <label htmlFor="create-tenant-fee" className="block text-xs text-gray-500 mb-1">Cuota mensual (S/.)</label>
+              <input id="create-tenant-fee" name="monthlyFee" type="number" min={0} step="0.01" className={inputClass} style={inputStyle}
                 value={form.monthlyFee} onChange={(e) => setForm({ ...form, monthlyFee: Number(e.target.value) })} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Email de contacto *</label>
-              <input type="email" className={inputClass} style={inputStyle} required
+              <label htmlFor="create-tenant-email" className="block text-xs text-gray-500 mb-1">Email de contacto *</label>
+              <input id="create-tenant-email" name="contactEmail" type="email" className={inputClass} style={inputStyle} required
                 value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Teléfono</label>
-              <input className={inputClass} style={inputStyle}
+              <label htmlFor="create-tenant-phone" className="block text-xs text-gray-500 mb-1">Teléfono</label>
+              <input id="create-tenant-phone" name="contactPhone" className={inputClass} style={inputStyle}
                 value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs text-gray-500 mb-1">Dominio personalizado (opcional)</label>
-              <input className={inputClass} style={inputStyle}
+              <label htmlFor="create-tenant-domain" className="block text-xs text-gray-500 mb-1">Dominio personalizado (opcional)</label>
+              <input id="create-tenant-domain" name="customDomain" className={inputClass} style={inputStyle}
                 placeholder="ej. agenciaseguridad.edu.pe"
                 value={form.customDomain ?? ''}
                 onChange={(e) => setForm({ ...form, customDomain: e.target.value })} />
@@ -241,24 +241,25 @@ export function CreateTenantPanel({ open, loading, onClose, onSubmit }: CreateTe
           </p>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Nombre completo *</label>
-              <input className={inputClass} style={inputStyle} required
+              <label htmlFor="create-admin-name" className="block text-xs text-gray-500 mb-1">Nombre completo *</label>
+              <input id="create-admin-name" name="adminFullName" className={inputClass} style={inputStyle} required
                 value={form.adminFullName} onChange={(e) => setForm({ ...form, adminFullName: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Email de acceso *</label>
-              <input type="email" className={inputClass} style={inputStyle} required
+              <label htmlFor="create-admin-email" className="block text-xs text-gray-500 mb-1">Email de acceso *</label>
+              <input id="create-admin-email" name="adminEmail" type="email" className={inputClass} style={inputStyle} required
                 value={form.adminEmail} onChange={(e) => setForm({ ...form, adminEmail: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">DNI (8 dígitos) *</label>
-              <input className={inputClass} style={inputStyle} required maxLength={8}
+              <label htmlFor="create-admin-dni" className="block text-xs text-gray-500 mb-1">DNI (8 dígitos) *</label>
+              <input id="create-admin-dni" name="adminDni" className={inputClass} style={inputStyle} required maxLength={8}
                 value={form.adminDni} onChange={(e) => setForm({ ...form, adminDni: e.target.value.replace(/\D/g, '') })} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Contraseña temporal *</label>
-              <input type="password" className={inputClass} style={inputStyle} required
-                value={form.adminPassword} onChange={(e) => setForm({ ...form, adminPassword: e.target.value })} />
+              <label htmlFor="create-admin-password" className="block text-xs text-gray-500 mb-1">Contraseña temporal *</label>
+              <input id="create-admin-password" name="adminPassword" type="password" className={inputClass} style={inputStyle} required
+                value={form.adminPassword} onChange={(e) => setForm({ ...form, adminPassword: e.target.value })}
+                autoComplete="new-password" />
               <PasswordPolicyHint password={form.adminPassword} />
             </div>
           </div>
