@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import {
   FileText,
   Flame,
@@ -85,12 +86,21 @@ export default function DashboardPage() {
   const latestData = latest as LatestSession | null
 
   const firstName = user?.fullName?.split(' ')[0] || 'Cadete'
-  const today = new Date().toLocaleDateString('es-PE', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  const [today, setToday] = useState('')
+  const [greet, setGreet] = useState('Hola')
+
+  useEffect(() => {
+    setToday(
+      new Date().toLocaleDateString('es-PE', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    )
+    const hour = new Date().getHours()
+    setGreet(hour < 12 ? 'Buen día' : hour < 19 ? 'Buenas tardes' : 'Buenas noches')
+  }, [])
 
   const sessions = statsData?.totalSessions ?? gamiData?.examsCompleted ?? 0
   const totalQ = statsData?.totalQuestions ?? 0
@@ -104,8 +114,6 @@ export default function DashboardPage() {
   const nextRank = gamiData?.nextRank ?? null
   const pointsToNext = gamiData?.pointsToNextRank ?? 0
   const rankPercent = gamiData?.rankProgressPercent ?? 0
-  const hour = new Date().getHours()
-  const greet = hour < 12 ? 'Buen día' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'
 
   if (loading && !gamiData && !statsData) {
     return (

@@ -53,8 +53,9 @@ function hasSsrBootstrap(
 
 export function useTenantConfig(overrideSlug?: string | null) {
   const autoSlug = useTenantSlug()
-  const slug = overrideSlug ?? autoSlug
   const { initialConfig, slug: bootstrapSlug } = useTenantLoginBootstrap()
+  const slug =
+    overrideSlug !== undefined ? overrideSlug : (autoSlug ?? bootstrapSlug)
 
   const seedConfig = useMemo(
     () => resolveSeedConfig(slug, bootstrapSlug, initialConfig),

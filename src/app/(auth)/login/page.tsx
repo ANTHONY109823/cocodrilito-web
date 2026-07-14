@@ -132,28 +132,28 @@ function LoginForm() {
   const displayName = isPlatformLogin
     ? BRAND_PLATFORM
     : (config?.name ?? BRAND_LOGIN)
-  const branding = tenantSlug
+  const branding = resolvedTenantSlug
     ? resolveLoginBranding(config?.loginConfig)
     : SUPERADMIN_LOGIN_BRANDING
 
   const logoSrc = resolveTenantAssetUrl(config?.logoUrl)
   const backgroundSrc = resolveTenantAssetUrl(config?.loginBackgroundUrl)
 
-  const loginBackgroundStyle: CSSProperties | undefined = tenantSlug && backgroundSrc
+  const loginBackgroundStyle: CSSProperties | undefined = resolvedTenantSlug && backgroundSrc
     ? { backgroundImage: `url('${backgroundSrc}')` }
-    : tenantSlug && config?.primaryColor
+    : resolvedTenantSlug && config?.primaryColor
       ? {
           background: `linear-gradient(160deg, ${config.primaryColor} 0%, #060e07 55%, #0b1f0d 100%)`,
         }
       : undefined
 
-  const bgLionClassName = tenantSlug ? 'bg-lion bg-lion--tenant bg-lion--ready' : 'bg-lion'
+  const bgLionClassName = resolvedTenantSlug ? 'bg-lion bg-lion--tenant bg-lion--ready' : 'bg-lion'
 
   const showLoginContent =
-    isPlatformLogin || !tenantSlug || Boolean(config) || Boolean(tenantConfigError)
-  const showSkeleton = Boolean(tenantSlug && configLoading && !config && !tenantConfigError)
-  const hasTenantBackground = Boolean(tenantSlug && backgroundSrc)
-  const loginRootClass = isPlatformLogin || !tenantSlug
+    isPlatformLogin || !resolvedTenantSlug || Boolean(config) || Boolean(tenantConfigError)
+  const showSkeleton = Boolean(resolvedTenantSlug && configLoading && !config && !tenantConfigError)
+  const hasTenantBackground = Boolean(resolvedTenantSlug && backgroundSrc)
+  const loginRootClass = isPlatformLogin || !resolvedTenantSlug
     ? 'loginRoot loginRoot--platform'
     : 'loginRoot loginRoot--tenant'
   const longBrandName = displayName.length > 10
@@ -220,7 +220,7 @@ function LoginForm() {
     <ThemeProvider config={config}>
       <div
         className={loginRootClass}
-        style={buildLoginThemeStyle(config, isPlatformLogin || !tenantSlug)}
+        style={buildLoginThemeStyle(config, isPlatformLogin || !resolvedTenantSlug)}
       >
         <div className="bg-wrap">
           <div className={bgLionClassName} style={loginBackgroundStyle} />
@@ -247,17 +247,17 @@ function LoginForm() {
         )}
 
         <main className="page page--ready">
-        {tenantSlug && tenantConfigError && !configLoading && (
+        {resolvedTenantSlug && tenantConfigError && !configLoading && (
           <div className="login-error-banner" role="alert">
             <strong>Agencia no encontrada.</strong>
             <p>
-              La URL <code>{tenantSlug}.simulacros.pe</code> no corresponde a ninguna institución activa.
+              La URL <code>{resolvedTenantSlug}.simulacros.pe</code> no corresponde a ninguna institución activa.
               Verifica el enlace con tu agencia o contacta a Simulacros.pe.
             </p>
           </div>
         )}
         <div className="brand">
-          {tenantSlug && logoSrc && (
+          {resolvedTenantSlug && logoSrc && (
             <Image
               src={logoSrc}
               alt=""
@@ -285,7 +285,7 @@ function LoginForm() {
             <ThemeToggle compact showLabel={false} className="login-theme-corner" />
 
             <div className="left login-promo-panel">
-              {tenantSlug && !isPlatformLogin && (
+              {resolvedTenantSlug && !isPlatformLogin && (
                 <div className="logo-pill">
                   <div className="logo-icon" aria-hidden>
                     {displayName.slice(0, 2).toUpperCase()}

@@ -4,6 +4,7 @@ import { TenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 import { fetchTenantConfigServer } from '@/lib/tenant/fetchTenantConfigServer'
 import { buildTenantIconMetadata, resolveTenantAssetUrl } from '@/lib/utils/resolveTenantAssetUrl'
 import { resolveRequestTenantSlug } from '@/lib/utils/resolveRequestTenantSlug'
+import { preload } from 'react-dom'
 
 export async function generateMetadata(): Promise<Metadata> {
   const slug = await resolveRequestTenantSlug()
@@ -24,19 +25,13 @@ export default async function LoginLayout({ children }: { children: React.ReactN
   const logoUrl = resolveTenantAssetUrl(initialConfig?.logoUrl)
   const backgroundUrl = resolveTenantAssetUrl(initialConfig?.loginBackgroundUrl)
 
+  // Precarga vía React (no <link> sueltos en el body → evita mismatch de hidratación).
+  if (backgroundUrl) preload(backgroundUrl, { as: 'image', fetchPriority: 'high' })
+  if (logoUrl) preload(logoUrl, { as: 'image', fetchPriority: 'high' })
+
   return (
-    <>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      {backgroundUrl ? (
-        <link rel="preload" as="image" href={backgroundUrl} fetchPriority="high" />
-      ) : null}
-      {logoUrl ? (
-        <link rel="preload" as="image" href={logoUrl} fetchPriority="high" />
-      ) : null}
-      <TenantLoginBootstrap slug={slug} initialConfig={initialConfig}>
-        {children}
-      </TenantLoginBootstrap>
-    </>
+    <TenantLoginBootstrap slug={slug} initialConfig={initialConfig}>
+      {children}
+    </TenantLoginBootstrap>
   )
 }

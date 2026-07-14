@@ -2,15 +2,21 @@
 
 import { getTenantSlugFromHost, isRootHost } from '@/lib/utils/tenantHost'
 import { readTenantSlugCookieClient } from '@/lib/utils/tenantSlugCookie'
+import { useTenantLoginBootstrap } from '@/components/tenant/TenantLoginBootstrap'
 
 /**
- * Slug del tenant según subdominio, cookie (dominio custom) o query param.
+ * Slug del tenant según bootstrap SSR, subdominio, cookie o query.
+ * Usa el slug del servidor cuando window aún no está disponible (evita React #418).
  */
 export function useTenantSlug(): string | null {
-  if (typeof window === 'undefined') return null
+  const { slug: bootstrapSlug } = useTenantLoginBootstrap()
+
+  if (typeof window === 'undefined') {
+    return bootstrapSlug
+  }
 
   if (isRootHost(window.location.hostname)) {
-    return readTenantSlugCookieClient()
+    return readTenantSlugCookieClient() ?? bootstrapSlug
   }
 
   const fromHost = getTenantSlugFromHost()
@@ -19,5 +25,5 @@ export function useTenantSlug(): string | null {
   const fromCookie = readTenantSlugCookieClient()
   if (fromCookie) return fromCookie
 
-  return new URLSearchParams(window.location.search).get('tenant_slug')
+  return new URLSearchParams(window.location.search).get('tenant_slug') ?? bootstrapSlug
 }

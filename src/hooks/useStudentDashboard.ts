@@ -22,12 +22,18 @@ export function useStudentDashboard() {
   const { data: latest, error: latestError, isLoading: latestLoading } = useSWR(
     '/exams/sessions/latest',
     swrFetcher,
-    swrOpts
+    {
+      ...swrOpts,
+      shouldRetryOnError: false,
+    }
   )
   const { data: history, error: historyError } = useSWR(
     '/exams/sessions/history?limit=7',
     swrFetcher,
-    swrOpts
+    {
+      ...swrOpts,
+      shouldRetryOnError: false,
+    }
   )
   const historyItems = Array.isArray(history) ? history : (history as { items?: unknown[] })?.items ?? []
   const chartScores = historyItems
@@ -36,13 +42,14 @@ export function useStudentDashboard() {
     .map((entry: { score: number }) => entry.score)
 
   const loading = gamiLoading && statsLoading && latestLoading && !gami && !stats && !latest
-  const error = gamiError || statsError || latestError || historyError
+  // latest/history no deben tumbar el dashboard si fallan (p.ej. 500).
+  const error = gamiError || statsError
 
   return {
     gami,
     stats,
-    latest,
-    chartScores,
+    latest: latestError ? null : latest,
+    chartScores: historyError ? [] : chartScores,
     loading,
     error,
   }
